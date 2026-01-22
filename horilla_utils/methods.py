@@ -135,7 +135,8 @@ def get_section_info_for_model(model_input):
     """Fetch section and URL for a model's app from registered sub-section menus.
 
     Args:
-        model_input: Either a model class or a string in format 'app_label.ModelName' or just 'ModelName'
+        model_input: Either a model class or a string in
+        format 'app_label.ModelName' or just 'ModelName'
     """
 
     # Convert string to model class if needed
