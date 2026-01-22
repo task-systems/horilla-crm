@@ -114,3 +114,33 @@ OPERATOR_CHOICES = [
     ("is_empty", _("Is Empty")),
     ("is_not_empty", _("Is Not Empty")),
 ]
+
+# IMPORTANT: Order matters — do not change the order of these lists
+DISPLAYABLE_FIELD_TYPES = [
+    "CharField",
+    "TextField",
+    "BooleanField",
+    "DateField",
+    "DateTimeField",
+    "TimeField",
+    "EmailField",
+    "URLField",
+]
+
+TABLE_FALLBACK_FIELD_TYPES = [
+    "CharField",
+    "TextField",
+    "EmailField",
+]
+
+FIELD_TYPE_MAP = {
+    "CharField": "text",
+    "TextField": "text",
+    "BooleanField": "boolean",
+    "IntegerField": "number",
+    "FloatField": "float",
+    "DecimalField": "decimal",
+    "ForeignKey": "foreignkey",
+    "DateField": "date",
+    "DateTimeField": "datetime",
+}

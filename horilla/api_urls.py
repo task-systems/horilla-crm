@@ -3,11 +3,14 @@
 API URL configuration for the Horilla project,
 including dynamic path collection and Swagger schema.
 """
+# Standard library
 import logging
 
+# Third-party imports (Django)
 from django.apps import apps
-from django.conf import settings
 from django.urls import include, path
+
+# Third-party imports (drf_yasg)
 from drf_yasg import openapi
 from drf_yasg.generators import OpenAPISchemaGenerator
 from drf_yasg.inspectors import SwaggerAutoSchema
