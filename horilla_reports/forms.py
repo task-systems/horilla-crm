@@ -59,7 +59,7 @@ class ReportForm(HorillaModelForm):
                     import ast
 
                     selected = ast.literal_eval(selected)
-                except:
+                except Exception:
                     selected = [
                         item.strip().strip("'\"")
                         for item in selected.strip("[]").split(",")

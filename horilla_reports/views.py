@@ -37,6 +37,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
 # First-party / Horilla imports
 from horilla.exceptions import HorillaHttp404
+from horilla.utils.choices import TABLE_FALLBACK_FIELD_TYPES
 from horilla_core.decorators import (
     htmx_required,
     permission_required,
@@ -109,6 +110,7 @@ class ReportNavbar(LoginRequiredMixin, HorillaNavView):
                 "url": f"""{ reverse_lazy('horilla_reports:create_report')}""",
                 "attrs": {"id": "report-create"},
             }
+        return None
 
     @cached_property
     def actions(self):
@@ -128,6 +130,7 @@ class ReportNavbar(LoginRequiredMixin, HorillaNavView):
                             """,
                 },
             ]
+        return None
 
     @cached_property
     def second_button(self):
@@ -140,6 +143,7 @@ class ReportNavbar(LoginRequiredMixin, HorillaNavView):
                 "url": f"""{ reverse_lazy('horilla_reports:create_folder')}?pk={self.request.GET.get('pk', '')}""",
                 "attrs": {"id": "report-folder-create"},
             }
+        return None
 
 
 @method_decorator(
@@ -177,6 +181,7 @@ class ReportsListView(LoginRequiredMixin, HorillaListView):
                 "attrs": 'id="reports-load"',
                 "title": _("Load Default Reports"),
             }
+        return None
 
     columns = ["name", (_("Module"), "module_verbose_name"), "folder"]
 
@@ -407,7 +412,7 @@ class ReportDetailView(RecentlyViewedMixin, LoginRequiredMixin, DetailView):
                 field = model_class._meta.get_field(field_name)
                 if isinstance(field, ForeignKey):
                     select_related_fields.append(field_name)
-            except:
+            except Exception:
                 pass
 
         if select_related_fields:
@@ -665,7 +670,7 @@ class ReportDetailView(RecentlyViewedMixin, LoginRequiredMixin, DetailView):
         """Get the verbose name of a field"""
         try:
             return model_class._meta.get_field(field_name).verbose_name.title()
-        except:
+        except Exception:
             return field_name.title()
 
     def handle_0_row_0_col(self, df, report, context):
@@ -1480,7 +1485,7 @@ class ReportDetailView(RecentlyViewedMixin, LoginRequiredMixin, DetailView):
                         "related_model": field.related_model,
                         "values": {},
                     }
-            except:
+            except Exception:
                 pass
         return cache
 
@@ -1504,7 +1509,7 @@ class ReportDetailView(RecentlyViewedMixin, LoginRequiredMixin, DetailView):
                         )
                         # Create lookup dict
                         fk_cache[field_name] = {obj.pk: obj for obj in related_objects}
-            except:
+            except Exception:
                 pass
         return fk_cache
 
@@ -1557,7 +1562,7 @@ class ReportDetailView(RecentlyViewedMixin, LoginRequiredMixin, DetailView):
                     "composite_key": "Unspecified (-)",
                 }
             return {"display": str(value), "id": value, "composite_key": str(value)}
-        except:
+        except Exception:
             return {
                 "display": str(value) if value is not None else "Unspecified (-)",
                 "id": value,
@@ -2110,9 +2115,10 @@ class ReportDetailFilteredView(LoginRequiredMixin, View):
                     if field_name in ["name", "title", "display_name", "label"]:
                         lookup_fields.insert(0, field_name)  # Add to front
                     # Include string/char fields that might be used for display
-                    elif hasattr(
-                        field, "get_internal_type"
-                    ) and field.get_internal_type() in ["CharField", "TextField"]:
+                    elif (
+                        hasattr(field, "get_internal_type")
+                        and field.get_internal_type() in TABLE_FALLBACK_FIELD_TYPES[:2]
+                    ):  # [CharField, TextField]
                         lookup_fields.append(field_name)
 
             # Add the original field name as fallback
@@ -2171,12 +2177,11 @@ class ReportDetailFilteredView(LoginRequiredMixin, View):
                     for lookup_field in lookup_fields:
                         try:
                             field_obj = related_model._meta.get_field(lookup_field)
-                            if hasattr(
-                                field_obj, "get_internal_type"
-                            ) and field_obj.get_internal_type() in [
-                                "CharField",
-                                "TextField",
-                            ]:
+                            if (
+                                hasattr(field_obj, "get_internal_type")
+                                and field_obj.get_internal_type()
+                                in TABLE_FALLBACK_FIELD_TYPES[:2]
+                            ):  # [CharField, TextField]
                                 related_obj = related_model.objects.get(
                                     **{f"{lookup_field}__iexact": value}
                                 )
@@ -3733,6 +3738,7 @@ class ChangeChartTypeView(LoginRequiredMixin, HorillaSingleFormView):
         pk = self.kwargs.get("pk") or self.request.GET.get("id")
         if pk:
             return reverse_lazy("horilla_reports:change_chart_type", kwargs={"pk": pk})
+        return None
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -3771,7 +3777,7 @@ class ChangeChartFieldView(LoginRequiredMixin, HorillaSingleFormView):
                 field = temp_report.model_class._meta.get_field(field_name)
                 verbose_name = field.verbose_name.title()
                 field_choices.append((field_name, f"{verbose_name} (Row Group)"))
-            except:
+            except Exception:
                 field_choices.append((field_name, f"{field_name.title()} (Row Group)"))
 
         # Add column groups to choices
@@ -3780,7 +3786,7 @@ class ChangeChartFieldView(LoginRequiredMixin, HorillaSingleFormView):
                 field = temp_report.model_class._meta.get_field(field_name)
                 verbose_name = field.verbose_name.title()
                 field_choices.append((field_name, f"{verbose_name} (Column Group)"))
-            except:
+            except Exception:
                 field_choices.append(
                     (field_name, f"{field_name.title()} (Column Group)")
                 )
@@ -3879,6 +3885,7 @@ class ChangeChartFieldView(LoginRequiredMixin, HorillaSingleFormView):
         pk = self.kwargs.get("pk") or self.request.GET.get("id")
         if pk:
             return reverse_lazy("horilla_reports:change_chart_field", kwargs={"pk": pk})
+        return None
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -3949,6 +3956,7 @@ class UpdateReportView(LoginRequiredMixin, HorillaSingleFormView):
         pk = self.kwargs.get("pk") or self.request.GET.get("id")
         if pk:
             return reverse_lazy("horilla_reports:update_report", kwargs={"pk": pk})
+        return None
 
     def get(self, request, *args, **kwargs):
         report_id = self.kwargs.get("pk")
@@ -3991,6 +3999,7 @@ class MoveReportView(LoginRequiredMixin, HorillaSingleFormView):
             return reverse_lazy(
                 "horilla_reports:move_report_to_folder", kwargs={"pk": pk}
             )
+        return None
 
     def get(self, request, *args, **kwargs):
         report_id = self.kwargs.get("pk")
@@ -4048,6 +4057,7 @@ class MoveFolderView(LoginRequiredMixin, HorillaSingleFormView):
             return reverse_lazy(
                 "horilla_reports:move_folder_to_folder", kwargs={"pk": pk}
             )
+        return None
 
     def get(self, request, *args, **kwargs):
         folder_id = self.kwargs.get("pk")
@@ -4333,7 +4343,7 @@ class ReportFolderDetailView(LoginRequiredMixin, HorillaListView):
         folders = ReportFolder.objects.filter(parent__id=folder_id).annotate(
             content_type=models.Value("folder", output_field=models.CharField())
         )
-        reports = Report.objects.filter(folder__id=folder_id).annotate(
+        _reports = Report.objects.filter(folder__id=folder_id).annotate(
             content_type=models.Value("report", output_field=models.CharField())
         )
         return folders
@@ -5290,7 +5300,7 @@ class ReportExportView(LoginRequiredMixin, View):
             group_starts[current_group] = (group_start_col, current_col - 1)
 
         # Merge group headers
-        for group_name, (start_col, end_col) in group_starts.items():
+        for _group_name, (start_col, end_col) in group_starts.items():
             if start_col < end_col:
                 start_cell = openpyxl.utils.get_column_letter(start_col)
                 end_cell = openpyxl.utils.get_column_letter(end_col)

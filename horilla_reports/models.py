@@ -45,7 +45,7 @@ class ReportFolder(HorillaCoreModel):
 
     def __str__(self):
         """Return the folder name as its string representation."""
-        return self.name
+        return str(self.name)
 
     def get_item_type(self):
         """Return a short label describing the item type (Folder)."""
@@ -145,7 +145,7 @@ class Report(HorillaCoreModel):
 
     def __str__(self):
         """Return the report name as its string representation."""
-        return self.name
+        return str(self.name)
 
     def get_item_type(self):
         """Return a short label describing the item type (Report)."""
@@ -305,7 +305,7 @@ class Report(HorillaCoreModel):
                     {"value": obj.pk, "display": str(obj)} for obj in related_objects
                 ]
             return []
-        except:
+        except Exception:
             return []
 
     def is_choice_or_foreign_key_field(self, field_name):
@@ -315,7 +315,7 @@ class Report(HorillaCoreModel):
             return (hasattr(field, "choices") and field.choices) or (
                 hasattr(field, "related_model") and field.related_model
             )
-        except:
+        except Exception:
             return False
 
     def actions(self):

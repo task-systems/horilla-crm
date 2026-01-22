@@ -342,7 +342,7 @@ def get_field_verbose_name(field_name, model_class):
     try:
         field = model_class._meta.get_field(field_name)
         return field.verbose_name.title()
-    except:
+    except Exception:
         return field_name.replace("_", " ").title()
 
 
@@ -507,5 +507,5 @@ def is_aggregatable(field_name, model_class):
             return True
 
         return False
-    except:
+    except Exception:
         return False
