@@ -19,6 +19,8 @@ class DashboardFolderSerializer(serializers.ModelSerializer):
     folder_owner_details = HorillaUserSerializer(source="folder_owner", read_only=True)
 
     class Meta:
+        """Meta class for DashboardFolderSerializer"""
+
         model = DashboardFolder
         fields = "__all__"
 
@@ -32,6 +34,8 @@ class DashboardSerializer(serializers.ModelSerializer):
     folder_details = serializers.SerializerMethodField()
 
     class Meta:
+        """Meta class for DashboardSerializer"""
+
         model = Dashboard
         fields = "__all__"
 
@@ -54,6 +58,8 @@ class DashboardComponentSerializer(serializers.ModelSerializer):
     dashboard_details = serializers.SerializerMethodField()
 
     class Meta:
+        """Meta class for DashboardComponentSerializer"""
+
         model = DashboardComponent
         fields = "__all__"
 
@@ -73,6 +79,8 @@ class ComponentCriteriaSerializer(serializers.ModelSerializer):
     component_details = serializers.SerializerMethodField()
 
     class Meta:
+        """Meta class for ComponentCriteriaSerializer"""
+
         model = ComponentCriteria
         fields = "__all__"
 

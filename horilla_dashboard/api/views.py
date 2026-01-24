@@ -7,11 +7,10 @@ bulk update, bulk delete, permissions, and documentation.
 
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import permissions, status, viewsets
+from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
-from rest_framework.response import Response
 
-from horilla_core.api.docs import BULK_DELETE_DOCS, BULK_UPDATE_DOCS, SEARCH_FILTER_DOCS
+from horilla_core.api.docs import BULK_DELETE_DOCS, BULK_UPDATE_DOCS
 from horilla_core.api.mixins import BulkOperationsMixin, SearchFilterMixin
 from horilla_core.api.permissions import IsCompanyMember
 from horilla_dashboard.api.docs import (
