@@ -91,9 +91,7 @@ class ShortKeyListView(LoginRequiredMixin, HorillaListView):
         """Return shortcut keys filtered by the logged-in user."""
         queryset = super().get_queryset()
         user_id = self.request.user
-        if user_id:
-            queryset = queryset.filter(user=user_id)
-        return queryset
+        return queryset.filter(user=user_id) if user_id else queryset.none()
 
     actions = [
         {

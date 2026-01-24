@@ -2,8 +2,6 @@
 Forms for the horilla_keys app
 """
 
-import platform
-
 from django import forms
 
 from horilla.menu import (
@@ -118,15 +116,9 @@ class ShortcutKeyForm(HorillaModelForm):
         request = getattr(_thread_local, "request", None)
         user_agent = request.META.get("HTTP_USER_AGENT", "").lower() if request else ""
 
-        os_name = platform.system().lower()
-        if "windows" in user_agent:
-            os_name = "windows"
-        elif any(x in user_agent for x in ["mac", "darwin"]):
-            os_name = "mac"
-        elif any(x in user_agent for x in ["linux", "ubuntu"]):
-            os_name = "linux"
+        is_mac = "mac" in user_agent or "darwin" in user_agent
 
-        if os_name == "mac":
+        if is_mac:
             return [("alt", "Option (⌥)")]
 
         return [("alt", "Alt")]
