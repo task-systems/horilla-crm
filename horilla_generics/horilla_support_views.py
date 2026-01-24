@@ -961,7 +961,7 @@ class DeleteSavedListView(LoginRequiredMixin, View):
             ).first()
             if pinned_view:
                 pinned_view.delete()
-                pass
+
             saved_list.delete()
             messages.success(
                 request, f"Saved list '{saved_list_name}' deleted successfully."
@@ -1473,6 +1473,18 @@ class HorillaSelect2DataView(LoginRequiredMixin, View):
 
         if queryset is None:
             queryset = model.objects.all()
+
+        # Apply company filtering if model has company field and active_company is set
+        company = getattr(request, "active_company", None)
+        if company:
+            # Check if the model has a company field
+            try:
+                model._meta.get_field("company")
+                # Filter queryset by company
+                queryset = queryset.filter(company=company)
+            except Exception:
+                # Model doesn't have a company field, skip filtering
+                pass
 
         if dependency_value and dependency_model and dependency_field:
             try:
