@@ -86,7 +86,7 @@ class PartnerRoleFilter(HorillaFilterSet):
         model = PartnerRole
         fields = "__all__"
         exclude = ["additional_info"]
-        search_fields = ["customer_role_name"]
+        search_fields = ["partner_role_name"]
 
 
 class HolidayFilter(HorillaFilterSet):

@@ -109,6 +109,7 @@ class PartnerRoleListView(LoginRequiredMixin, HorillaListView):
     main_url = reverse_lazy("horilla_core:partner_role_view")
     table_width = False
     bulk_select_option = False
+    save_to_list_option = False
     header_attrs = [
         {"description": {"style": "width: 300px;"}},
     ]
