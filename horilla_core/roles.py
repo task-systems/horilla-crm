@@ -148,6 +148,8 @@ class RoleUsersListView(LoginRequiredMixin, HorillaListView):
     main_url = reverse_lazy("horilla_core:view_user_in_role")
     bulk_delete_enabled = False
     bulk_update_fields = ["role"]
+    save_to_list_option = False
+    filter_url_push = False
 
     def get_queryset(self):
         """
@@ -155,8 +157,16 @@ class RoleUsersListView(LoginRequiredMixin, HorillaListView):
         """
         queryset = super().get_queryset()
         role_id = self.request.GET.get("role_id")
-        queryset = queryset.filter(role=role_id)
-        return queryset
+        if role_id:
+            try:
+                Role.objects.get(pk=role_id)
+                queryset = queryset.filter(role=role_id)
+            except Exception:
+                messages.error(self.request, _("The requested role does not exist."))
+                return HttpResponse(
+                    "<script>$('#reloadButton').click();closeContentModal();</script>"
+                )
+        return queryset.none()
 
     @cached_property
     def col_attrs(self):
@@ -224,6 +234,27 @@ class UsersInRoleView(LoginRequiredMixin, TemplateView):
 
     template_name = "role/view_user.html"
 
+    def get(self, request, *args, **kwargs):
+        """
+        Handle GET request and validate role_id.
+        """
+        role_id = request.GET.get("role_id")
+
+        if not role_id:
+            messages.error(request, _("Please select a role to continue."))
+            return HttpResponse(
+                "<script>$('#reloadButton').click();closeContentModal()</script>"
+            )
+
+        try:
+            Role.objects.get(pk=role_id)
+            return super().get(request, *args, **kwargs)
+        except Exception:
+            messages.error(request, _("The requested role does not exist."))
+            return HttpResponse(
+                "<script>$('#reloadButton').click();closeContentModal()</script>"
+            )
+
 
 @method_decorator(htmx_required, name="dispatch")
 @method_decorator(
@@ -250,6 +281,7 @@ class RoleUsersNavView(LoginRequiredMixin, HorillaNavView):
     reload_option = False
     border_enabled = False
     navbar_indication = True
+    search_push_url = False
 
     def get_context_data(self, **kwargs):
         """
