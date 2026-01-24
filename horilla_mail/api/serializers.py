@@ -14,7 +14,11 @@ from horilla_mail.models import (
 
 
 class HorillaMailConfigurationSerializer(serializers.ModelSerializer):
+    """Serializer for HorillaMailConfiguration model"""
+
     class Meta:
+        """Meta class for HorillaMailConfigurationSerializer"""
+
         model = HorillaMailConfiguration
         fields = "__all__"
 
@@ -35,9 +39,13 @@ class HorillaMailConfigurationSerializer(serializers.ModelSerializer):
 
 
 class HorillaMailSerializer(serializers.ModelSerializer):
+    """Serializer for HorillaMail model"""
+
     related_model = serializers.CharField(write_only=True, required=False)
 
     class Meta:
+        """Meta class for HorillaMailSerializer"""
+
         model = HorillaMail
         fields = "__all__"
 
@@ -64,13 +72,21 @@ class HorillaMailSerializer(serializers.ModelSerializer):
 
 
 class HorillaMailAttachmentSerializer(serializers.ModelSerializer):
+    """Serializer for HorillaMailAttachment model"""
+
     class Meta:
+        """Meta class for HorillaMailAttachmentSerializer"""
+
         model = HorillaMailAttachment
         fields = "__all__"
 
 
 class HorillaMailTemplateSerializer(serializers.ModelSerializer):
+    """Serializer for HorillaMailTemplate model"""
+
     class Meta:
+        """Meta class for HorillaMailTemplateSerializer"""
+
         model = HorillaMailTemplate
         fields = "__all__"
 

@@ -41,6 +41,8 @@ search_param = openapi.Parameter(
 class HorillaMailConfigurationViewSet(
     SearchFilterMixin, BulkOperationsMixin, viewsets.ModelViewSet
 ):
+    """ViewSet for HorillaMailConfiguration model"""
+
     queryset = HorillaMailConfiguration.objects.all().select_related(
         "company", "created_by"
     )
@@ -78,6 +80,8 @@ class HorillaMailConfigurationViewSet(
 
 
 class HorillaMailViewSet(SearchFilterMixin, BulkOperationsMixin, viewsets.ModelViewSet):
+    """ViewSet for HorillaMail model"""
+
     queryset = HorillaMail.objects.all().select_related(
         "sender", "content_type", "created_by", "company"
     )
@@ -113,6 +117,8 @@ class HorillaMailViewSet(SearchFilterMixin, BulkOperationsMixin, viewsets.ModelV
 class HorillaMailAttachmentViewSet(
     SearchFilterMixin, BulkOperationsMixin, viewsets.ModelViewSet
 ):
+    """ViewSet for HorillaMailAttachment model"""
+
     queryset = HorillaMailAttachment.objects.all().select_related(
         "mail", "created_by", "company"
     )
@@ -139,6 +145,8 @@ class HorillaMailAttachmentViewSet(
 class HorillaMailTemplateViewSet(
     SearchFilterMixin, BulkOperationsMixin, viewsets.ModelViewSet
 ):
+    """ViewSet for HorillaMailTemplate model"""
+
     queryset = HorillaMailTemplate.objects.all().select_related("company", "created_by")
     serializer_class = HorillaMailTemplateSerializer
     permission_classes = [permissions.IsAuthenticated, IsCompanyMember]
