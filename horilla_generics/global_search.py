@@ -19,6 +19,7 @@ from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.safestring import mark_safe
 from django.views import View
 
@@ -368,6 +369,11 @@ class GlobalSearchView(LoginRequiredMixin, View):
         if previous_url:
             try:
                 previous_url = unquote(unquote(previous_url))
+                if not url_has_allowed_host_and_scheme(
+                    url=previous_url,
+                    allowed_hosts={request.get_host()},
+                ):
+                    previous_url = "/"
 
                 if "?" in previous_url:
 
