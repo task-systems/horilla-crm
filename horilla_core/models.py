@@ -2364,8 +2364,10 @@ class Holiday(HorillaCoreModel):
         """
         Get all users eligible for this holiday
         """
+        from horilla.auth.models import User
+
         if self.all_users:
-            return HorillaUser.objects.filter(is_active=True)
+            return User.objects.filter(is_active=True)
         return self.specific_users.all()
 
     def is_user_eligible(self, user):
