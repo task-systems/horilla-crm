@@ -99,9 +99,27 @@ class OpportunityStage(HorillaCoreModel):
 
             if self.pk is None:
                 # For new stages, use provided order or next available order
+                desired_order = self.order
                 if not self.order:
                     self.order = self.get_next_order_for_company(self.company)
-                self._desired_position = self.order if not self.is_final else None
+                    desired_order = self.order
+                else:
+                    # Check if the provided order already exists for this company
+                    if OpportunityStage.objects.filter(
+                        company=self.company, order=self.order
+                    ).exists():
+                        # If order conflicts, use a temporary high value to avoid constraint violation
+                        # The _reorder_all_statuses method will handle proper ordering
+                        # Find a safe temporary value that won't conflict
+                        max_order = OpportunityStage.objects.filter(
+                            company=self.company
+                        ).aggregate(max_order=models.Max("order"))["max_order"]
+                        # Use a value that's guaranteed to be unique (higher than max + large offset)
+                        # and higher than reordering temp values (10000+)
+                        self.order = max((max_order or 0) + 50000, 100000)
+                    else:
+                        desired_order = self.order
+                self._desired_position = desired_order if not self.is_final else None
             else:
                 original = OpportunityStage.objects.get(pk=self.pk)
                 is_final_changed = self.is_final != original.is_final
