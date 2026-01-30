@@ -220,19 +220,27 @@
                                             {% endif %}
                                           </div>
                                         {% if field.name in dynamic_create_fields and field.name in related_models_info %}
+                                            {% with initial_data=related_models_info|get_item_form:field.name|get_item_form:'initial' %}
                                             <button type="button"
                                                     class="whitespace-nowrap text-primary-600 hover:text-primary-800 text-xs font-semibold px-2 py-1 bg-primary-300 rounded border border-primary-200 transition-colors"
-                                                    hx-get="{% url 'horilla_generics:dynamic_create' related_models_info|get_item_form:field.name|get_item_form:'app_label' related_models_info|get_item_form:field.name|get_item_form:'model_name' %}?target_field={{ field.name }}&fields={{ dynamic_create_field_mapping|get_item_form:field.name|get_item_form:'fields'|join:',' }}&full_width_fields={{ dynamic_create_field_mapping|get_item_form:field.name|get_item_form:'full_width_fields'|join:',' }}{% if related_models_info|get_item_form:field.name|get_item_form:'permission' %}&permission={{ related_models_info|get_item_form:field.name|get_item_form:'permission' }}{% endif %}"
+                                                    hx-get="{% url 'horilla_generics:dynamic_create' related_models_info|get_item_form:field.name|get_item_form:'app_label' related_models_info|get_item_form:field.name|get_item_form:'model_name' %}?target_field={{ field.name }}&fields={{ dynamic_create_field_mapping|get_item_form:field.name|get_item_form:'fields'|join:',' }}&full_width_fields={{ dynamic_create_field_mapping|get_item_form:field.name|get_item_form:'full_width_fields'|join:',' }}{% if related_models_info|get_item_form:field.name|get_item_form:'permission' %}&permission={{ related_models_info|get_item_form:field.name|get_item_form:'permission' }}{% endif %}{% if initial_data %}{% for key, value in initial_data.items %}&initial_{{ key }}={{ value }}{% endfor %}{% endif %}"
                                                     hx-target="#dynamicCreateModalBox"
                                                     hx-on:click="openDynamicModal();"
                                                     hx-swap="innerHTML"
                                                     hx-post="">
                                                 + {% trans "Add" %}
                                             </button>
+                                            {% endwith %}
                                         {% endif %}
                                     </div>
                                     <div class="relative">
                                     {{ field }}
+                                        {% if field.field.widget.attrs.data_show_conversion_indicator %}
+                                            <span id="conversion-rate-spinner" class="htmx-indicator mt-1 inline-flex gap-1 items-center text-xs text-primary-600">
+                                                {{ field.field.widget.attrs.data_indicator_text|default:_("Loading...") }}
+                                                <div class="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-primary-600"></div>
+                                            </span>
+                                        {% endif %}
                                         {% if field.field.widget.attrs.readonly or field.field.widget.attrs.data_readonly or field.field.widget.attrs.disabled or field.field.widget.attrs.data_disabled %}
                                             <div class="absolute right-3 pb-3 transform -translate-y-1/2 pointer-events-none">
                                                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
