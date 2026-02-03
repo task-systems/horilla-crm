@@ -254,6 +254,16 @@ urlpatterns = [
         name="user_edit_single_form",
     ),
     path(
+        "user-change-company-form/<int:pk>/",
+        user_views.ChangeUserCompanyView.as_view(),
+        name="user_change_company_form",
+    ),
+    path(
+        "get-company-related-fields/",
+        user_views.GetCompanyRelatedFieldsView.as_view(),
+        name="get_company_related_fields",
+    ),
+    path(
         "user-delete-view/<int:pk>/",
         user_views.UserDeleteView.as_view(),
         name="user_delete_view",

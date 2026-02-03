@@ -1021,7 +1021,7 @@ class HorillaUser(AbstractUser):
         verbose_name = _("User")
         verbose_name_plural = _("Users")
         abstract = False
-        unique_together = ["username", "role"]
+        unique_together = ["company", "username", "role"]
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
@@ -1037,6 +1037,14 @@ class HorillaUser(AbstractUser):
         This method to get detail view url for user
         """
         return reverse_lazy("horilla_core:user_detail_view", kwargs={"pk": self.pk})
+
+    def get_change_company_url(self):
+        """
+        This method to get change company url for user
+        """
+        return reverse_lazy(
+            "horilla_core:user_change_company_form", kwargs={"pk": self.pk}
+        )
 
     def get_avatar(self):
         """
@@ -3220,6 +3228,19 @@ class ImportHistory(HorillaCoreModel):
             return f"{seconds/60:.1f}m"
 
         return f"{seconds/3600:.1f}h"
+
+    @property
+    def module_verbose_name(self):
+        """Returns the verbose name of the model based on module_name and app_label."""
+        if not self.module_name or not self.app_label:
+            return self.module_name or ""
+
+        try:
+            model = apps.get_model(self.app_label, self.module_name)
+            return model._meta.verbose_name
+        except (LookupError, AttributeError):
+            # If model not found, return the module_name as fallback
+            return self.module_name
 
 
 class HorillaAttachment(HorillaCoreModel):

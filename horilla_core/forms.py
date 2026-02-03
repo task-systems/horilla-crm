@@ -29,6 +29,7 @@ from .models import (
     BusinessHour,
     Company,
     DatedConversionRate,
+    Department,
     FiscalYear,
     Holiday,
     MultipleCurrency,
@@ -1262,5 +1263,141 @@ class ChangePasswordForm(forms.Form):
                     "new_password",
                     _("New password must be different from current password."),
                 )
+
+        return cleaned_data
+
+
+class ChangeUserCompanyForm(HorillaModelForm):
+    """Form for changing user's company with dynamic role, department, and currency filtering"""
+
+    class Meta:
+        model = User
+        fields = ["company", "role", "department", "currency"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "company" in self.fields:
+            self.fields["company"].queryset = Company.objects.all().order_by("name")
+            if hasattr(self, "field_permissions") and self.field_permissions:
+                self.field_permissions["company"] = "readwrite"
+
+        if "company" in self.fields:
+            hx_vals = {}
+            if self.instance and self.instance.pk:
+                hx_vals["user_pk"] = str(self.instance.pk)
+
+            attrs = {
+                "hx-get": reverse_lazy("horilla_core:get_company_related_fields"),
+                "hx-target": "#company-related-fields",
+                "hx-swap": "innerHTML",
+                "hx-trigger": "change",
+                "hx-include": "#id_company",  # Only include the select element by ID
+            }
+
+            if hx_vals:
+                import json
+
+                attrs["hx-vals"] = json.dumps(hx_vals)
+
+            self.fields["company"].widget.attrs.update(attrs)
+
+        company = None
+        if self.data and self.data.get("company"):
+            try:
+                company = Company.objects.get(pk=self.data.get("company"))
+            except (Company.DoesNotExist, ValueError, TypeError):
+                pass
+
+        if not company and self.instance and self.instance.pk and self.instance.company:
+            company = self.instance.company
+
+        if company:
+            self._filter_fields_by_company(company)
+
+    def _filter_fields_by_company(self, company):
+        """Filter role, department, and currency fields by company"""
+
+        if "role" in self.fields:
+            self.fields["role"].queryset = Role.all_objects.filter(
+                company=company, is_active=True
+            )
+
+        if "department" in self.fields:
+            self.fields["department"].queryset = Department.all_objects.filter(
+                company=company, is_active=True
+            )
+
+        if "currency" in self.fields:
+            self.fields["currency"].queryset = MultipleCurrency.all_objects.filter(
+                company=company, is_active=True
+            )
+
+    def _get_fresh_queryset(self, field_name, related_model):
+        """
+        Override to bypass permission filtering for role, department, and currency fields.
+        These fields are filtered by company, not by user permissions.
+        """
+        if field_name in ["role", "department", "currency"]:
+            company = None
+            if self.data and self.data.get("company"):
+                try:
+                    from horilla_core.models import Company
+
+                    company_id = self.data.get("company")
+                    if isinstance(company_id, list):
+                        company_id = company_id[-1] if company_id else None
+                    if company_id:
+                        company = Company.objects.get(pk=company_id)
+                except (Company.DoesNotExist, ValueError, TypeError):
+                    pass
+            elif self.instance and self.instance.pk and self.instance.company:
+                company = self.instance.company
+
+            if company:
+                return related_model.all_objects.filter(company=company, is_active=True)
+            else:
+                return related_model.all_objects.none()
+
+        return super()._get_fresh_queryset(field_name, related_model)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        company = cleaned_data.get("company")
+        role = cleaned_data.get("role")
+        department = cleaned_data.get("department")
+        currency = cleaned_data.get("currency")
+
+        if company and role:
+            if role.company != company:
+                self.add_error(
+                    "role", f"Selected role does not belong to {company.name}"
+                )
+
+        if company and department:
+            if department.company != company:
+                self.add_error(
+                    "department",
+                    f"Selected department does not belong to {company.name}",
+                )
+
+        if company and currency:
+            if currency.company != company:
+                self.add_error(
+                    "currency", f"Selected currency does not belong to {company.name}"
+                )
+
+        if self.instance and self.instance.pk and role:
+            current_role = getattr(self.instance, "role", None)
+
+            if current_role != role:
+                username = self.instance.username
+                existing_user = User.all_objects.filter(
+                    username=username, role=role
+                ).exclude(pk=self.instance.pk)
+                if existing_user.exists():
+                    self.add_error(
+                        "role",
+                        f'Another user with username "{username}" already has this role. Please select a different role.',
+                    )
 
         return cleaned_data
