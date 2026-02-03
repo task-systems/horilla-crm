@@ -48,6 +48,19 @@ from horilla_generics.views import HorillaListView, HorillaTabView
 logger = logging.getLogger(__name__)
 
 
+def get_model_verbose_name(module_name, app_label):
+    """Get the verbose name of a model from its module name and app label."""
+    if not module_name or not app_label:
+        return module_name or ""
+
+    try:
+        model = apps.get_model(app_label, module_name)
+        return model._meta.verbose_name
+    except (LookupError, AttributeError):
+        # If model not found, return the module_name as fallback
+        return module_name
+
+
 class ImportView(LoginRequiredMixin, TemplateView):
     """A generic class-based view for rendering the Horilla import data page."""
 
@@ -1400,6 +1413,9 @@ class ImportStep3View(View):
             mapped_count = len(field_mappings)
             unmapped_count = len(headers) - mapped_count
 
+            # Get the verbose name for the module
+            module_verbose_name = get_model_verbose_name(module, app_label)
+
             try:
                 return render(
                     request,
@@ -1409,6 +1425,7 @@ class ImportStep3View(View):
                         "mapped_count": mapped_count,
                         "unmapped_count": unmapped_count,
                         "module": module,
+                        "module_verbose_name": module_verbose_name,
                         "app_label": app_label,
                         "single_import": single_import,
                     },
@@ -1522,6 +1539,9 @@ class ImportStep4View(View):
         mapped_count = len(field_mappings)
         unmapped_count = len(headers) - mapped_count
 
+        # Get the verbose name for the module
+        module_verbose_name = get_model_verbose_name(module, app_label)
+
         return render(
             request,
             "import/import_step4.html",
@@ -1530,6 +1550,7 @@ class ImportStep4View(View):
                 "mapped_count": mapped_count,
                 "unmapped_count": unmapped_count,
                 "module": module,
+                "module_verbose_name": module_verbose_name,
                 "app_label": app_label,
                 "single_import": single_import,
             },
@@ -2621,7 +2642,7 @@ class ImportHistoryView(LoginRequiredMixin, HorillaListView):
 
     columns = [
         "import_name",
-        "module_name",
+        (_("Module"), "module_verbose_name"),
         "original_filename",
         "status",
         "success_rate",
