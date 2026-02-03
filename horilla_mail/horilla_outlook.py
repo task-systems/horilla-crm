@@ -174,6 +174,14 @@ def refresh_outlook_token(api: HorillaMailConfiguration):
     """
     Refresh Outlook token
     """
+    # Check if token exists and has refresh_token
+    if not api.token or not isinstance(api.token, dict):
+        raise ValueError("Token is missing or invalid")
+
+    refresh_token = api.token.get("refresh_token")
+    if not refresh_token:
+        raise ValueError("Refresh token is missing. Please re-authenticate.")
+
     oauth = OAuth2Session(
         api.outlook_client_id,
         token=api.token,
@@ -185,7 +193,7 @@ def refresh_outlook_token(api: HorillaMailConfiguration):
     )
     new_token = oauth.refresh_token(
         api.outlook_token_url,
-        refresh_token=api.token["refresh_token"],
+        refresh_token=refresh_token,
         client_id=api.outlook_client_id,
         client_secret=api.get_decrypted_client_secret(),
     )
@@ -195,7 +203,6 @@ def refresh_outlook_token(api: HorillaMailConfiguration):
     return api
 
 
-@method_decorator(htmx_required, name="dispatch")
 @method_decorator(
     permission_required_or_denied(["horilla_mail.view_horillamailconfiguration"]),
     name="dispatch",
@@ -212,19 +219,32 @@ class OutlookRefreshTokenView(View):
         except Exception as e:
             messages.error(
                 request,
-                e,
+                str(e),
             )
             return HttpResponse(
                 "<script>$('#reloadButton').click();closeModal();</script>"
             )
 
-        old_token = api.token.get("access_token")
+        try:
+            old_token = api.token.get("access_token") if api.token else None
 
-        api = refresh_outlook_token(api)
+            api = refresh_outlook_token(api)
 
-        if api.token.get("access_token") == old_token:
-            messages.info(request, _("Token not refreshed, Login required"))
-        else:
-            messages.success(request, _("Token refreshed successfully"))
+            if api.token.get("access_token") == old_token:
+                messages.info(request, _("Token not refreshed, Login required"))
+            else:
+                messages.success(request, _("Token refreshed successfully"))
+        except ValueError as e:
+            messages.error(
+                request,
+                _("Token refresh failed: {error}. Please re-authenticate.").format(
+                    error=str(e)
+                ),
+            )
+        except Exception as e:
+            messages.error(
+                request,
+                _("Token refresh failed: {error}").format(error=str(e)),
+            )
 
         return HttpResponseRedirect(request.META.get("HTTP_REFERER", "/"))
