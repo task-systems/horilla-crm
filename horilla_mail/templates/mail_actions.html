@@ -33,7 +33,11 @@
       <button class="w-10 h-7 bg-dark-25 flex-1 flex justify-center border-r border-r-[white] hover:bg-dark-50 transition duration-300 items-center"
           title="Edit"
           {% if instance.type == 'mail' %}
+        {% if instance.mail_channel == 'outgoing' %}
           hx-get="{% url "horilla_mail:mail_server_update_view" instance.id  %}?{{ request.GET.urlencode}}"
+          {% else %}
+          hx-get="{% url "horilla_mail:incoming_mail_server_update_view" instance.id  %}?{{ request.GET.urlencode}}"
+          {% endif %}
           {% else %}
           hx-get="{% url "horilla_mail:outlook_mail_server_update_view" instance.id  %}?{{ request.GET.urlencode}}"
           {% endif %}
