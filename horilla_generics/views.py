@@ -47,7 +47,7 @@ from django.db import IntegrityError, models, transaction
 from django.db.models import Case, ForeignKey, Max, Q, When
 from django.db.models.fields.related import ManyToManyField
 from django.http import Http404, HttpResponse, QueryDict
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.urls import resolve, reverse, reverse_lazy
 from django.utils import timezone, translation
@@ -73,6 +73,7 @@ from reportlab.pdfgen import canvas
 # First-party (Horilla)
 from horilla.exceptions import HorillaHttp404
 from horilla.utils.choices import FIELD_TYPE_MAP, TABLE_FALLBACK_FIELD_TYPES
+from horilla.utils.shortcuts import get_object_or_404
 from horilla_core.decorators import htmx_required, permission_required_or_denied
 from horilla_core.mixins import OwnerQuerysetMixin
 from horilla_core.models import (
@@ -452,19 +453,10 @@ class HorillaListView(ListView):
         elif view_type == "recently_modified":
             queryset = queryset.order_by("-updated_at")
         elif self.default_sort_field:
-            # Use default_sort_field if specified in child class
             order_prefix = "-" if self.default_sort_direction == "desc" else ""
             queryset = queryset.order_by(f"{order_prefix}{self.default_sort_field}")
         else:
             queryset = queryset.order_by("-id")
-        # elif sort_field:
-        #     queryset = self._apply_sorting(queryset, sort_field, sort_direction)
-        # elif view_type == "recently_created":
-        #     queryset = queryset.order_by("-created_at")
-        # elif view_type == "recently_modified":
-        #     queryset = queryset.order_by("-updated_at")
-        # else:
-        #     queryset = queryset.order_by("-id")
 
         if self.store_ordered_ids:
             ordered_ids = list(queryset.values_list("pk", flat=True))
@@ -494,18 +486,41 @@ class HorillaListView(ListView):
             return queryset.none()
         return queryset.distinct()
 
+    def _add_company_column_if_needed(self, columns):
+        """Add or remove company column based on show_all_companies setting."""
+        show_all_companies = self.request.session.get("show_all_companies", False)
+        if not show_all_companies:
+            columns = [
+                col for col in columns if col[1] not in ("company", "company__name")
+            ]
+            return columns
+
+        if show_all_companies and self.model:
+            try:
+                company_field = self.model._meta.get_field("company")
+                if not any(
+                    col[1] == "company" or col[1] == "company__name" for col in columns
+                ):
+                    company_verbose_name = getattr(
+                        company_field, "verbose_name", "Company"
+                    )
+                    columns.append([str(company_verbose_name), "company__name"])
+            except FieldDoesNotExist:
+                pass
+        return columns
+
     def _get_columns(self):
         """Get columns configuration based on model fields and methods."""
 
         if not self.list_column_visibility:
             columns = [[col[0], col[1]] for col in self.columns] if self.columns else []
-            # Filter out hidden fields based on field permissions
             if columns and self.model:
                 field_names = [col[1] for col in columns]
                 visible_field_names = filter_hidden_fields(
                     self.request.user, self.model, field_names
                 )
                 columns = [col for col in columns if col[1] in visible_field_names]
+            columns = self._add_company_column_if_needed(columns)
             return columns
         app_label = self.model._meta.app_label
         model_name = self.model.__name__
@@ -519,7 +534,6 @@ class HorillaListView(ListView):
         cache_key = f"visible_columns_{self.request.user.id}_{app_label}_{model_name}_{context}_{current_path}"
         cached_columns = cache.get(cache_key)
         if cached_columns:
-            # Always filter hidden fields from cached columns in case permissions changed
             if cached_columns and self.model:
                 field_names = [
                     col[1]
@@ -529,13 +543,14 @@ class HorillaListView(ListView):
                 visible_field_names = filter_hidden_fields(
                     self.request.user, self.model, field_names
                 )
-                cached_columns = [
-                    col
-                    for col in cached_columns
-                    if isinstance(col, (list, tuple))
-                    and len(col) >= 2
-                    and col[1] in visible_field_names
-                ]
+            cached_columns = [
+                col
+                for col in cached_columns
+                if isinstance(col, (list, tuple))
+                and len(col) >= 2
+                and col[1] in visible_field_names
+            ]
+            cached_columns = self._add_company_column_if_needed(cached_columns)
             return cached_columns
 
         visibility = ListColumnVisibility.all_objects.filter(
@@ -591,6 +606,7 @@ class HorillaListView(ListView):
                     self.request.user, self.model, field_names
                 )
                 columns = [col for col in columns if col[1] in visible_field_names]
+            columns = self._add_company_column_if_needed(columns)
             cache.set(cache_key, columns)
             return columns
 
@@ -620,6 +636,7 @@ class HorillaListView(ListView):
                         self.request.user, self.model, field_names
                     )
                     columns = [col for col in columns if col[1] in visible_field_names]
+                columns = self._add_company_column_if_needed(columns)
                 cache.set(cache_key, columns)
                 return columns
 
@@ -646,6 +663,7 @@ class HorillaListView(ListView):
             auto_columns = [
                 col for col in auto_columns if col[1] in visible_field_names
             ]
+        auto_columns = self._add_company_column_if_needed(auto_columns)
         return auto_columns
 
     def _apply_sorting(self, queryset, field, direction):
@@ -5011,6 +5029,115 @@ class HorillaRelatedListContentView(LoginRequiredMixin, DetailView):
         return render(request, self.template_name, context)
 
 
+class HorillaModalDetailView(DetailView):
+    """
+    HorillDetailedView
+    """
+
+    title = "Detailed View"
+    template_name = "single_detail_view.html"
+    header: dict = {
+        "title": "Horilla",
+        "subtitle": "Horilla Detailed View",
+        "avatar": "",
+    }
+    body: list = []
+
+    action_method: list = []
+    actions: list = []
+    cols: dict = {}
+    instance = None
+    empty_template = None
+
+    ids_key: str = "instance_ids"
+
+    def get_queryset(self):
+        """
+        Filter queryset based on instance_ids from session.
+        """
+        queryset = super().get_queryset()
+        instance_ids = self.request.session.get(self.ordered_ids_key, [])
+        if instance_ids:
+            queryset = queryset.filter(pk__in=instance_ids)
+        return queryset
+
+    def get_object(self, queryset=None):
+        if queryset is None:
+            queryset = self.get_queryset()
+        try:
+            self.instance = super().get_object(queryset)
+        except Exception as e:
+            logger.error("Error getting object: %s", e)
+        return self.instance
+
+    def get(self, request, *args, **kwargs):
+        if not self.request.GET.get(self.ids_key) and not self.request.session.get(
+            self.ordered_ids_key
+        ):
+            self.request.session[self.ordered_ids_key] = []
+        response = super().get(request, *args, **kwargs)
+        if not self.instance and self.empty_template:
+            return render(request, self.empty_template, context=self.get_context_data())
+        if not self.instance:
+            messages.error(request, "The requested record does not exist.")
+            return HttpResponse("<script>$('#reloadButton').click();</script>")
+        return response
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.ordered_ids_key = f"ordered_ids_{self.model.__name__.lower()}"
+        request = getattr(_thread_local, "request", None)
+        self.request = request
+        # update_initial_cache(request, CACHE, HorillaDetailedView)
+
+    def get_context_data(self, **kwargs: Any):
+        context = super().get_context_data(**kwargs)
+        obj = context.get("object")
+
+        if not obj:
+            return context
+
+        pk = obj.pk
+        instance_ids = self.request.session.get(self.ordered_ids_key, [])
+        url_info = resolve(self.request.path)
+        url_name = url_info.url_name
+        key = next(iter(url_info.kwargs), "pk")
+
+        context["instance"] = obj
+        context["title"] = self.title
+        context["header"] = self.header
+        context["body"] = self.body
+        context["actions"] = self.actions
+        context["action_method"] = self.action_method
+        context["cols"] = self.cols
+
+        if instance_ids:
+            prev_id, next_id = closest_numbers(instance_ids, pk)
+
+            full_url_name = (
+                f"{url_info.namespaces[0]}:{url_name}"
+                if url_info.namespaces
+                else url_name
+            )
+            context.update(
+                {
+                    "instance_ids": str(instance_ids),
+                    "ids_key": self.ids_key,
+                    "next_url": reverse_lazy(full_url_name, kwargs={key: next_id}),
+                    "previous_url": reverse_lazy(full_url_name, kwargs={key: prev_id}),
+                }
+            )
+
+            # Filter out instance_ids key from GET params
+            get_params = self.request.GET.copy()
+            get_params.pop(self.ids_key, None)
+            context["extra_query"] = get_params.urlencode()
+        else:
+            context["extra_query"] = ""
+
+        return context
+
+
 class AttachmentListView(HorillaListView):
     """List view for displaying horilla attachments."""
 
@@ -5160,6 +5287,11 @@ class HorillaNotesAttachementSectionView(DetailView):
             content_type=content_type, object_id=object_id
         )
 
+        # Store instance_ids in session for navigation
+        ordered_ids_key = "ordered_ids_horillaattachment"
+        ordered_ids = list(queryset.values_list("pk", flat=True))
+        self.request.session[ordered_ids_key] = ordered_ids
+
         list_view = AttachmentListView()
         list_view.request = self.request
         list_view.queryset = queryset
@@ -5181,12 +5313,12 @@ class HorillaNotesAttachementSectionView(DetailView):
     ),
     name="dispatch",
 )
-class HorillaNotesAttachementDetailView(DetailView):
+class HorillaNotesAttachementDetailView(HorillaModalDetailView):
     """Detail view for displaying individual notes and attachments."""
 
     template_name = "notes_attachments_detail.html"
-    context_object_name = "obj"
     model = HorillaAttachment
+    title = "Notes and Attachment"
 
     def get(self, request, *args, **kwargs):
         try:
@@ -6548,6 +6680,7 @@ class HorillaSingleFormView(FormView):
     duplicate_mode = False
     detail_url_name = None
     save_and_new = True
+    return_response = ""
 
     def get_filtered_dynamic_create_fields(self):
         """Filter dynamic_create_fields based on user's add permissions"""
@@ -6625,7 +6758,7 @@ class HorillaSingleFormView(FormView):
             try:
                 self.object = get_object_or_404(self.model, pk=self.kwargs["pk"])
             except Exception as e:
-                messages.error(request, e)
+                messages.error(request, str(e))
                 return HttpResponse(
                     "<script>$('#reloadButton').click();closeModal();</script>"
                 )
@@ -8163,6 +8296,8 @@ class HorillaSingleFormView(FormView):
                 response["HX-Redirect"] = detail_url
                 return response
 
+            if self.return_response:
+                return self.return_response
             return HttpResponse(
                 "<script>closeModal();$('#reloadButton').click();</script>"
             )
@@ -9696,112 +9831,3 @@ class HorillaNotesAttachmentDeleteView(LoginRequiredMixin, HorillaSingleDeleteVi
         return HttpResponse(
             "<script>htmx.trigger('#reloadButton','click');closeContentModal();</script>"
         )
-
-
-class HorillaModalDetailView(DetailView):
-    """
-    HorillDetailedView
-    """
-
-    title = "Detailed View"
-    template_name = "single_detail_view.html"
-    header: dict = {
-        "title": "Horilla",
-        "subtitle": "Horilla Detailed View",
-        "avatar": "",
-    }
-    body: list = []
-
-    action_method: list = []
-    actions: list = []
-    cols: dict = {}
-    instance = None
-    empty_template = None
-
-    ids_key: str = "instance_ids"
-
-    def get_queryset(self):
-        """
-        Filter queryset based on instance_ids from session.
-        """
-        queryset = super().get_queryset()
-        instance_ids = self.request.session.get(self.ordered_ids_key, [])
-        if instance_ids:
-            queryset = queryset.filter(pk__in=instance_ids)
-        return queryset
-
-    def get_object(self, queryset=None):
-        if queryset is None:
-            queryset = self.get_queryset()
-        try:
-            self.instance = super().get_object(queryset)
-        except Exception as e:
-            logger.error("Error getting object: %s", e)
-        return self.instance
-
-    def get(self, request, *args, **kwargs):
-        if not self.request.GET.get(self.ids_key) and not self.request.session.get(
-            self.ordered_ids_key
-        ):
-            self.request.session[self.ordered_ids_key] = []
-        response = super().get(request, *args, **kwargs)
-        if not self.instance and self.empty_template:
-            return render(request, self.empty_template, context=self.get_context_data())
-        if not self.instance:
-            messages.error(request, "The requested record does not exist.")
-            return HttpResponse("<script>$('#reloadButton').click();</script>")
-        return response
-
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
-        self.ordered_ids_key = f"ordered_ids_{self.model.__name__.lower()}"
-        request = getattr(_thread_local, "request", None)
-        self.request = request
-        # update_initial_cache(request, CACHE, HorillaDetailedView)
-
-    def get_context_data(self, **kwargs: Any):
-        context = super().get_context_data(**kwargs)
-        obj = context.get("object")
-
-        if not obj:
-            return context
-
-        pk = obj.pk
-        instance_ids = self.request.session.get(self.ordered_ids_key, [])
-        url_info = resolve(self.request.path)
-        url_name = url_info.url_name
-        key = next(iter(url_info.kwargs), "pk")
-
-        context["instance"] = obj
-        context["title"] = self.title
-        context["header"] = self.header
-        context["body"] = self.body
-        context["actions"] = self.actions
-        context["action_method"] = self.action_method
-        context["cols"] = self.cols
-
-        if instance_ids:
-            prev_id, next_id = closest_numbers(instance_ids, pk)
-
-            full_url_name = (
-                f"{url_info.namespaces[0]}:{url_name}"
-                if url_info.namespaces
-                else url_name
-            )
-            context.update(
-                {
-                    "instance_ids": str(instance_ids),
-                    "ids_key": self.ids_key,
-                    "next_url": reverse_lazy(full_url_name, kwargs={key: next_id}),
-                    "previous_url": reverse_lazy(full_url_name, kwargs={key: prev_id}),
-                }
-            )
-
-            # Filter out instance_ids key from GET params
-            get_params = self.request.GET.copy()
-            get_params.pop(self.ids_key, None)
-            context["extra_query"] = get_params.urlencode()
-        else:
-            context["extra_query"] = ""
-
-        return context
