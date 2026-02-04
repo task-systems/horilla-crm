@@ -1034,11 +1034,8 @@ canvas {
   border-radius: 10px;
   position: relative;
   border: 1px;
-  border-color: #ffb6ab;
   border-style: solid;
-  /* box-shadow: 0px 0px 20px rgb(0 0 0 / 5%); */
   position: relative;
-  background-color: #ffe4e0;
 }
 
 .member-view-box:after {
