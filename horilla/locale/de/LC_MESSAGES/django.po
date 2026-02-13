@@ -129,7 +129,7 @@ msgstr "Ist nicht leer"
 msgid "Users"
 msgstr "Benutzer"
 
-msgid "Add column to list"
+msgid "Add Column to List"
 msgstr "Spalte zur Liste hinzufügen"
 
 msgid "Name"

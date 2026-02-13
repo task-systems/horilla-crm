@@ -129,7 +129,7 @@ msgstr "غير فارغ"
 msgid "Users"
 msgstr "المستخدمون"
 
-msgid "Add column to list"
+msgid "Add Column to List"
 msgstr "إضافة عمود إلى القائمة"
 
 msgid "Name"

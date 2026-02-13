@@ -128,7 +128,7 @@ msgstr "N’est pas vide"
 msgid "Users"
 msgstr "Utilisateurs"
 
-msgid "Add column to list"
+msgid "Add Column to List"
 msgstr "Ajouter une colonne à la liste"
 
 msgid "Name"
