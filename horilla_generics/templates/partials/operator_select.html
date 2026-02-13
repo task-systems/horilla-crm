@@ -9,7 +9,7 @@
         hx-select="#value-container-{{ row_id }}"
         hx-swap="outerHTML"
         hx-push-url="false"
-        hx-trigger="change">
+        hx-trigger="change, load">
   <option value="">Select Operator</option>
   {% for operator in operators %}
     <option value="{{ operator.0 }}">{{ operator.1 }}</option>

@@ -11,7 +11,7 @@
           hx-swap="outerHTML"
           hx-on::after-request="if(event.detail.successful) { closeModal(); }">
         {% csrf_token %}
-        
+
         <div class="p-5 pb-1">
             <div class="flex justify-between items-center mb-2">
                 <h2 class="text-md font-semibold">{% trans 'Add Quick Filter' %}</h2>
@@ -19,13 +19,13 @@
                     <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}" />
                 </button>
             </div>
-            
+
             {% if error_message %}
                 <div class="bg-red-50 text-red-500 px-4 py-3 rounded-lg text-xs mb-4">
                     {{ error_message }}
                 </div>
             {% endif %}
-            
+
             <div class="overflow-hidden overflow-y-auto pe-2 custom-scroll">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                     <div id="field_name_container" class="flex flex-col col-span-2">
@@ -58,7 +58,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="flex justify-end p-5 pt-0 gap-2">
             <button type="submit" class="text-sm px-4 py-2 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white]" {% if not available_fields %}disabled{% endif %}>
                 {% trans "Save" %}
@@ -66,4 +66,3 @@
         </div>
     </form>
 </div>
-

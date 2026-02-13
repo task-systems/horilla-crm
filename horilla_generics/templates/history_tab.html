@@ -29,7 +29,7 @@
                     <div class="mb-20 history-date-group">
                         <div class="relative max-w-[600px]">
                             <h2 class="bg-primary-600 m-auto w-max mb-[20px] px-[15px] py-[5px] rounded-[5px] text-[white]">
-                                {{ date|date:"d M Y" }}
+                                {{ date|user_datetime_format }}
                             </h2>
 
                             <div class="absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-gray-300 hidden md:block"></div>
@@ -39,7 +39,7 @@
                                     <li class="flex flex-col sm:flex-row justify-between items-center relative">
                                         <div class="md:w-1/2 md:pr-10 md:text-right mt-2 md:mt-0 order-1 md:order-none">
                                             <div class="inline-block px-4 py-2 rounded-md text-center bg-primary-200 text-primary-600">
-                                                <span class="text-xs block">{{ entry.timestamp|time:"H:i A" }}</span>
+                                                <span class="text-xs block">{{ entry.timestamp|user_datetime_format }}</span>
                                             </div>
                                         </div>
 
@@ -71,7 +71,7 @@
                                                         {% if entry.changes_display_dict %}
                                                             {% for field, values in entry.changes_display_dict.items %}
                                                                 <span class="font-bold text-black">{{ field|capfirst }}:</span> <br>
-                                                                {{ values.0|default:"--" }} → <span style="background-color: #ffd8d29c; color:#e54f38; padding: 2px 4px; border-radius: 5px;">{{ values.1|default:"--" }}</span>
+                                                                {{ values.0|default:"--"|user_datetime_format_display }} → <span style="background-color: #ffd8d29c; color:#e54f38; padding: 2px 4px; border-radius: 5px;">{{ values.1|default:"--"|user_datetime_format_display}}</span>
                                                                 {% if not forloop.last %}<br>{% endif %}
                                                             {% endfor %}
                                                         {% else %}
@@ -94,7 +94,7 @@
                                                     {% else %}
                                                         {% if entry.changes_display_dict %}
                                                             {% for key, value in entry.changes_display_dict.items %}
-                                                                {{ key }}: {{ value }}<br>
+                                                                {{ key }}: {{ value.0|default:"--"|user_datetime_format_display }}{% if value.1 %} → {{ value.1|default:"--"|user_datetime_format_display }}{% endif %}<br>
                                                             {% endfor %}
                                                         {% else %}
                                                             {% trans "Action performed by" %} {{ entry.actor|default:"Unknown" }}

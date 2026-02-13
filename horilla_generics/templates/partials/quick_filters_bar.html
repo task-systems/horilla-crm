@@ -32,8 +32,8 @@
                             {{ qf.verbose_name }}:
                         </label>
                         <div class="flex-1 min-w-[120px]">
-                            <select 
-                                id="qf_{{ qf.field_name }}" 
+                            <select
+                                id="qf_{{ qf.field_name }}"
                                 name="qf_{{ qf.field_name }}"
                                 class="js-example-basic-single text-xs"
                                 style="width: 100%;"
@@ -53,7 +53,7 @@
                             </select>
                         </div>
                     </div>
-                    <button 
+                    <button
                         type="button"
                         hx-post="{{ search_url }}"
                         hx-vals='{"action": "remove_quick_filter", "filter_id": "{{ qf.id }}"}'

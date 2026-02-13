@@ -101,9 +101,9 @@
                 <span>
                   {{ row.verbose_name }} {{ row.operator_display }}
                   {% if row.start_value and row.end_value %}
-                    {{ row.start_value }} and {{ row.end_value }}
-                  {% elif row.raw_value %}
-                    {{ row.raw_value }}
+                    {{ row.start_value_obj|user_datetime_format|default:row.start_value }} and {{ row.end_value_obj|user_datetime_format|default:row.end_value }}
+                  {% elif row.raw_value or row.value_obj %}
+                    {{ row.value_obj|user_datetime_format|default:row.raw_value }}
                   {% endif %}
                 </span>
                 <!-- Remove filter button -->
