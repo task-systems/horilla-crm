@@ -80,6 +80,7 @@ class OpportunityNavbar(LoginRequiredMixin, HorillaNavView):
     model_app_label = "opportunities"
     exclude_kanban_fields = "owner"
     enable_actions = True
+    enable_quick_filters = True
 
     @cached_property
     def new_button(self):
@@ -111,6 +112,7 @@ class OpportunityListView(LoginRequiredMixin, HorillaListView):
     filterset_class = OpportunityFilter
     search_url = reverse_lazy("opportunities:opportunities_list")
     main_url = reverse_lazy("opportunities:opportunities_view")
+    enable_quick_filters = True
     bulk_update_fields = ["owner", "opportunity_type", "lead_source"]
     header_attrs = [
         {"email": {"style": "width: 300px;"}, "title": {"style": "width: 200px;"}},
