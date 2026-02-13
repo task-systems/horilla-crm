@@ -302,15 +302,6 @@ class Lead(HorillaCoreModel):
     def __str__(self):
         return f"{str(self.title)}-{self.id}"
 
-    @property
-    def get_annual_revenue_calc(self):
-        """
-        This method to get annual revenue
-        """
-        return self.annual_revenue * 3
-
-    LEAD_PROPERTY_LABELS = {"annual_revenue_calc": _("Annual Revenue 3x")}
-
     DYNAMIC_METHODS = ["get_edit_url"]
     # Get field details
 
