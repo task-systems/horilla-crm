@@ -13,11 +13,36 @@
           <h1 class="text-xl font-bold text-gray-800">
             {% trans "Welcome" %}, {{ user.get_full_name|default:user.username }}
           </h1>
-          <a
-            href="{% url 'horilla_dashboard:dashboard_list_view' %}?section=analytics"
-            class="text-sm px-4 py-2 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white]">
-            {% trans "View All Dashboards" %}
-          </a>
+          <div class="flex items-center gap-2 flex-wrap">
+            {% if date_range_choices and date_range_base_url %}
+            <span id="dateRangeFilterContainer">{% include "home/date_range_filter.html" %}</span>
+            {% endif %}
+            {% if has_components and current_obj %}
+            <button type="button" id="editLayoutBtn" onclick="toggleEditMode()"
+            class="text-sm px-4 py-2 border border-bg-primary-600 rounded-md transition duration-300 text-primary-600 ">
+            {% trans "Reorder" %}
+            </button>
+            <span id="editModeActions" class="hidden items-center gap-2">
+              <button type="button" onclick="saveDragOrder()" id="saveOrderBtn"
+              class="text-sm px-4 py-2 bg-primary-600 rounded-md transition duration-300 text-[white]">
+              {% trans "Save" %}
+              </button>
+              <button type="button" onclick="resetDashboardToDefault()" id="setToDefaultBtn"
+              class="text-sm px-4 py-2 rounded-md bg-primary-300 text-primary-600 transition duration-300 cursor-pointer">
+              <i class="fa-solid fa-rotate-left mr-1"></i> {% trans "Set to default" %}
+              </button>
+              <button type="button" onclick="toggleEditMode()" id="cancelEditBtn"
+              class="text-sm px-4 py-2 rounded-md border border-primary-600 text-primary-600 transition duration-300 cursor-pointer">
+              {% trans "Cancel" %}
+              </button>
+            </span>
+            {% endif %}
+            <a
+              href="{% url 'horilla_dashboard:dashboard_list_view' %}?section=analytics"
+              class="text-sm px-4 py-2 bg-primary-600 rounded-md transition duration-300 text-[white]">
+              {% trans "View All Dashboards" %}
+            </a>
+          </div>
         </div>
 
         <p class="text-gray-600">
@@ -26,19 +51,21 @@
       </div>
     </div>
 
-    <div class="p-2 sm:p-5" id="dashboard-detail-view">
+    <div class="p-2 sm:p-5" id="dashboard-detail-view" data-reorder-url="{% if current_obj %}{% url 'horilla_dashboard:reorder_components' dashboard_id=current_obj.pk %}{% endif %}" data-reset-order-url="{% if current_obj %}{% url 'horilla_dashboard:reset_dashboard_layout_order' dashboard_id=current_obj.pk %}{% endif %}" data-csrf-token="{{ csrf_token }}">
       {% if has_components %}
         <!-- KPI Components - Always at the top -->
         {% with kpi_components=components|filter_by_type:'kpi' %}
           {% if kpi_components %}
             <div class="mb-4">
-              <div class="grid grid-cols-12 gap-2 sm:gap-3">
+              <div class="grid grid-cols-12 gap-2 sm:gap-3" id="reorderable-kpis">
                 {% for component in kpi_components %}
                 <div
-                  class="col-span-12 sm:col-span-6 lg:col-span-3 kpi-component-fixed"
+                  class="col-span-12 sm:col-span-6 lg:col-span-3 kpi-component-fixed kpi-dashboard-card relative"
+                  data-component-id="{{ component.id }}"
                 >
+                  <div class="edit-drag-handle hidden absolute left-2 top-2 cursor-grab text-gray-400 z-20" title="{% trans 'Drag to reorder' %}"><i class="fa-solid fa-grip-vertical"></i></div>
                   <div
-                    hx-get="{% url 'horilla_dashboard:component_chart' component_id=component.id %}"
+                    hx-get="{% url 'horilla_dashboard:component_chart' component_id=component.id %}{% if date_range %}?date_range={{ date_range }}{% if date_range == 'custom' %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% endif %}{% endif %}"
                     hx-trigger="load"
                     hx-swap="innerHTML"
                     class="w-full h-full"
@@ -67,10 +94,11 @@
               {% endif %}
               <div class="grid grid-cols-12 gap-3" id="reorderable-components">
                 {% for component in non_kpi_components %}
-                <div class="col-span-6" data-component-id="{{ component.id }}">
+                <div class="col-span-6 dashboard-component-card" data-component-id="{{ component.id }}">
                   <div
-                    class="shadow-sm bg-white rounded-lg z-0 p-4 overflow overflow-hidden"
+                    class="shadow-sm bg-white rounded-lg z-0 p-4 overflow overflow-hidden relative"
                   >
+                    <div class="edit-drag-handle hidden absolute left-2 top-2 cursor-grab text-gray-400 z-20" title="{% trans 'Drag to reorder' %}"><i class="fa-solid fa-grip-vertical"></i></div>
                     <div class="flex items-center justify-between mb-3">
                       <h3 class="text-md font-semibold">{{ component.name }}</h3>
                     </div>
@@ -80,7 +108,7 @@
                       style="height: 344px"
                     >
                       <div
-                        hx-get="{% url 'horilla_dashboard:component_chart' component_id=component.id %}"
+                        hx-get="{% url 'horilla_dashboard:component_chart' component_id=component.id %}{% if date_range %}?date_range={{ date_range }}{% if date_range == 'custom' %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% endif %}{% endif %}"
                         hx-trigger="load"
                         hx-swap="innerHTML"
                         class="w-full h-full"
@@ -157,7 +185,6 @@
 <script>
   $(document).ready(function () {
     initializeSelect2();
-    initializeReorderTabs();
     bindEventHandlers();
   });
 
@@ -172,20 +199,133 @@
     });
   }
 
-  function initializeReorderTabs() {
-    switchReorderTab("components");
+
+  var sortableKpis = null;
+  var sortableComponents = null;
+  var editMode = false;
+
+  function toggleEditMode() {
+    editMode = !editMode;
+    var $view = $("#dashboard-detail-view");
+    if (editMode) {
+      $("#editLayoutBtn").addClass("hidden");
+      $("#editModeActions").removeClass("hidden").addClass("flex");
+      $("#dateRangeFilterContainer").addClass("hidden");
+      $view.addClass("edit-mode");
+      $view.find(".edit-drag-handle").removeClass("hidden");
+      initDragSortables();
+    } else {
+      $("#editLayoutBtn").removeClass("hidden");
+      $("#editModeActions").addClass("hidden").removeClass("flex");
+      $("#dateRangeFilterContainer").removeClass("hidden");
+      $view.removeClass("edit-mode");
+      $view.find(".edit-drag-handle").addClass("hidden");
+      destroyDragSortables();
+    }
   }
 
-  function bindEventHandlers() {
-    $("#componentReorderForm").on("submit", handleComponentReorderSubmit);
-    $("#kpiReorderForm").on("submit", handleKpiReorderSubmit);
+  function initDragSortables() {
+    if (typeof Sortable === "undefined") return;
+    var kpiList = document.getElementById("reorderable-kpis");
+    var compList = document.getElementById("reorderable-components");
+    var handle = ".edit-drag-handle";
+    if (kpiList && !sortableKpis) {
+      sortableKpis = Sortable.create(kpiList, {
+        handle: handle,
+        animation: 150,
+        ghostClass: "opacity-50"
+      });
+    }
+    if (compList && !sortableComponents) {
+      sortableComponents = Sortable.create(compList, {
+        handle: handle,
+        animation: 150,
+        ghostClass: "opacity-50"
+      });
+    }
+  }
 
-    $("#reorderModal").on("click", handleModalOutsideClick);
+  function destroyDragSortables() {
+    if (sortableKpis) { sortableKpis.destroy(); sortableKpis = null; }
+    if (sortableComponents) { sortableComponents.destroy(); sortableComponents = null; }
+  }
 
-    $("#reorderModal .bg-white").on("click", function (e) {
-      e.stopPropagation();
+  function saveDragOrder() {
+    var $view = $("#dashboard-detail-view");
+    var url = $view.data("reorder-url");
+    var csrfToken = $view.data("csrf-token");
+    if (!url) return;
+
+    function postOrder(reorderType, order) {
+      var formData = new FormData();
+      formData.append("csrfmiddlewaretoken", csrfToken);
+      formData.append("reorder_type", reorderType);
+      order.forEach(function(id) { formData.append("component_order", id); });
+      return $.ajax({
+        url: url,
+        method: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        headers: { "X-CSRFToken": csrfToken }
+      });
+    }
+
+    var kpiIds = [];
+    $("#reorderable-kpis").find("[data-component-id]").each(function() {
+      kpiIds.push($(this).data("component-id"));
+    });
+    var compIds = [];
+    $("#reorderable-components").find("[data-component-id]").each(function() {
+      compIds.push($(this).data("component-id"));
+    });
+
+    var promises = [];
+    if (kpiIds.length) promises.push(postOrder("kpi", kpiIds));
+    if (compIds.length) promises.push(postOrder("components", compIds));
+
+    if (!promises.length) {
+      toggleEditMode();
+      return;
+    }
+    $("#saveOrderBtn").prop("disabled", true);
+    $.when.apply($, promises).done(function() {
+      toggleEditMode();
+      window.location.reload();
+    }).fail(function() {
+      window.location.reload();
+    }).always(function() {
+      $("#saveOrderBtn").prop("disabled", false);
     });
   }
+
+  function resetDashboardToDefault() {
+    var $view = $("#dashboard-detail-view");
+    var url = $view.data("reset-order-url");
+    var csrfToken = $view.data("csrf-token");
+    if (!url) return;
+    $("#setToDefaultBtn").prop("disabled", true);
+    $.ajax({
+      url: url,
+      method: "POST",
+      data: { csrfmiddlewaretoken: csrfToken },
+      headers: { "X-CSRFToken": csrfToken },
+      success: function() {
+        toggleEditMode();
+        window.location.reload();
+      },
+      error: function() {
+        alert("{% trans 'Failed to reset layout to default.' %}");
+      },
+      complete: function() {
+        $("#setToDefaultBtn").prop("disabled", false);
+      }
+    });
+  }
+
+  window.toggleEditMode = toggleEditMode;
+  window.saveDragOrder = saveDragOrder;
+  window.resetDashboardToDefault = resetDashboardToDefault;
 
   function exportChart(chartId, chartName, format) {
     const $chartDom = $("#" + chartId);
@@ -215,143 +355,7 @@
     }
   }
 
-  function openReorderModal() {
-    $("#reorderModal").removeClass("hidden");
-    $("body").css("overflow", "hidden");
-  }
-
-  function closeReorderModal() {
-    $("#reorderModal").addClass("hidden");
-    $("body").css("overflow", "auto");
-  }
-
-  function switchReorderTab(tabType) {
-    const $componentsTab = $("#tab-components");
-    const $kpiTab = $("#tab-kpi");
-    const $componentsContent = $("#tab-components-content");
-    const $kpiContent = $("#tab-kpi-content");
-
-    $componentsContent.addClass("hidden");
-    $kpiContent.addClass("hidden");
-
-    $componentsTab
-      .removeClass("text-primary-600 border-b-2 border-primary-600")
-      .addClass("text-[#333]");
-    $kpiTab
-      .removeClass("text-primary-600 border-b-2 border-primary-600")
-      .addClass("text-[#333]");
-
-    if (tabType === "components") {
-      $componentsContent.removeClass("hidden");
-      $componentsTab
-        .removeClass("text-[#333]")
-        .addClass("text-primary-600 border-b-2 border-primary-600");
-      $componentsTab.attr("aria-selected", "true");
-      $kpiTab.attr("aria-selected", "false");
-    } else {
-      $kpiContent.removeClass("hidden");
-      $kpiTab
-        .removeClass("text-[#333]")
-        .addClass("text-primary-600 border-b-2 border-primary-600");
-      $kpiTab.attr("aria-selected", "true");
-      $componentsTab.attr("aria-selected", "false");
-    }
-  }
-
-  function moveComponent(componentId, direction, tabType) {
-    const listId = tabType === "kpi" ? "kpiOrderList" : "componentOrderList";
-    const $list = $("#" + listId);
-    const $currentItem = $list.find(`li[data-component-id="${componentId}"]`);
-
-    if ($currentItem.length === 0) return;
-
-    if (direction === "up") {
-      const $prevItem = $currentItem.prev();
-      if ($prevItem.length) {
-        $currentItem.insertBefore($prevItem);
-      }
-    } else if (direction === "down") {
-      const $nextItem = $currentItem.next();
-      if ($nextItem.length) {
-        $currentItem.insertAfter($nextItem);
-      }
-    }
-
-    updateComponentOrder(tabType);
-  }
-
-  function updateComponentOrder(tabType) {
-    const listId = tabType === "kpi" ? "kpiOrderList" : "componentOrderList";
-    const inputsContainerId =
-      tabType === "kpi" ? "kpiOrderInputs" : "componentOrderInputs";
-
-    const $list = $("#" + listId);
-    const $items = $list.find("li[data-component-id]");
-    const $inputsContainer = $("#" + inputsContainerId);
-
-    $inputsContainer.empty();
-
-    $items.each(function (index) {
-      const componentId = $(this).data("component-id");
-      const $input = $("<input>", {
-        type: "hidden",
-        name: "component_order",
-        value: componentId,
-      });
-      $inputsContainer.append($input);
-    });
-  }
-
-  function handleComponentReorderSubmit(e) {
-    e.preventDefault();
-    submitReorderForm(this, "components");
-  }
-
-  function handleKpiReorderSubmit(e) {
-    e.preventDefault();
-    submitReorderForm(this, "kpi");
-  }
-
-  function submitReorderForm(form, type) {
-    const $form = $(form);
-    const formData = new FormData(form);
-    const csrfToken = $("[name=csrfmiddlewaretoken]").val();
-
-    $.ajax({
-      url: form.action,
-      method: "POST",
-      data: formData,
-      processData: false,
-      contentType: false,
-      headers: {
-        "X-CSRFToken": csrfToken,
-      },
-      success: function (data) {
-        if (data.success) {
-          closeReorderModal();
-          window.location.reload();
-        } else {
-          alert("Error: " + (data.error || `Failed to reorder ${type}`));
-        }
-      },
-      error: function (xhr, status, error) {
-        console.error("Error:", error);
-        alert(`An error occurred while reordering ${type}`);
-      },
-    });
-  }
-
-  function handleModalOutsideClick(e) {
-    if (e.target === this) {
-      closeReorderModal();
-    }
-  }
-
   window.exportChart = exportChart;
-  window.openReorderModal = openReorderModal;
-  window.closeReorderModal = closeReorderModal;
-  window.switchReorderTab = switchReorderTab;
-  window.moveComponent = moveComponent;
 </script>
 
 {% endblock %}

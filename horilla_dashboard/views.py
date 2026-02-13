@@ -3,6 +3,7 @@
 # Standard library imports
 import json
 import logging
+import re
 from urllib.parse import urlencode, urlparse
 
 # Third-party imports (Django)
@@ -12,9 +13,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import redirect_to_login
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Count, ForeignKey, Q
+from django.db.models import Case, Count, ForeignKey, Q, When
 from django.http import HttpResponse, JsonResponse, QueryDict
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
@@ -38,6 +39,7 @@ from horilla_dashboard.models import (
     Dashboard,
     DashboardComponent,
     DashboardFolder,
+    DefaultHomeLayoutOrder,
 )
 from horilla_generics.mixins import RecentlyViewedMixin
 from horilla_generics.views import (
@@ -51,7 +53,13 @@ from horilla_utils.methods import get_section_info_for_model
 from horilla_utils.middlewares import _thread_local
 
 # Local imports
-from .utils import DefaultDashboardGenerator
+from .utils import (
+    DATE_RANGE_CHOICES,
+    DefaultDashboardGenerator,
+    apply_date_range_to_queryset,
+    validate_custom_date_params,
+    validate_date_range_request,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +70,10 @@ class HomePageView(LoginRequiredMixin, TemplateView):
     template_name = "home/default_home.html"
 
     def get(self, request, *args, **kwargs):
+        redirect_url = validate_date_range_request(request)
+        if redirect_url:
+            return redirect(redirect_url)
+
         try:
             default_dashboard = Dashboard.get_default_dashboard(request.user)
 
@@ -84,6 +96,12 @@ class HomePageView(LoginRequiredMixin, TemplateView):
             mutable_get = request.GET.copy()
             mutable_get["section"] = "home"
             mutable_get["is_home"] = "true"
+            if "date_range" in request.GET:
+                mutable_get["date_range"] = request.GET["date_range"]
+            if "date_from" in request.GET:
+                mutable_get["date_from"] = request.GET["date_from"]
+            if "date_to" in request.GET:
+                mutable_get["date_to"] = request.GET["date_to"]
             request.GET = mutable_get
 
             context = detail_view.get_context_data(object=dashboard)
@@ -103,10 +121,31 @@ class HomePageView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data()
 
         user_company = getattr(self.request.user, "company", None)
+        date_range = self.request.GET.get("date_range")
+        if date_range == "all":
+            date_range = None
+        date_from = self.request.GET.get("date_from")
+        date_to = self.request.GET.get("date_to")
+        date_range, date_from, date_to = validate_custom_date_params(
+            date_range, date_from, date_to
+        )
+        if date_range is None:
+            date_from = None
+            date_to = None
 
-        generator = DefaultDashboardGenerator(self.request.user, user_company)
+        generator = DefaultDashboardGenerator(
+            self.request.user,
+            user_company,
+            date_range=date_range,
+            date_from=date_from,
+            date_to=date_to,
+        )
 
         kpi_data = generator.generate_kpi_data()
+        kpi_data.sort(key=lambda k: k.get("title", ""))
+        for id, data in enumerate(kpi_data):
+            data["order"] = id
+
         chart_data = generator.generate_chart_data()
         table_data = generator.generate_table_data()
 
@@ -118,6 +157,92 @@ class HomePageView(LoginRequiredMixin, TemplateView):
         except ImportError:
             pass
 
+        base_url = self.request.build_absolute_uri(self.request.path).split("?")[0]
+        query_params = self.request.GET.copy()
+        query_params.pop("date_range", None)
+        query_params.pop("date_from", None)
+        query_params.pop("date_to", None)
+        base_query = query_params.urlencode()
+        date_range_base_url = f"{base_url}?{base_query}" if base_query else base_url
+
+        default_home_order = {}
+        try:
+            layout_order = DefaultHomeLayoutOrder.objects.filter(
+                user=self.request.user, dashboard__isnull=True
+            ).first()
+            if layout_order and isinstance(layout_order.order, dict):
+                default_home_order = layout_order.order
+        except Exception:
+            pass
+
+        default_home_blocks = []
+        chart_list = list(enumerate(chart_data)) if chart_data else []
+        table_list = list(enumerate(table_data)) if table_data else []
+        ci, ti = 0, 0
+        while ci < len(chart_list) or ti < len(table_list):
+            for _unused in range(2):
+                if ci < len(chart_list):
+                    idx, ch = chart_list[ci]
+                    default_home_blocks.append(
+                        {
+                            "type": "chart",
+                            "chart_index": idx,
+                            "data": ch,
+                        }
+                    )
+                    ci += 1
+            if ti < len(table_list):
+                idx, tb = table_list[ti]
+                default_home_blocks.append(
+                    {
+                        "type": "table",
+                        "table_index": idx,
+                        "data": tb,
+                    }
+                )
+                ti += 1
+
+        if default_home_order:
+            kpi_order = default_home_order.get("kpi", [])
+            charts_tables_order = default_home_order.get("chartsAndTables", [])
+
+            try:
+                if kpi_order and kpi_data:
+                    kpi_dict = {f"default-kpi-{kpi['order']}": kpi for kpi in kpi_data}
+                    kpi_data = [kpi_dict[key] for key in kpi_order if key in kpi_dict]
+
+                # Reorder charts and tables
+                if charts_tables_order and default_home_blocks:
+                    blocks_dict = {}
+                    for block in default_home_blocks:
+                        if block["type"] == "chart":
+                            key = f"default-chart-{block['chart_index']}"
+                        else:
+                            key = f"default-table-{block['table_index']}"
+                        blocks_dict[key] = block
+
+                    default_home_blocks = [
+                        blocks_dict[key]
+                        for key in charts_tables_order
+                        if key in blocks_dict
+                    ]
+            except TypeError:
+                logger.warning(
+                    "Invalid default home layout order for user %s (unhashable type). Resetting.",
+                    self.request.user,
+                )
+                DefaultHomeLayoutOrder.objects.filter(
+                    user=self.request.user, dashboard__isnull=True
+                ).delete()
+                messages.error(
+                    self.request,
+                    _(
+                        "Your saved layout order was invalid and has been reset. "
+                        "Please reorder the dashboard again if needed."
+                    ),
+                )
+                default_home_order = {}
+
         context.update(
             {
                 "is_default_home": True,
@@ -125,10 +250,17 @@ class HomePageView(LoginRequiredMixin, TemplateView):
                 "kpi_data": kpi_data,
                 "chart_data": chart_data,
                 "table_data": table_data,
+                "default_home_blocks": default_home_blocks,
                 "user_dashboards": user_dashboards,
                 "has_dashboards": bool(user_dashboards),
                 "show_create_dashboard_prompt": True,
                 "available_models_count": len(generator.models),
+                "date_range": date_range,
+                "date_range_choices": DATE_RANGE_CHOICES,
+                "date_range_base_url": date_range_base_url,
+                "date_from": date_from,
+                "date_to": date_to,
+                "default_home_layout_order": default_home_order,
             }
         )
 
@@ -388,6 +520,11 @@ class DashboardDetailView(RecentlyViewedMixin, LoginRequiredMixin, TemplateView)
             "horilla_dashboard.view_dashboard"
         ):
             return render(self.request, "error/403.html")
+
+        redirect_url = validate_date_range_request(request)
+        if redirect_url:
+            return redirect(redirect_url)
+
         return super().get(request, *args, **kwargs)
 
     def dispatch(self, request, *args, **kwargs):
@@ -849,6 +986,17 @@ class DashboardDetailView(RecentlyViewedMixin, LoginRequiredMixin, TemplateView)
         conditions = component.conditions.all().order_by("sequence")
         queryset = self.apply_conditions(queryset, conditions)
 
+        date_range = request.GET.get("date_range")
+        if date_range and (
+            str(date_range) in [str(d) for d in DATE_RANGE_CHOICES]
+            or date_range == "custom"
+        ):
+            date_from = request.GET.get("date_from") if date_range == "custom" else None
+            date_to = request.GET.get("date_to") if date_range == "custom" else None
+            queryset = apply_date_range_to_queryset(
+                queryset, model, date_range, date_from=date_from, date_to=date_to
+            )
+
         sort_field = request.GET.get("sort", None)
         sort_direction = request.GET.get("direction", "asc")
         if sort_field:
@@ -1049,9 +1197,56 @@ class DashboardDetailView(RecentlyViewedMixin, LoginRequiredMixin, TemplateView)
         is_home_view = section == "home" and is_home and is_default
 
         dashboard = self.get_object()
-        components = DashboardComponent.objects.filter(
+        components_qs = DashboardComponent.objects.filter(
             dashboard=dashboard, is_active=True
         ).order_by("sequence")
+
+        # Apply per-user layout order if saved (same model as default home)
+        layout = DefaultHomeLayoutOrder.objects.filter(
+            user=self.request.user, dashboard=dashboard
+        ).first()
+        if layout and isinstance(layout.order, dict):
+            order = layout.order
+            kpi_ids = order.get("kpi", [])
+            component_ids = order.get("components", [])
+
+            # Create ordering for KPIs
+            if kpi_ids:
+                kpi_order = Case(
+                    *[
+                        When(
+                            id=int(id_val) if isinstance(id_val, str) else id_val,
+                            then=pos,
+                        )
+                        for pos, id_val in enumerate(kpi_ids)
+                    ]
+                )
+                components_qs = components_qs.annotate(kpi_order_field=kpi_order)
+
+            # Create ordering for components
+            if component_ids:
+                comp_order = Case(
+                    *[
+                        When(
+                            id=int(id_val) if isinstance(id_val, str) else id_val,
+                            then=pos,
+                        )
+                        for pos, id_val in enumerate(component_ids)
+                    ]
+                )
+                components_qs = components_qs.annotate(comp_order_field=comp_order)
+
+            # Apply combined ordering
+            if kpi_ids and component_ids:
+                components_qs = components_qs.order_by(
+                    "kpi_order_field", "comp_order_field", "sequence"
+                )
+            elif kpi_ids:
+                components_qs = components_qs.order_by("kpi_order_field", "sequence")
+            elif component_ids:
+                components_qs = components_qs.order_by("comp_order_field", "sequence")
+
+        components = components_qs
 
         # Process KPI components
         kpi_data = []
@@ -1103,6 +1298,26 @@ class DashboardDetailView(RecentlyViewedMixin, LoginRequiredMixin, TemplateView)
 
         context["previous_url"] = previous_url
 
+        date_range = self.request.GET.get("date_range")
+        if date_range == "all":
+            date_range = None
+        date_from = self.request.GET.get("date_from")
+        date_to = self.request.GET.get("date_to")
+        date_range, date_from, date_to = validate_custom_date_params(
+            date_range, date_from, date_to
+        )
+        if date_range is None:
+            date_from = None
+            date_to = None
+
+        base_url = self.request.build_absolute_uri(self.request.path).split("?")[0]
+        query_params = self.request.GET.copy()
+        query_params.pop("date_range", None)
+        query_params.pop("date_from", None)
+        query_params.pop("date_to", None)
+        base_query = query_params.urlencode()
+        date_range_base_url = f"{base_url}?{base_query}" if base_query else base_url
+
         context.update(
             {
                 "current_obj": dashboard,
@@ -1116,6 +1331,11 @@ class DashboardDetailView(RecentlyViewedMixin, LoginRequiredMixin, TemplateView)
                 "is_home_view": is_home_view,
                 "section": section,
                 "is_home": is_home,
+                "date_range": date_range,
+                "date_range_choices": DATE_RANGE_CHOICES,
+                "date_range_base_url": date_range_base_url,
+                "date_from": date_from,
+                "date_to": date_to,
             }
         )
 
@@ -1167,6 +1387,17 @@ class DashboardComponentTableDataView(LoginRequiredMixin, View):
         detail_view = DashboardDetailView()
         detail_view.request = request
         queryset = detail_view.apply_conditions(queryset, conditions)
+
+        date_range = request.GET.get("date_range")
+        if date_range and (
+            str(date_range) in [str(d) for d in DATE_RANGE_CHOICES]
+            or date_range == "custom"
+        ):
+            date_from = request.GET.get("date_from") if date_range == "custom" else None
+            date_to = request.GET.get("date_to") if date_range == "custom" else None
+            queryset = apply_date_range_to_queryset(
+                queryset, model, date_range, date_from=date_from, date_to=date_to
+            )
 
         # Apply sorting
         sort_field = request.GET.get("sort", None)
@@ -2097,6 +2328,23 @@ class DashboardComponentChartView(View):
             conditions = component.conditions.all().order_by("sequence")
             queryset = self.apply_conditions(queryset, conditions)
 
+            date_range = self.request.GET.get("date_range")
+            if date_range and (
+                str(date_range) in [str(d) for d in DATE_RANGE_CHOICES]
+                or date_range == "custom"
+            ):
+                date_from = (
+                    self.request.GET.get("date_from")
+                    if date_range == "custom"
+                    else None
+                )
+                date_to = (
+                    self.request.GET.get("date_to") if date_range == "custom" else None
+                )
+                queryset = apply_date_range_to_queryset(
+                    queryset, model, date_range, date_from=date_from, date_to=date_to
+                )
+
             value = queryset.count()
 
             section_info = get_section_info_for_model(model)
@@ -2160,6 +2408,23 @@ class DashboardComponentChartView(View):
         try:
             queryset = get_queryset_for_module(self.request.user, model)
             conditions = component.conditions.all()
+
+            date_range = self.request.GET.get("date_range")
+            if date_range and (
+                str(date_range) in [str(d) for d in DATE_RANGE_CHOICES]
+                or date_range == "custom"
+            ):
+                date_from = (
+                    self.request.GET.get("date_from")
+                    if date_range == "custom"
+                    else None
+                )
+                date_to = (
+                    self.request.GET.get("date_to") if date_range == "custom" else None
+                )
+                queryset = apply_date_range_to_queryset(
+                    queryset, model, date_range, date_from=date_from, date_to=date_to
+                )
 
             is_stacked_chart = component.chart_type in [
                 "stacked_vertical",
@@ -2447,7 +2712,7 @@ class DashboardComponentChartView(View):
             }
 
         except Exception as e:
-            logger.error("Failed to generate stacked chart: %s", e, exc_info=True)
+            messages.error(self.request, e)
             return None
 
     def get_report_chart_data(self, component):
@@ -3450,10 +3715,7 @@ class ReorderComponentsView(LoginRequiredMixin, View):
             reorder_type = request.POST.get("reorder_type", "components")
 
             if not component_order:
-                return JsonResponse(
-                    {"success": False, "error": "No component order provided"},
-                    status=400,
-                )
+                messages.error(self.request, e)
 
             if reorder_type == "kpi":
                 valid_components = DashboardComponent.objects.filter(
@@ -3476,34 +3738,231 @@ class ReorderComponentsView(LoginRequiredMixin, View):
 
             invalid_ids = set(component_order) - set(valid_component_ids)
             if invalid_ids:
-                return JsonResponse(
-                    {
-                        "success": False,
-                        "error": f'Invalid component IDs: {", ".join(invalid_ids)}',
-                    },
-                    status=400,
-                )
+                messages.error(self.request, e)
 
+            # Save per-user layout order in the same model as default home
             with transaction.atomic():
-                for index, component_id in enumerate(component_order):
-                    DashboardComponent.objects.filter(
-                        id=component_id, dashboard=dashboard
-                    ).update(sequence=index + 1)
+                layout_order, _ = DefaultHomeLayoutOrder.objects.get_or_create(
+                    user=request.user,
+                    dashboard=dashboard,
+                    defaults={"order": {"kpi": [], "components": []}},
+                )
+                order_dict = (
+                    layout_order.order if isinstance(layout_order.order, dict) else {}
+                )
+                order_dict = dict(order_dict)
+                if reorder_type == "kpi":
+                    order_dict["kpi"] = [int(x) for x in component_order]
+                else:
+                    order_dict["components"] = [int(x) for x in component_order]
+                layout_order.order = order_dict
+                layout_order.save(update_fields=["order"])
 
             messages.success(request, _(success_message))
 
             return JsonResponse({"success": True, "message": success_message})
 
-        except Dashboard.DoesNotExist:
-            return JsonResponse(
-                {"success": False, "error": "Dashboard not found"}, status=404
-            )
-        except ValueError as e:
-            return JsonResponse({"success": False, "error": str(e)}, status=400)
         except Exception as e:
-            return JsonResponse(
-                {"success": False, "error": f"An error occurred: {str(e)}"}, status=500
+            messages.error(self.request, e)
+            return JsonResponse({"success": False, "message": str(e)})
+
+
+def _get_default_home_previous_order(user):
+    """Return the user's last saved default home layout order, or None if none saved."""
+    layout = DefaultHomeLayoutOrder.objects.filter(
+        user=user, dashboard__isnull=True
+    ).first()
+    if layout and isinstance(layout.order, dict):
+        return layout.order
+    return None
+
+
+def _get_valid_default_home_layout_ids(user, date_range=None):
+    """Return (valid_kpi_ids, valid_block_ids) from generator counts only."""
+    user_company = getattr(user, "company", None)
+    generator = DefaultDashboardGenerator(user, user_company, date_range=date_range)
+    n_kpi = len(generator.generate_kpi_data())
+    n_chart = len(generator.generate_chart_data())
+    n_table = len(generator.generate_table_data())
+    valid_kpi_ids = {f"default-kpi-{i}" for i in range(n_kpi)}
+    valid_block_ids = {f"default-chart-{i}" for i in range(n_chart)} | {
+        f"default-table-{i}" for i in range(n_table)
+    }
+    return valid_kpi_ids, valid_block_ids
+
+
+class SaveDefaultHomeLayoutOrderView(LoginRequiredMixin, View):
+    """Save default home page layout order (KPIs, charts, tables) for the current user."""
+
+    def _error_response(self, request, message, previous_order):
+        messages.error(request, message)
+        return JsonResponse(
+            {
+                "success": False,
+                "message": message,
+                "order": previous_order,
+            }
+        )
+
+    def post(self, request, *args, **kwargs):
+        previous_order = _get_default_home_previous_order(request.user)
+
+        try:
+            # ---- Parse request body ----
+            if request.content_type and "application/json" in request.content_type:
+                body = json.loads(request.body or "{}")
+            else:
+                body = request.POST.dict()
+
+            order_data = body.get("order")
+            if not isinstance(order_data, dict):
+                order_data = {}
+
+            # ---- Required keys validation ----
+            if "kpi" not in order_data:
+                return self._error_response(
+                    request, _("KPI data is missing in the request"), previous_order
+                )
+
+            if "chartsAndTables" not in order_data:
+                return self._error_response(
+                    request,
+                    _("Charts and tables data is missing in the request"),
+                    previous_order,
+                )
+
+            kpi = order_data.get("kpi")
+            charts_and_tables = order_data.get("chartsAndTables")
+
+            # ---- Type validation ----
+            if not isinstance(kpi, list):
+                return self._error_response(
+                    request,
+                    _("KPI data is invalid. Expected a list"),
+                    previous_order,
+                )
+
+            if not isinstance(charts_and_tables, list):
+                return self._error_response(
+                    request,
+                    _("Charts and tables data is invalid. Expected a list"),
+                    previous_order,
+                )
+
+            # ---- Empty validation ----
+            if not kpi:
+                return self._error_response(
+                    request, _("KPI order is empty."), previous_order
+                )
+
+            if not charts_and_tables:
+                return self._error_response(
+                    request,
+                    _("Charts and tables order cannot be empty."),
+                    previous_order,
+                )
+
+            kpi_pattern = re.compile(r"^default-kpi-\d+$")
+            if not all(isinstance(i, str) and kpi_pattern.match(i) for i in kpi):
+                return self._error_response(
+                    request, _("Invalid KPI id in order."), previous_order
+                )
+
+            block_pattern = re.compile(r"^default-(?:chart|table)-\d+$")
+            if not all(
+                isinstance(i, str) and block_pattern.match(i) for i in charts_and_tables
+            ):
+                return self._error_response(
+                    request,
+                    _("Invalid chart or table id in order."),
+                    previous_order,
+                )
+
+            date_range = body.get("date_range") or request.GET.get("date_range")
+            if date_range == "all":
+                date_range = None
+            valid_kpi_ids, valid_block_ids = _get_valid_default_home_layout_ids(
+                request.user, date_range=date_range
             )
+            kpi_set = set(kpi)
+            if kpi_set != valid_kpi_ids or len(kpi) != len(valid_kpi_ids):
+                return self._error_response(
+                    request,
+                    _(
+                        "Invalid KPI order: IDs must match the current default home KPIs."
+                    ),
+                    previous_order,
+                )
+            charts_tables_set = set(charts_and_tables)
+            if charts_tables_set != valid_block_ids or len(charts_and_tables) != len(
+                valid_block_ids
+            ):
+                return self._error_response(
+                    request,
+                    _(
+                        "Invalid charts/tables order: IDs must match the current default home charts and tables."
+                    ),
+                    previous_order,
+                )
+
+            order = {
+                "kpi": kpi,
+                "chartsAndTables": charts_and_tables,
+            }
+
+            DefaultHomeLayoutOrder.objects.update_or_create(
+                user=request.user,
+                dashboard=None,
+                defaults={"order": order},
+            )
+
+            messages.success(request, _("Layout order saved successfully"))
+            return JsonResponse({"success": True, "message": _("Layout order saved.")})
+
+        except Exception as e:
+            messages.error(request, e)
+            return JsonResponse(
+                {"success": False, "message": str(e), "order": previous_order}
+            )
+
+
+class ResetDefaultHomeLayoutOrderView(LoginRequiredMixin, View):
+    """Remove the current user's saved default home layout order and revert to template default."""
+
+    def post(self, request, *args, **kwargs):
+        try:
+            DefaultHomeLayoutOrder.objects.filter(
+                user=request.user, dashboard__isnull=True
+            ).delete()
+            messages.success(self.request, _("Layout reset to default."))
+            return JsonResponse(
+                {"success": True, "message": _("Layout reset to default.")}
+            )
+        except Exception as e:
+            messages.error(self.request, e)
+            return JsonResponse({"success": False, "message": str(e)})
+
+
+@method_decorator(
+    permission_required_or_denied("horilla_dashboard.change_dashboard"), name="dispatch"
+)
+class ResetDashboardLayoutOrderView(LoginRequiredMixin, View):
+    """Remove the current user's saved layout order for this dashboard so default order is used."""
+
+    def post(self, request, *args, **kwargs):
+        dashboard_id = kwargs.get("dashboard_id")
+        try:
+            dashboard = get_object_or_404(Dashboard, id=dashboard_id)
+            DefaultHomeLayoutOrder.objects.filter(
+                user=request.user, dashboard=dashboard
+            ).delete()
+            messages.success(request, _("Dashboard layout reset to default order."))
+            return JsonResponse(
+                {"success": True, "message": _("Dashboard layout reset to default.")}
+            )
+        except Exception as e:
+            messages.error(self.request, e)
+            return JsonResponse({"success": False, "message": str(e)})
 
 
 @method_decorator(htmx_required, name="dispatch")

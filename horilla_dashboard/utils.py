@@ -4,14 +4,193 @@ import json
 import logging
 import traceback
 import uuid
+from datetime import datetime, timedelta
 
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.utils import timezone
 
 from horilla_utils.methods import get_section_info_for_model
 from horilla_utils.middlewares import _thread_local
 
 logger = logging.getLogger(__name__)
+
+# Valid date range values (days)
+DATE_RANGE_CHOICES = [7, 30, 60, 90]
+
+
+def is_valid_date_range(value, date_from=None, date_to=None):
+    """Return True if value is a valid date_range (including 'custom' when date_from or date_to given)."""
+    if value in (None, "", "all"):
+        return True
+    if str(value) == "custom":
+        return bool(date_from or date_to)
+    return str(value) in [str(d) for d in DATE_RANGE_CHOICES]
+
+
+def parse_date_param(value):
+    """Parse YYYY-MM-DD string to date; return None if invalid or empty.
+    Only accepts exactly 10-character YYYY-MM-DD (rejects trailing junk)."""
+    if not value:
+        return None
+    s = str(value).strip()
+    if len(s) != 10:
+        return None
+    try:
+        return datetime.strptime(s, "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return None
+
+
+def get_date_field_for_model(model_class):
+    """Get the first date field from model."""
+    for field in model_class._meta.fields:
+        if field.get_internal_type() in ["DateField", "DateTimeField"]:
+            return field.name
+    return None
+
+
+def _custom_dates_invalid(date_from_raw, date_to_raw, parsed_from, parsed_to):
+    """Return True if any supplied custom date param failed to parse (invalid format)."""
+    had_from = date_from_raw is not None and str(date_from_raw).strip()
+    had_to = date_to_raw is not None and str(date_to_raw).strip()
+    return (had_from and parsed_from is None) or (had_to and parsed_to is None)
+
+
+def validate_custom_date_params(date_range, date_from, date_to):
+    """If date_range is 'custom' and any of date_from/date_to is invalid, return (None, None, None).
+    Otherwise return (date_range, date_from, date_to). For valid custom range, date_from/date_to
+    are returned as date objects so templates never display raw input."""
+    if date_range != "custom" or (not date_from and not date_to):
+        return (date_range, date_from, date_to)
+    parsed_from = parse_date_param(date_from) if date_from else None
+    parsed_to = parse_date_param(date_to) if date_to else None
+    if _custom_dates_invalid(date_from, date_to, parsed_from, parsed_to):
+        return (None, None, None)
+    return (date_range, parsed_from, parsed_to)
+
+
+def validate_date_range_request(request):
+    """
+    Validate date_range, date_from, date_to from request and return resolved values.
+    Returns (date_range, date_from, date_to, redirect_url).
+    If redirect_url is not None, the view should return redirect(redirect_url).
+    Handles: invalid/malformed keys (date_range[]), duplicate keys, invalid dates, junk in dates, empty strings.
+    """
+    date_range = request.GET.get("date_range")
+    date_from = request.GET.get("date_from") or None
+    date_to = request.GET.get("date_to") or None
+    if date_from == "":
+        date_from = None
+    if date_to == "":
+        date_to = None
+
+    date_range, date_from, date_to = validate_custom_date_params(
+        date_range, date_from, date_to
+    )
+    if date_range is None and request.GET.get("date_range") == "custom":
+        date_range = "all"
+    if date_range is not None and not is_valid_date_range(
+        date_range, date_from=date_from, date_to=date_to
+    ):
+        date_range = "all"
+        date_from = date_to = None
+    if date_range is None or date_range == "all":
+        date_from = date_to = None
+
+    query_params = request.GET.copy()
+    for key in list(query_params.keys()):
+        if (
+            key in ("date_range", "date_from", "date_to")
+            or key.startswith("date_range")
+            or key.startswith("date_from")
+            or key.startswith("date_to")
+        ):
+            query_params.pop(key, None)
+    if date_range is None or date_range == "all":
+        query_params["date_range"] = "all"
+    elif date_range == "custom":
+        query_params["date_range"] = "custom"
+        if date_from is not None:
+            query_params["date_from"] = (
+                date_from.strftime("%Y-%m-%d")
+                if hasattr(date_from, "strftime")
+                else str(date_from)
+            )
+        if date_to is not None:
+            query_params["date_to"] = (
+                date_to.strftime("%Y-%m-%d")
+                if hasattr(date_to, "strftime")
+                else str(date_to)
+            )
+    else:
+        query_params["date_range"] = str(date_range)
+
+    date_keys = [
+        k
+        for k in request.GET.keys()
+        if k in ("date_range", "date_from", "date_to")
+        or k.startswith("date_range")
+        or k.startswith("date_from")
+        or k.startswith("date_to")
+    ]
+    malformed = any(k not in ("date_range", "date_from", "date_to") for k in date_keys)
+    cur_dr = request.GET.get("date_range")
+    cur_df = request.GET.get("date_from") or ""
+    cur_dt = request.GET.get("date_to") or ""
+    want_dr = query_params.get("date_range")
+    want_df = query_params.get("date_from", "")
+    want_dt = query_params.get("date_to", "")
+    needs_redirect = (
+        malformed or cur_dr != want_dr or cur_df != want_df or cur_dt != want_dt
+    )
+    if not date_keys and (date_range is None or date_range == "all"):
+        needs_redirect = False
+    redirect_url = None
+    if needs_redirect:
+        base_path = request.build_absolute_uri(request.path).split("?")[0]
+        redirect_url = base_path + (
+            "?" + query_params.urlencode() if query_params else ""
+        )
+
+    return redirect_url
+
+
+def apply_date_range_to_queryset(
+    queryset, model_class, date_range_days=None, date_from=None, date_to=None
+):
+    """Filter queryset by date range: either last N days or custom start/end (at least one required for custom).
+    If custom range is requested but any date param is invalid, returns unfiltered queryset (all data).
+    """
+    date_field = get_date_field_for_model(model_class)
+    if not date_field:
+        return queryset
+
+    if date_range_days == "custom" or date_from is not None or date_to is not None:
+        date_from_raw = date_from
+        date_to_raw = date_to
+        if date_from is not None and not hasattr(date_from, "year"):
+            date_from = parse_date_param(date_from)
+        if date_to is not None and not hasattr(date_to, "year"):
+            date_to = parse_date_param(date_to)
+        if date_range_days == "custom" and _custom_dates_invalid(
+            date_from_raw, date_to_raw, date_from, date_to
+        ):
+            return queryset
+        if date_from is None and date_to is None:
+            return queryset
+        if date_from is not None:
+            queryset = queryset.filter(**{f"{date_field}__date__gte": date_from})
+        if date_to is not None:
+            queryset = queryset.filter(**{f"{date_field}__date__lte": date_to})
+        return queryset
+    if not date_range_days:
+        return queryset
+    try:
+        since = timezone.now() - timedelta(days=int(date_range_days))
+        return queryset.filter(**{f"{date_field}__gte": since})
+    except (TypeError, ValueError):
+        return queryset
 
 
 class DefaultDashboardGenerator:
@@ -21,17 +200,58 @@ class DefaultDashboardGenerator:
 
     extra_models = []
 
-    def __init__(self, user, company=None):
+    def __init__(
+        self, user, company=None, date_range=None, date_from=None, date_to=None
+    ):
         self.user = user
         self.company = company
+        self.date_range = self._parse_date_range(date_range)
+        parsed_from = parse_date_param(date_from) if date_from is not None else None
+        parsed_to = parse_date_param(date_to) if date_to is not None else None
+        if self.date_range == "custom" and _custom_dates_invalid(
+            date_from, date_to, parsed_from, parsed_to
+        ):
+            self.date_range = None
+            self.date_from = None
+            self.date_to = None
+        else:
+            self.date_from = parsed_from
+            self.date_to = parsed_to
 
         try:
-
             self.models = self.get_models()
-
         except ImportError:
             logger.warning("Horilla models not found, using empty model list")
             self.models = []
+
+    @staticmethod
+    def is_clear_range(date_range):
+        """Return True if date_range means 'clear/no filter'."""
+        return date_range in (None, "", "clear", "all")
+
+    def _parse_date_range(self, date_range):
+        """Parse and validate date_range (days or 'custom'). Returns None for clear, 30 if invalid."""
+        if self.is_clear_range(date_range):
+            return None
+        if str(date_range) == "custom":
+            return "custom"
+        try:
+            days = int(date_range)
+            return days if days in DATE_RANGE_CHOICES else 30
+        except (TypeError, ValueError):
+            return 30
+
+    def apply_date_range_filter(self, queryset, model_class):
+        """Filter queryset to records within the selected date range."""
+        if self.date_range == "custom":
+            return apply_date_range_to_queryset(
+                queryset,
+                model_class,
+                date_range_days="custom",
+                date_from=self.date_from,
+                date_to=self.date_to,
+            )
+        return apply_date_range_to_queryset(queryset, model_class, self.date_range)
 
     def get_models(self):
         """
@@ -50,6 +270,7 @@ class DefaultDashboardGenerator:
         has_view_own = self.user.has_perm(f"{app_label}.view_own_{model_name}")
 
         if has_view_all:
+            queryset = self.apply_date_range_filter(queryset, model_class)
             return queryset
 
         if has_view_own:
@@ -69,6 +290,7 @@ class DefaultDashboardGenerator:
                     if q_objects:
                         queryset = queryset.filter(q_objects)
 
+            queryset = self.apply_date_range_filter(queryset, model_class)
             return queryset
 
         return queryset.none()
