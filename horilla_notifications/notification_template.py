@@ -1,11 +1,11 @@
 """Notification Template Views"""
 
 import logging
+from functools import cached_property
 
 from django.apps import apps
-from functools import cached_property
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.contenttypes.models import ContentType
 from django.forms import ValidationError
@@ -13,23 +13,28 @@ from django.http import HttpResponse
 from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import FormView, DetailView,TemplateView
-
+from django.views.generic import DetailView, FormView, TemplateView
 
 from horilla.exceptions import HorillaHttp404
 from horilla.utils.shortcuts import get_object_or_404
+from horilla_core.decorators import htmx_required, permission_required_or_denied
+from horilla_core.methods import get_template_reverse_models
+from horilla_generics.views import (
+    HorillaListView,
+    HorillaNavView,
+    HorillaSingleDeleteView,
+    HorillaView,
+)
 from horilla_notifications.filters import NotificationTemplateFilter
 from horilla_notifications.forms import NotificationTemplateForm
 from horilla_utils.middlewares import _thread_local
-from horilla_core.decorators import htmx_required, permission_required_or_denied
-from horilla_generics.views import HorillaListView, HorillaNavView, HorillaSingleDeleteView, HorillaView
-from .models import NotificationTemplate
 
+from .models import NotificationTemplate
 
 logger = logging.getLogger(__name__)
 
 
-class NotificationTemplateView(LoginRequiredMixin,HorillaView):
+class NotificationTemplateView(LoginRequiredMixin, HorillaView):
     """
     TemplateView for notification template view
     """
@@ -97,7 +102,6 @@ class NotificationTemplateListView(LoginRequiredMixin, HorillaListView):
 
     columns = ["title", (_("Related Model"), "get_related_model")]
 
-
     def no_record_add_button(self):
         """Button to show when no records exist"""
         if self.request.user.has_perm("horilla_notifications.add_notificationtemplate"):
@@ -114,9 +118,9 @@ class NotificationTemplateListView(LoginRequiredMixin, HorillaListView):
             "img_class": "w-4 h-4",
             "permission": "horilla_notifications.change_notificationtemplate",
             "attrs": """
-                        hx-get="{get_edit_url}?new=true" 
+                        hx-get="{get_edit_url}?new=true"
                         hx-target="#modalBox"
-                        hx-swap="innerHTML" 
+                        hx-swap="innerHTML"
                         onclick="openModal()"
                         """,
         },
@@ -126,9 +130,9 @@ class NotificationTemplateListView(LoginRequiredMixin, HorillaListView):
             "img_class": "w-4 h-4",
             "permission": "horilla_notifications.delete_notificationtemplate",
             "attrs": """
-                    hx-post="{get_delete_url}" 
+                    hx-post="{get_delete_url}"
                     hx-target="#deleteModeBox"
-                    hx-swap="innerHTML" 
+                    hx-swap="innerHTML"
                     hx-trigger="click"
                     hx-vals='{{"check_dependencies": "true"}}'
                     onclick="openDeleteModeModal()"
@@ -136,11 +140,12 @@ class NotificationTemplateListView(LoginRequiredMixin, HorillaListView):
         },
     ]
 
-
     @cached_property
     def raw_attrs(self):
         """Get row attributes for HTMX detail view loading"""
-        if self.request.user.has_perm("horilla_notifications.view_notificationtemplate"):
+        if self.request.user.has_perm(
+            "horilla_notifications.view_notificationtemplate"
+        ):
             return {
                 "hx-get": "{get_detail_view_url}",
                 "hx-target": "#contentModalBox",
@@ -150,7 +155,6 @@ class NotificationTemplateListView(LoginRequiredMixin, HorillaListView):
                 "class": "hover:text-primary-600",
             }
         return ""
-
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -214,7 +218,8 @@ class NotificationTemplateCreateUpdateView(LoginRequiredMixin, FormView):
         """Get the appropriate URL for form submission"""
         if self.object:
             return reverse(
-                "horilla_notifications:notification_template_update_view", kwargs={"pk": self.object.pk}
+                "horilla_notifications:notification_template_update_view",
+                kwargs={"pk": self.object.pk},
             )
         return reverse("horilla_notifications:notification_template_create_view")
 
@@ -251,7 +256,6 @@ class NotificationTemplateCreateUpdateView(LoginRequiredMixin, FormView):
             return self.form_invalid(form)
 
 
-
 @method_decorator(htmx_required, name="dispatch")
 @method_decorator(
     permission_required_or_denied(
@@ -268,13 +272,11 @@ class NotificationTemplateDeleteView(LoginRequiredMixin, HorillaSingleDeleteView
         return HttpResponse("<script>$('#reloadButton').click();</script>")
 
 
-
-
 @method_decorator(
     permission_required_or_denied(["horilla_notifications.view_notificationtemplate"]),
     name="dispatch",
 )
-class MailTemplateDetailView(LoginRequiredMixin, DetailView):
+class NotificationTemplateDetailView(LoginRequiredMixin, DetailView):
     """ " View to display mail template details"""
 
     def __init__(self, *args, **kwargs):
@@ -296,7 +298,6 @@ class MailTemplateDetailView(LoginRequiredMixin, DetailView):
     model = NotificationTemplate
     template_name = "notification_template/template_detail.html"
     context_object_name = "notification_template"
-
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -352,7 +353,9 @@ class NotificationTemplateFieldSelectionView(LoginRequiredMixin, TemplateView):
                     content_type = ContentType.objects.get(model=model_name.lower())
                 else:
                     content_type = ContentType.objects.get(id=content_type_id)
-                    model_name = content_type.model_class()._meta.verbose_name
+                    # Use content_type.model (e.g. 'employee') for URLs, not verbose_name,
+                    # so tab links send a value that ContentType.objects.get(model=...) can find
+                    model_name = content_type.model
                 model_class = apps.get_model(
                     app_label=content_type.app_label, model_name=content_type.model
                 )
@@ -426,18 +429,45 @@ class NotificationTemplateFieldSelectionView(LoginRequiredMixin, TemplateView):
 
                 reverse_relation_fields = []
 
+                # Models allowed as reverse relations in Insert field (feature registry)
+                allowed_reverse_models = get_template_reverse_models()
+
+                # Models already shown in Related Fields (forward FKs) - don't show again in Reverse
+                related_models_in_forward = set()
+                for f in model_class._meta.get_fields():
+                    if (
+                        f.many_to_one
+                        and hasattr(f, "related_model")
+                        and f.related_model
+                    ):
+                        related_models_in_forward.add(f.related_model)
+
                 # Get all reverse relations
                 for field in model_class._meta.get_fields():
                     if field.one_to_many or field.many_to_many:
                         # Skip fields that don't have get_accessor_name method
                         # (e.g., AuditlogHistoryField)
-                        if not hasattr(field, 'get_accessor_name'):
+                        if not hasattr(field, "get_accessor_name"):
                             continue
                         try:
                             # Get the accessor name (like 'employee_set' or custom related_name)
                             accessor_name = field.get_accessor_name()
 
                             related_model = field.related_model
+
+                            # Skip reverse relation if this model is already in Related Fields
+                            if (
+                                related_model
+                                and related_model in related_models_in_forward
+                            ):
+                                continue
+
+                            # Include only models in template_reverse registry when feature is registered
+                            if (
+                                allowed_reverse_models is not None
+                                and related_model not in allowed_reverse_models
+                            ):
+                                continue
 
                             if related_model:
                                 for reverse_field in related_model._meta.get_fields():
@@ -472,8 +502,8 @@ class NotificationTemplateFieldSelectionView(LoginRequiredMixin, TemplateView):
                                             f"{reverse_field.__class__.__name__}"
                                         ),
                                         "template_syntax": (
-                                            f"{{{{ instance.{accessor_name}."
-                                            f"first.{reverse_field.name} }}}}"
+                                            f"{{{{ instance.{accessor_name}|join_attr:"
+                                            f"'{reverse_field.name}' }}}}"
                                         ),
                                         "parent_field": accessor_name,
                                         "is_reverse_relation": True,
@@ -598,4 +628,3 @@ class NotificationTemplateFieldSelectionView(LoginRequiredMixin, TemplateView):
         except Exception as e:
             context["error"] = f"Error loading fields: {str(e)}"
         return context
-

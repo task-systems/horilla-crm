@@ -25,6 +25,7 @@ from django.views import View
 from django.views.generic import TemplateView
 
 from horilla_core.decorators import htmx_required, permission_required_or_denied
+from horilla_core.methods import get_template_reverse_models
 from horilla_generics.views import HorillaSingleDeleteView
 from horilla_mail.models import (
     HorillaMail,
@@ -898,7 +899,9 @@ class HorillaMailFieldSelectionView(LoginRequiredMixin, TemplateView):
                     content_type = ContentType.objects.get(model=model_name.lower())
                 else:
                     content_type = ContentType.objects.get(id=content_type_id)
-                    model_name = content_type.model_class()._meta.verbose_name
+                    # Use content_type.model (e.g. 'employee') for URLs, not verbose_name,
+                    # so tab links send a value that ContentType.objects.get(model=...) can find
+                    model_name = content_type.model
                 model_class = apps.get_model(
                     app_label=content_type.app_label, model_name=content_type.model
                 )
@@ -972,6 +975,19 @@ class HorillaMailFieldSelectionView(LoginRequiredMixin, TemplateView):
 
                 reverse_relation_fields = []
 
+                # Models allowed as reverse relations in Insert field (feature registry)
+                allowed_reverse_models = get_template_reverse_models()
+
+                # Models already shown in Related Fields (forward FKs) - don't show again in Reverse
+                related_models_in_forward = set()
+                for f in model_class._meta.get_fields():
+                    if (
+                        f.many_to_one
+                        and hasattr(f, "related_model")
+                        and f.related_model
+                    ):
+                        related_models_in_forward.add(f.related_model)
+
                 # Get all reverse relations
                 for field in model_class._meta.get_fields():
                     if field.one_to_many or field.many_to_many:
@@ -984,6 +1000,20 @@ class HorillaMailFieldSelectionView(LoginRequiredMixin, TemplateView):
                             accessor_name = field.get_accessor_name()
 
                             related_model = field.related_model
+
+                            # Skip reverse relation if this model is already in Related Fields
+                            if (
+                                related_model
+                                and related_model in related_models_in_forward
+                            ):
+                                continue
+
+                            # Include only models in template_reverse registry when feature is registered
+                            if (
+                                allowed_reverse_models is not None
+                                and related_model not in allowed_reverse_models
+                            ):
+                                continue
 
                             if related_model:
                                 for reverse_field in related_model._meta.get_fields():
@@ -1018,8 +1048,8 @@ class HorillaMailFieldSelectionView(LoginRequiredMixin, TemplateView):
                                             f"{reverse_field.__class__.__name__}"
                                         ),
                                         "template_syntax": (
-                                            f"{{{{ instance.{accessor_name}."
-                                            f"first.{reverse_field.name} }}}}"
+                                            f"{{{{ instance.{accessor_name}|join_attr:"
+                                            f"'{reverse_field.name}' }}}}"
                                         ),
                                         "parent_field": accessor_name,
                                         "is_reverse_relation": True,

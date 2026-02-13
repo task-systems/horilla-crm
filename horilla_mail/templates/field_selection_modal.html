@@ -8,11 +8,6 @@
 </div>
 
 <div class="p-5">
-    {% if error %}
-        <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded mb-4">
-            {{ error }}
-        </div>
-    {% else %}
         <div class="mb-4">
             <p class="text-sm text-gray-600 mb-2">
                 {% trans "Select fields to insert into your email template." %}
@@ -27,9 +22,9 @@
                             <button
                                 type="button"
                                 hx-get="{% url 'horilla_mail:field_selection' %}?model_name={{ model_name }}&object_id={{ object_id }}&tab_type=instance"
-                                hx-target="#tab-content"
+                                hx-target="#tab-content-wrapper"
                                 hx-select="#tab-content"
-                                hx-swap="outerHTML"
+                                hx-swap="innerHTML"
                                 hx-indicator="#loading-spinner"
                                 class="tab-btn items-center p-2 rounded-md {% if tab_type == 'instance' %}text-white bg-primary-600{% else %}bg-transparent text-[#3d3d3d]{% endif %} w-full flex gap-3"
                                 onclick="preserveSelections(); setActiveTab(this);">
@@ -50,9 +45,9 @@
                           {% else %}
                           hx-get="{% url 'horilla_mail:field_selection' %}?tab_type=user"
                           {% endif %}
-                          hx-target="#tab-content"
-                        hx-select="#tab-content"
-                          hx-swap="outerHTML"
+                          hx-target="#tab-content-wrapper"
+                          hx-select="#tab-content"
+                          hx-swap="innerHTML"
                           hx-indicator="#loading-spinner"
                           class="tab-btn items-center p-2 rounded-md {% if tab_type == 'user' %}text-white bg-primary-600{% else %}bg-transparent text-[#3d3d3d]{% endif %} w-full flex gap-3"
                           onclick="preserveSelections(); setActiveTab(this);">
@@ -72,9 +67,9 @@
                           {% else %}
                           hx-get="{% url 'horilla_mail:field_selection' %}?tab_type=company"
                           {% endif %}
-                          hx-target="#tab-content"
-                           hx-select="#tab-content"
-                          hx-swap="outerHTML"
+                          hx-target="#tab-content-wrapper"
+                          hx-select="#tab-content"
+                          hx-swap="innerHTML"
                           hx-indicator="#loading-spinner"
                           class="tab-btn items-center p-2 rounded-md {% if tab_type == 'company' %}text-white bg-primary-600{% else %}bg-transparent text-[#3d3d3d]{% endif %} w-full flex gap-3"
                           onclick="preserveSelections(); setActiveTab(this);">
@@ -94,9 +89,9 @@
                           {% else %}
                             hx-get="{% url 'horilla_mail:field_selection' %}?tab_type=request"
                           {% endif %}
-                          hx-target="#tab-content"
+                          hx-target="#tab-content-wrapper"
                           hx-select="#tab-content"
-                          hx-swap="outerHTML"
+                          hx-swap="innerHTML"
                           hx-indicator="#loading-spinner"
                           class="tab-btn items-center p-2 rounded-md {% if tab_type == 'request' %}text-white bg-primary-600{% else %}bg-transparent text-[#3d3d3d]{% endif %} w-full flex gap-3"
                           onclick="preserveSelections(); setActiveTab(this);">
@@ -110,7 +105,13 @@
                     </li>
                 </ul>
             </div>
-            <div id="tab-content" class="col-span-9">
+            <div id="tab-content-wrapper" class="col-span-9">
+                <div id="tab-content">
+                {% if error %}
+                <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded mb-4">
+                    {{ error }}
+                </div>
+                {% else %}
                 <!-- Loading spinner -->
                 <div id="loading-spinner" class="htmx-indicator text-center py-4">
                     <svg class="animate-spin h-8 w-8 mx-auto text-primary-600" fill="none" viewBox="0 0 24 24">
@@ -252,9 +253,10 @@
                         </div>
                     {% endif %}
                 </form>
+                {% endif %}
+                </div>
             </div>
         </div>
-    {% endif %}
 </div>
 
 <div class="p-4 flex justify-between items-center">
@@ -309,7 +311,7 @@
     }
 
     document.body.addEventListener('htmx:afterSwap', function(evt) {
-        if (evt.target.id === 'tab-content') {
+        if (evt.target.id === 'tab-content' || evt.target.id === 'tab-content-wrapper') {
             restoreSelections();
         }
     });

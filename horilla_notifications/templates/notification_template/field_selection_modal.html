@@ -8,11 +8,6 @@
 </div>
 
 <div class="p-5">
-    {% if error %}
-        <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded mb-4">
-            {{ error }}
-        </div>
-    {% else %}
         <div class="mb-4">
             <p class="text-sm text-gray-600 mb-2">
                 {% trans "Select fields to insert into your email template." %}
@@ -27,9 +22,9 @@
                             <button
                                 type="button"
                                 hx-get="{% url 'horilla_mail:field_selection' %}?model_name={{ model_name }}&object_id={{ object_id }}&tab_type=instance"
-                                hx-target="#tab-content"
+                                hx-target="#tab-content-wrapper"
                                 hx-select="#tab-content"
-                                hx-swap="outerHTML"
+                                hx-swap="innerHTML"
                                 hx-indicator="#loading-spinner"
                                 class="tab-btn items-center p-2 rounded-md {% if tab_type == 'instance' %}text-white bg-primary-600{% else %}bg-transparent text-[#3d3d3d]{% endif %} w-full flex gap-3"
                                 onclick="preserveSelections(); setActiveTab(this);">
@@ -50,9 +45,9 @@
                           {% else %}
                           hx-get="{% url 'horilla_mail:field_selection' %}?tab_type=user"
                           {% endif %}
-                          hx-target="#tab-content"
-                        hx-select="#tab-content"
-                          hx-swap="outerHTML"
+                          hx-target="#tab-content-wrapper"
+                          hx-select="#tab-content"
+                          hx-swap="innerHTML"
                           hx-indicator="#loading-spinner"
                           class="tab-btn items-center p-2 rounded-md {% if tab_type == 'user' %}text-white bg-primary-600{% else %}bg-transparent text-[#3d3d3d]{% endif %} w-full flex gap-3"
                           onclick="preserveSelections(); setActiveTab(this);">
@@ -72,9 +67,9 @@
                           {% else %}
                           hx-get="{% url 'horilla_mail:field_selection' %}?tab_type=company"
                           {% endif %}
-                          hx-target="#tab-content"
-                           hx-select="#tab-content"
-                          hx-swap="outerHTML"
+                          hx-target="#tab-content-wrapper"
+                          hx-select="#tab-content"
+                          hx-swap="innerHTML"
                           hx-indicator="#loading-spinner"
                           class="tab-btn items-center p-2 rounded-md {% if tab_type == 'company' %}text-white bg-primary-600{% else %}bg-transparent text-[#3d3d3d]{% endif %} w-full flex gap-3"
                           onclick="preserveSelections(); setActiveTab(this);">
@@ -94,9 +89,9 @@
                           {% else %}
                             hx-get="{% url 'horilla_mail:field_selection' %}?tab_type=request"
                           {% endif %}
-                          hx-target="#tab-content"
+                          hx-target="#tab-content-wrapper"
                           hx-select="#tab-content"
-                          hx-swap="outerHTML"
+                          hx-swap="innerHTML"
                           hx-indicator="#loading-spinner"
                           class="tab-btn items-center p-2 rounded-md {% if tab_type == 'request' %}text-white bg-primary-600{% else %}bg-transparent text-[#3d3d3d]{% endif %} w-full flex gap-3"
                           onclick="preserveSelections(); setActiveTab(this);">
@@ -110,7 +105,13 @@
                     </li>
                 </ul>
             </div>
-            <div id="tab-content" class="col-span-9">
+            <div id="tab-content-wrapper" class="col-span-9">
+                <div id="tab-content">
+                {% if error %}
+                <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded mb-4">
+                    {{ error }}
+                </div>
+                {% else %}
                 <!-- Loading spinner -->
                 <div id="loading-spinner" class="htmx-indicator text-center py-4">
                     <svg class="animate-spin h-8 w-8 mx-auto text-primary-600" fill="none" viewBox="0 0 24 24">
@@ -118,7 +119,7 @@
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                 </div>
-                
+
                 <form id="fieldSelectionForm">
                     <div class="max-h-96 overflow-y-auto custom-scroll">
                         <!-- Direct Model Fields -->
@@ -152,7 +153,7 @@
                                 </div>
                             </div>
                         {% endif %}
-                        
+
                         <!-- Foreign Key Fields - Only show for instance tab -->
                         {% if foreign_key_fields %}
                             <div class="mb-6">
@@ -162,7 +163,7 @@
                                     </svg>
                                     {% trans "Related Fields" %}
                                 </h4>
-                
+
                                 {% regroup foreign_key_fields by header as grouped_fk_fields %}
                                 {% for group in grouped_fk_fields %}
                                     <div class="border border-primary-300 rounded mr-2 mb-2">
@@ -197,7 +198,7 @@
                                 {% endfor %}
                             </div>
                         {% endif %}
-                        
+
                         <!-- Reverse Relationship Fields - Only show for instance tab -->
                         {% if reverse_relation_fields %}
                             <div class="mb-6">
@@ -207,7 +208,7 @@
                                     </svg>
                                     {% trans "Reverse Related Fields" %}
                                 </h4>
-                
+
                                 {% regroup reverse_relation_fields by header as grouped_reverse_fields %}
                                 {% for group in grouped_reverse_fields %}
                                     <div class="border border-primary-300 rounded mr-2 mb-2">
@@ -252,15 +253,16 @@
                         </div>
                     {% endif %}
                 </form>
+                {% endif %}
+                </div>
             </div>
         </div>
-    {% endif %}
 </div>
 
 <div class="p-4 flex justify-between items-center">
-    <div class="flex gap-2 justify-end w-full"> 
-        <button type="button" 
-                onclick="insertSelectedFields()" 
+    <div class="flex gap-2 justify-end w-full">
+        <button type="button"
+                onclick="insertSelectedFields()"
                 class="text-sm px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-800 transition duration-300">
             {% trans "Insert Selected Fields" %}
         </button>
@@ -270,13 +272,13 @@
 <script>
     // Use window object to avoid redeclaration errors with HTMX
     window.globalSelectedFields = window.globalSelectedFields || [];
-    
+
     function preserveSelections() {
         const checkboxes = document.querySelectorAll('#fieldSelectionForm input[type="checkbox"]:checked');
         checkboxes.forEach(checkbox => {
             const template = checkbox.getAttribute('data-template');
-            const uniqueKey = checkbox.id + '_' + template; 
-            
+            const uniqueKey = checkbox.id + '_' + template;
+
             if (template && !window.globalSelectedFields.some(item => item.uniqueKey === uniqueKey)) {
                 window.globalSelectedFields.push({
                     id: checkbox.id,
@@ -286,10 +288,10 @@
                 });
             }
         });
-        
+
         document.getElementById('selectedFieldsStore').value = JSON.stringify(window.globalSelectedFields);
     }
-    
+
     function restoreSelections() {
         const storedValue = document.getElementById('selectedFieldsStore').value;
         if (storedValue) {
@@ -299,7 +301,7 @@
                 window.globalSelectedFields = [];
             }
         }
-        
+
         window.globalSelectedFields.forEach(field => {
             const checkbox = document.getElementById(field.id);
             if (checkbox && checkbox.getAttribute('data-template') === field.template) {
@@ -307,17 +309,17 @@
             }
         });
     }
-    
+
     document.body.addEventListener('htmx:afterSwap', function(evt) {
-        if (evt.target.id === 'tab-content') {
+        if (evt.target.id === 'tab-content' || evt.target.id === 'tab-content-wrapper') {
             restoreSelections();
         }
     });
-    
+
     function toggleAccordion(button) {
         const content = button.nextElementSibling;
         const arrow = button.querySelector('svg');
-        
+
         if (content.style.maxHeight && content.style.maxHeight !== '0px') {
             content.style.maxHeight = '0px';
             arrow.style.transform = 'rotate(0deg)';
@@ -326,38 +328,38 @@
             arrow.style.transform = 'rotate(180deg)';
         }
     }
-    
+
     function setActiveTab(clickedBtn) {
         const tabButtons = document.querySelectorAll("#custom-tabs .tab-btn");
         tabButtons.forEach((btn) => {
             btn.classList.remove("bg-primary-600", "text-white");
             btn.classList.add("bg-transparent", "text-[#3d3d3d]");
         });
-    
+
         clickedBtn.classList.remove("bg-transparent", "text-[#3d3d3d]");
         clickedBtn.classList.add("bg-primary-600", "text-white");
     }
-    
+
     function insertSelectedFields() {
         preserveSelections();
         if (window.globalSelectedFields.length === 0) {
             return;
         }
-        
+
         const fieldsText = window.globalSelectedFields.map(field => field.template).join(' ');
-        
+
         // Use the global function from the main template
         if (typeof window.insertTextAtCursor === 'function') {
             window.insertTextAtCursor(fieldsText);
         }
-        
+
         // Clear selections
         window.globalSelectedFields = [];
         document.getElementById('selectedFieldsStore').value = '';
-        
+
         closeContentModal();
     }
-    
+
     document.addEventListener('DOMContentLoaded', function() {
         restoreSelections();
     });
