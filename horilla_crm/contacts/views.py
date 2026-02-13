@@ -85,6 +85,7 @@ class ContactNavbar(LoginRequiredMixin, HorillaNavView):
     filterset_class = ContactFilter
     exclude_kanban_fields = "company"
     enable_actions = True
+    enable_quick_filters = True
 
     @cached_property
     def new_button(self):
@@ -117,6 +118,7 @@ class ContactListView(LoginRequiredMixin, HorillaListView):
     filterset_class = ContactFilter
     search_url = reverse_lazy("contacts:contact_list_view")
     main_url = reverse_lazy("contacts:contacts_view")
+    enable_quick_filters = True
 
     def no_record_add_button(self):
         """Button to add a new contact if no records exist"""
