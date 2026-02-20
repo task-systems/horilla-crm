@@ -52,6 +52,7 @@ from horilla_generics.views import (
     HorillaDetailSectionView,
     HorillaDetailTabView,
     HorillaDetailView,
+    HorillaGroupByView,
     HorillaHistorySectionView,
     HorillaKanbanView,
     HorillaListView,
@@ -76,6 +77,7 @@ class AccountView(LoginRequiredMixin, HorillaView):
     nav_url = reverse_lazy("accounts:accounts_nav_view")
     list_url = reverse_lazy("accounts:accounts_list_view")
     kanban_url = reverse_lazy("accounts:accounts_kanban_view")
+    group_by_url = reverse_lazy("accounts:accounts_group_by_view")
 
 
 @method_decorator(
@@ -94,6 +96,7 @@ class AccountsNavbar(LoginRequiredMixin, HorillaNavView):
     search_url = reverse_lazy("accounts:accounts_list_view")
     main_url = reverse_lazy("accounts:accounts_view")
     kanban_url = reverse_lazy("accounts:accounts_kanban_view")
+    group_by_url = reverse_lazy("accounts:accounts_group_by_view")
     model_name = "Account"
     model_app_label = "accounts"
     filterset_class = AccountFilter
@@ -242,6 +245,73 @@ class AccountListView(LoginRequiredMixin, HorillaListView):
                             """,
         },
     ]
+
+
+@method_decorator(htmx_required, name="dispatch")
+@method_decorator(
+    permission_required_or_denied(
+        ["accounts.view_account", "accounts.view_own_account"]
+    ),
+    name="dispatch",
+)
+class AccountGroupByView(LoginRequiredMixin, HorillaGroupByView):
+    """
+    Account Group By view
+    """
+
+    model = Account
+    view_id = "accounts-group-by"
+    filterset_class = AccountFilter
+    search_url = reverse_lazy("accounts:accounts_list_view")
+    main_url = reverse_lazy("accounts:accounts_view")
+    enable_quick_filters = True
+    group_by_field = "account_type"
+
+    columns = [
+        "name",
+        "account_number",
+        "account_owner",
+        "account_type",
+        "account_source",
+        "annual_revenue",
+    ]
+    actions = AccountListView.actions
+
+    def no_record_add_button(self):
+        """Return the 'New Account' button if the user has add permission."""
+        if self.request.user.has_perm(
+            "accounts.add_account"
+        ) or self.request.user.has_perm("accounts.add_own_account"):
+            return {
+                "url": f"""{reverse_lazy('accounts:account_create_form_view')}?new=true""",
+                "attrs": 'id="account-create"',
+            }
+        return None
+
+    @cached_property
+    def col_attrs(self):
+        """Return column attributes for HTMX interactions if the user can view accounts."""
+        query_params = {}
+        if "section" in self.request.GET:
+            query_params["section"] = self.request.GET.get("section")
+        query_string = urlencode(query_params)
+        attrs = {
+            "hx-get": f"{{get_detail_url}}?{query_string}",
+            "hx-target": "#mainContent",
+            "hx-swap": "outerHTML",
+            "hx-push-url": "true",
+            "hx-select": "#mainContent",
+            "permission": "accounts.view_account",
+            "own_permission": "accounts.view_own_account",
+            "owner_field": "account_owner",
+        }
+        return [
+            {
+                "name": {
+                    **attrs,
+                }
+            }
+        ]
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -796,6 +866,20 @@ class AccountRelatedListsTab(LoginRequiredMixin, HorillaRelatedListSectionView):
                         }
                     ),
                 ],
+                "custom_buttons": [
+                    {
+                        "label": _("View Hierarchy"),
+                        "url": reverse_lazy("accounts:account_hierarchy"),
+                        "attrs": """
+                                        hx-target="#modalBox"
+                                        hx-swap="innerHTML"
+                                        onclick="openModal()"
+                                        hx-indicator="#modalBox"
+                                    """,
+                        "icon": "fa-solid fa-sitemap",
+                        "class": "text-xs px-4 py-1.5 bg-white border border-primary-600 text-primary-600 rounded-md transition duration-300",
+                    },
+                ],
             },
             "opportunity_account": {
                 "title": _("Opportunities"),
@@ -870,6 +954,37 @@ class AccountRelatedListsTab(LoginRequiredMixin, HorillaRelatedListSectionView):
         }
 
     excluded_related_lists = ["contact_relationships", "partner_account", "partner"]
+
+
+def _build_account_tree(account):
+    """Build tree of campaign and descendants for <details> hierarchy."""
+    return {
+        "account": account,
+        "children": [_build_account_tree(c) for c in account.child_accounts.all()],
+    }
+
+
+@method_decorator(htmx_required, name="dispatch")
+@method_decorator(
+    permission_required_or_denied(
+        ["accounts.view_account", "campaigns.view_own_account"]
+    ),
+    name="dispatch",
+)
+class AccountHierarchyView(LoginRequiredMixin, View):
+    """Modal view showing account hierarchy with expand/collapse (no JS)."""
+
+    def get(self, request, *args, **kwargs):
+        account_id = request.GET.get("id")
+        if not account_id:
+            return render(request, "error/403.html", {"modal": True})
+        account = get_object_or_404(Account, pk=account_id)
+        root = _build_account_tree(account)
+        return render(
+            request,
+            "account_hierarchy_modal.html",
+            {"root": root},
+        )
 
 
 @method_decorator(

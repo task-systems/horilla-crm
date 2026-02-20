@@ -24,6 +24,11 @@ urlpatterns = [
         name="accounts_kanban_view",
     ),
     path(
+        "accounts-group-by-view/",
+        views.AccountGroupByView.as_view(),
+        name="accounts_group_by_view",
+    ),
+    path(
         "account-create-form-view/",
         views.AccountFormView.as_view(),
         name="account_create_form_view",
@@ -127,5 +132,10 @@ urlpatterns = [
         "partner-account-delete/<int:pk>/",
         views.PartnerAccountDeleteView.as_view(),
         name="partner_account_delete",
+    ),
+    path(
+        "account-hierarchy/",
+        views.AccountHierarchyView.as_view(),
+        name="account_hierarchy",
     ),
 ]
