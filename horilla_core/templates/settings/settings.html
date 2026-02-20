@@ -39,7 +39,7 @@
                       {% if can_view_item %}
                         <li class="py-1">
                           <a role="button"
-                            hx-get="{{ item.url }}?{{ request.GET.urlencode }}"
+                            hx-get="{{ item.url }}"
                             {% for key, value in item.items %}
                                 {% if key not in "label,url" %}
                                   {{ key }}="{{ value }}"
