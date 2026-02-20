@@ -63,6 +63,7 @@ class LeadFormClass(OwnerQuerysetMixin, HorillaMultiStepForm):
             self.fields["created_by"].required = False
             self.fields["updated_by"].required = False
 
+        self.fields["lead_status"].queryset = LeadStatus.objects.filter(is_final=False)
         self.fields["country"].widget.attrs.update(
             {
                 "hx-get": reverse_lazy("horilla_core:get_country_subdivisions"),
@@ -131,6 +132,7 @@ class LeadSingleForm(OwnerQuerysetMixin, HorillaModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["lead_status"].queryset = LeadStatus.objects.filter(is_final=False)
         self.fields["country"].widget.attrs.update(
             {
                 "hx-get": reverse_lazy("horilla_core:get_country_subdivisions"),
