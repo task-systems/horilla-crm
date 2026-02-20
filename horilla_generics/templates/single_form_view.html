@@ -319,14 +319,14 @@
                                                 <div>
                                                     <div id="id_{{ field_name }}_{{ forloop.parentloop.counter }}_container">
                                                         {% if field_name == 'field' %}
-                                                        {% with field_val=condition|getter:field_name value_val=condition|getter:value|default:"" %}
+                                                        {% with field_val=condition|getter:field_name value_val=condition|getter:value|default:"" operator_val=condition|getter:operator|default:"" %}
                                                         <select name="{{ field_name }}_{{ forloop.parentloop.counter }}" class="js-example-basic-single headselect" id="id_{{ field_name }}_{{ forloop.parentloop.counter }}"
                                                             {% if field_name == 'field' %}
                                                                     hx-get="{% url 'horilla_generics:get_field_value_widget' %}"
                                                                     hx-target="#id_value_{{ forloop.parentloop.counter }}_container"
                                                                     hx-swap="innerHTML"
-                                                                    hx-include="[name='{{ field_name }}_{{ forloop.parentloop.counter }}'],#id_value_{{ forloop.parentloop.counter }}"
-                                                                    hx-vals='{"model_name": "{{ form.model_name }}", "row_id": "{{ forloop.parentloop.counter }}", "field_{{ forloop.parentloop.counter }}": "{{ field_val|escapejs }}", "value_{{ forloop.parentloop.counter }}": "{{ value_val|escapejs }}"}'
+                                                                    hx-include="[name='{{ field_name }}_{{ forloop.parentloop.counter }}'],[name='operator_{{ forloop.parentloop.counter }}']"
+                                                                    hx-vals='{"model_name": "{{ form.model_name }}", "row_id": "{{ forloop.parentloop.counter }}", "condition_model": "{{ condition_model_str|escapejs }}", "field_{{ forloop.parentloop.counter }}": "{{ field_val|escapejs }}", "value_{{ forloop.parentloop.counter }}": "{{ value_val|escapejs }}", "operator_{{ forloop.parentloop.counter }}": "{{ operator_val|escapejs }}"}'
                                                                     hx-trigger="change,load"
                                                                 {% endif %}>
                                                             {% for choice in condition_field_choices|get_item_form:field_name %}
