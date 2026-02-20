@@ -31,6 +31,7 @@ body.dark .note-btn{
 body.dark .nav-link img {
   filter: brightness(0) invert(1);
 }
+body.dark .bg-primary-50,
 body.dark .bg-primary-100,
 body.dark .select2-dropdown,
 body.dark .bg-dark-25,
@@ -63,6 +64,10 @@ body.dark .swal2-popup.swal2-toast.custom-toast,
 body.dark .panel-default>.panel-heading,
 body.dark .note-editor.note-frame .note-editing-area .note-editable{
   background-color: #5d5d5d !important;
+}
+/* Dropdown item hover (layout + actions) – match detail view: black in dark */
+body.dark .hover\:bg-gray-50:hover {
+  background-color: black !important;
 }
 body.dark h1,
 body.dark .member-header,
@@ -206,4 +211,22 @@ body.dark .bg-\[\#e6fff5\]{
 }
 body.dark .bg-\[\#e6fff5\]:hover, body.dark .bg-\[\#ffefed\]:hover{
   color: #e54f38 !important;
+}
+
+/* Group-by view: container and cards in dark theme */
+body.dark .bg-\[\#e9edf0ba\] {
+  background-color: #1e1e1e !important;
+}
+body.dark .group-by-details {
+  border-color: #565656 !important;
+}
+body.dark .group-by-header-band {
+  background-color: #383838 !important;
+  border-color: #565656 !important;
+}
+body.dark .group-by-details .group-by-summary span.text-primary-600 {
+  color: #f07a6a !important;
+}
+body.dark .group-by-details .group-by-summary .fa-chevron-down {
+  color: #f07a6a !important;
 }
