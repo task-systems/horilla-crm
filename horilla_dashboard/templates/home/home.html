@@ -28,7 +28,7 @@
               {% trans "Save" %}
               </button>
               <button type="button" onclick="resetDashboardToDefault()" id="setToDefaultBtn"
-              class="text-sm px-4 py-2 rounded-md bg-primary-300 text-primary-600 transition duration-300 cursor-pointer">
+              class="text-sm px-4 py-2 rounded-md bg-primary-300 text-primary-600 transition duration-300 cursor-pointer{% if not user_has_custom_dashboard_layout %} hidden{% endif %}">
               <i class="fa-solid fa-rotate-left mr-1"></i> {% trans "Set to default" %}
               </button>
               <button type="button" onclick="toggleEditMode()" id="cancelEditBtn"
@@ -290,6 +290,7 @@
     }
     $("#saveOrderBtn").prop("disabled", true);
     $.when.apply($, promises).done(function() {
+      $("#setToDefaultBtn").removeClass("hidden");
       toggleEditMode();
       window.location.reload();
     }).fail(function() {

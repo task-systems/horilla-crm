@@ -1,4 +1,4 @@
-{% load i18n %}
+{% load i18n horilla_tags %}
 <div class="relative dropdown-wrapper z-20">
     <button type="button"
         class="inline-flex items-center gap-2 px-3 py-2 bg-white rounded-md border border-primary-300 text-sm text-gray-700 hover:bg-gray-50 transition-colors min-w-[180px] justify-between">
@@ -6,7 +6,7 @@
             <i class="fa-regular fa-calendar text-gray-500"></i>
             <span id="dateRangeLabel">
                 {% if date_range == "custom" %}
-                    {% if date_from and date_to %}{% trans "From" %} {{ date_from }} {% trans "to" %} {{ date_to }}{% elif date_from %}{% trans "From" %} {{ date_from }}{% elif date_to %}{% trans "Until" %} {{ date_to }}{% else %}{% trans "Custom" %}{% endif %}
+                    {% if date_from and date_to %}{% trans "From" %} {{ date_from|user_datetime_format }} {% trans "to" %} {{ date_to|user_datetime_format }}{% elif date_from %}{% trans "From" %} {{ date_from|user_datetime_format }}{% elif date_to %}{% trans "Until" %} {{ date_to|user_datetime_format }}{% else %}{% trans "Custom" %}{% endif %}
                 {% elif date_range %}
                     {% trans "Last" %} {{ date_range }} {% trans "Days" %}
                 {% else %}
@@ -16,11 +16,11 @@
         </span>
         <i class="fa-solid fa-chevron-down text-gray-500 text-xs"></i>
     </button>
-    <div class="dropdown-content absolute right-0 mt-1 py-1 z-[60] border border-primary-300">
-        <ul class="text-sm py-0 min-w-[180px] bg-white rounded-md">
+    <div class="dropdown-content absolute right-0 mt-1 py-1 z-[60] border border-primary-300 min-w-[180px] bg-white rounded-md shadow-lg">
+        <ul class="text-sm py-0">
             <li>
                 <a href="{{ date_range_base_url }}{% if '?' in date_range_base_url %}&{% else %}?{% endif %}date_range=all"
-                    class="flex items-center justify-between px-3 py-2 text-primary-700 hover:bg-gray-100 {% if not date_range %}bg-primary-50 text-primary-700{% endif %}">
+                    class="flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-100 {% if not date_range %}bg-primary-100 text-gray-900{% endif %}">
                     <span>{% trans "Reset Range" %}</span>
                     {% if not date_range %}
                     <i class="fa-solid fa-check text-primary-600 text-xs  ml-3"></i>
@@ -30,7 +30,7 @@
             {% for days in date_range_choices %}
             <li>
                 <a href="{{ date_range_base_url }}{% if '?' in date_range_base_url %}&{% else %}?{% endif %}date_range={{ days }}"
-                    class="flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-100 {% if date_range|stringformat:'s' == days|stringformat:'s' %}bg-primary-50 text-primary-700{% endif %}">
+                    class="flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-100 {% if date_range|stringformat:'s' == days|stringformat:'s' %}bg-primary-100 text-gray-900{% endif %}">
                     <span>{% trans "Last" %} {{ days }} {% trans "Days" %}</span>
                     {% if date_range|stringformat:'s' == days|stringformat:'s' %}
                     <i class="fa-solid fa-check text-primary-600 text-xs  ml-3"></i>
@@ -40,7 +40,7 @@
             {% endfor %}
             <li class="border-t border-primary-100 mt-1 pt-1">
                 <details class="group custom-date-details relative">
-                    <summary class="flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-gray-50 hover:text-primary-600 cursor-pointer list-none rounded {% if date_range == 'custom' %}bg-primary-50 text-primary-700{% endif %} [&::-webkit-details-marker]:hidden">
+                    <summary class="flex items-center justify-between px-3 py-2 text-gray-700 hover:bg-[#f3f4f6] hover:text-primary-600 cursor-pointer list-none rounded {% if date_range == 'custom' %}bg-primary-100 text-gray-900{% endif %} [&::-webkit-details-marker]:hidden">
                         <span>{% trans "Custom Range" %}</span>
                         {% if date_range == "custom" %}
                         <i class="fa-solid fa-check text-primary-600 text-xs ml-3"></i>

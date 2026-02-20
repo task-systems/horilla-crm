@@ -12,7 +12,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import redirect_to_login
 from django.core.paginator import Paginator
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Case, Count, ForeignKey, Q, When
 from django.http import HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import redirect, render
@@ -166,12 +166,14 @@ class HomePageView(LoginRequiredMixin, TemplateView):
         date_range_base_url = f"{base_url}?{base_query}" if base_query else base_url
 
         default_home_order = {}
+        user_has_custom_default_home_layout = False
         try:
             layout_order = DefaultHomeLayoutOrder.objects.filter(
                 user=self.request.user, dashboard__isnull=True
             ).first()
             if layout_order and isinstance(layout_order.order, dict):
                 default_home_order = layout_order.order
+                user_has_custom_default_home_layout = True
         except Exception:
             pass
 
@@ -234,6 +236,7 @@ class HomePageView(LoginRequiredMixin, TemplateView):
                 DefaultHomeLayoutOrder.objects.filter(
                     user=self.request.user, dashboard__isnull=True
                 ).delete()
+                user_has_custom_default_home_layout = False
                 messages.error(
                     self.request,
                     _(
@@ -261,6 +264,7 @@ class HomePageView(LoginRequiredMixin, TemplateView):
                 "date_from": date_from,
                 "date_to": date_to,
                 "default_home_layout_order": default_home_order,
+                "user_has_custom_default_home_layout": user_has_custom_default_home_layout,
             }
         )
 
@@ -1246,6 +1250,9 @@ class DashboardDetailView(RecentlyViewedMixin, LoginRequiredMixin, TemplateView)
             elif component_ids:
                 components_qs = components_qs.order_by("comp_order_field", "sequence")
 
+        user_has_custom_dashboard_layout = bool(
+            layout and isinstance(layout.order, dict)
+        )
         components = components_qs
 
         # Process KPI components
@@ -1324,6 +1331,7 @@ class DashboardDetailView(RecentlyViewedMixin, LoginRequiredMixin, TemplateView)
                 "dashboard": dashboard,
                 "components": components,
                 "has_components": components.exists(),
+                "user_has_custom_dashboard_layout": user_has_custom_dashboard_layout,
                 "kpi_data": kpi_data,
                 "chart_data": chart_data,
                 "table_contexts": table_contexts,
@@ -3715,22 +3723,27 @@ class ReorderComponentsView(LoginRequiredMixin, View):
             reorder_type = request.POST.get("reorder_type", "components")
 
             if not component_order:
-                messages.error(self.request, e)
+                messages.error(
+                    self.request,
+                    _("No component order provided. Please try reordering again."),
+                )
+                return JsonResponse(
+                    {
+                        "success": False,
+                        "message": str(_("No component order provided.")),
+                    }
+                )
 
             if reorder_type == "kpi":
                 valid_components = DashboardComponent.objects.filter(
                     dashboard=dashboard, id__in=component_order, component_type="kpi"
                 )
-                # component_type_filter = "kpi"
-                success_message = "KPI components reordered successfully!"
             else:
                 valid_components = DashboardComponent.objects.filter(
                     dashboard=dashboard,
                     id__in=component_order,
                     component_type__in=["chart", "table_data"],  # All non-KPI types
                 )
-                # component_type_filter = "non_kpi"
-                success_message = "Components reordered successfully!"
 
             valid_component_ids = list(valid_components.values_list("id", flat=True))
 
@@ -3738,11 +3751,17 @@ class ReorderComponentsView(LoginRequiredMixin, View):
 
             invalid_ids = set(component_order) - set(valid_component_ids)
             if invalid_ids:
-                messages.error(self.request, e)
+                messages.error(
+                    self.request,
+                    _("Invalid component order. Please refresh and try again."),
+                )
+                return JsonResponse(
+                    {"success": False, "message": str(_("Invalid component order."))}
+                )
 
             # Save per-user layout order in the same model as default home
             with transaction.atomic():
-                layout_order, _ = DefaultHomeLayoutOrder.objects.get_or_create(
+                layout_order, created = DefaultHomeLayoutOrder.objects.get_or_create(
                     user=request.user,
                     dashboard=dashboard,
                     defaults={"order": {"kpi": [], "components": []}},
@@ -3758,9 +3777,9 @@ class ReorderComponentsView(LoginRequiredMixin, View):
                 layout_order.order = order_dict
                 layout_order.save(update_fields=["order"])
 
-            messages.success(request, _(success_message))
+            messages.success(request, _("Components reordered successfully!"))
 
-            return JsonResponse({"success": True, "message": success_message})
+            return JsonResponse({"success": True})
 
         except Exception as e:
             messages.error(self.request, e)

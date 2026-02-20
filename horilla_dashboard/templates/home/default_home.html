@@ -31,7 +31,7 @@
                         {% trans "Save" %}
                     </button>
                     <button type="button" onclick="resetDefaultHomeToDefault()" id="setToDefaultBtn"
-                    class="text-sm px-4 py-2 rounded-md bg-primary-300 text-primary-600 transition duration-300 cursor-pointer">
+                    class="text-sm px-4 py-2 rounded-md bg-primary-300 text-primary-600 transition duration-300 cursor-pointer{% if not user_has_custom_default_home_layout %} hidden{% endif %}">
                     <i class="fa-solid fa-rotate-left mr-1"></i> {% trans "Set to default" %}
                     </button>
                     <button type="button" onclick="toggleDefaultHomeEditMode()" id="cancelEditBtn"
@@ -275,6 +275,7 @@
             headers: { 'X-CSRFToken': DEFAULT_HOME_CSRF_TOKEN },
         }).done(function(res) {
             if (res && res.success) {
+                $('#setToDefaultBtn').removeClass('hidden');
                 toggleDefaultHomeEditMode();
             } else {
                 applyDefaultHomeOrder(res && res.order);
