@@ -144,3 +144,13 @@ FIELD_TYPE_MAP = {
     "DateField": "date",
     "DateTimeField": "datetime",
 }
+
+BLOCKED_EXTENSIONS = {
+    ".sqlite3",
+    ".py",
+    ".env",
+    ".key",
+    ".pem",
+    ".ini",
+    ".conf",
+}

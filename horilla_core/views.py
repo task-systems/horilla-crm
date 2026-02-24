@@ -20,8 +20,10 @@ from django.contrib.staticfiles.storage import staticfiles_storage
 from django.http import FileResponse, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
+from django.utils._os import safe_join
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property  # type: ignore
+from django.utils.html import escape
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
@@ -37,6 +39,7 @@ from horilla import settings
 from horilla.auth.models import User
 from horilla.exceptions import HorillaHttp404
 from horilla.utils.branding import load_branding
+from horilla.utils.choices import BLOCKED_EXTENSIONS
 from horilla_core.decorators import htmx_required, permission_required_or_denied
 from horilla_core.forms import (
     BusinessHourForm,
@@ -87,47 +90,30 @@ def is_jwt_token_valid(auth_header):
 
 def protected_media(request, path):
     """Serve protected media files with access control."""
-    public_pages = [
-        "/login",
-        "/sign-up-user",
-        "/forgot-password",
-        "/change-password",
-        "/reset-password",
-        "/initialize-database",
-        "/initialize-database-user",
-        "/initialize-database-role",
-        "/initialize-database-company",
-        "/initialize-company-form",
-        "/load-data",
-        "/load-demo-data",
-    ]
-    exempted_folders = ["assets/icons/"]
+    try:
+        media_path = safe_join(settings.MEDIA_ROOT, path)
+    except ValueError:
+        raise HorillaHttp404("Invalid file path")
 
-    media_path = os.path.join(settings.MEDIA_ROOT, path)
-    if not os.path.exists(media_path):
+    if not os.path.isfile(media_path):
         raise HorillaHttp404("File not found")
 
-    referer_path = urlparse(request.META.get("HTTP_REFERER", "")).path
+    # Block dangerous extensions
+    _, ext = os.path.splitext(media_path)
+    if ext.lower() in BLOCKED_EXTENSIONS:
+        raise HorillaHttp404("Access denied")
 
-    # Try Bearer token auth
+    # Otherwise require authentication
     jwt_user = is_jwt_token_valid(request.META.get("HTTP_AUTHORIZATION", ""))
 
-    # Access control logic
-    if referer_path not in public_pages and not any(
-        path.startswith(f) for f in exempted_folders
-    ):
-        if not request.user.is_authenticated and not jwt_user:
-            messages.error(
-                request,
-                "You must be logged in or provide a valid token to access this file.",
-            )
-            next_url = f"/media/{path}"
-            login_url = (
-                f"{redirect('horilla_core:login').url}?{urlencode({'next': next_url})}"
-            )
-            return redirect(login_url)
+    if not request.user.is_authenticated and not jwt_user:
+        return redirect("horilla_core:login")
 
-    return FileResponse(open(media_path, "rb"))
+    response = FileResponse(open(media_path, "rb"))
+    response["X-Content-Type-Options"] = "nosniff"
+    response["Cache-Control"] = "private"
+
+    return response
 
 
 class HomePageView(LoginRequiredMixin, View):
@@ -1283,10 +1269,12 @@ class GetCountrySubdivisionsView(LoginRequiredMixin, View):
 
         if country_code:
             subdivisions = pycountry.subdivisions.get(country_code=country_code.upper())
-            for subdivision in subdivisions:
-                options += (
-                    f'<option value="{subdivision.code}">{subdivision.name}</option>'
-                )
+            if subdivisions:
+                for subdivision in subdivisions:
+                    options += (
+                        f'<option value="{escape(subdivision.code)}">'
+                        f"{escape(subdivision.name)}</option>"
+                    )
 
         return HttpResponse(options)
 
