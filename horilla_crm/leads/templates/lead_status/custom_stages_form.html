@@ -2,7 +2,9 @@
 {% load static %}
 {% load i18n %}
 <div class="border border-[#efefef] rounded-md px-3 py-2 h-[250px] overflow-hidden overflow-y-auto">
+
     <h6 class="text-sm font-semibold text-gray-900 mb-4">{% trans 'Manage Custom Stages'%}</h6>
+    <div id="custom-stages-error" class="mt-4"></div>
     <form id="custom-stages-form"
       hx-post="{% url 'leads:save_custom_stages' company.id %}?initialization={{initialization}}"
       hx-target="#{{hx_target}}"
@@ -36,12 +38,12 @@
               </span>
             </div>
             <div>
-              <button type="button"
+              <button type="button" class="remove-stage-btn"
               hx-post="{% url 'leads:remove_stage' company.id %}"
               hx-target="#custom-stage-collapse"
               hx-swap="innerHTML"
               hx-include="closest form"
-              hx-vals='{"remove_index": {{ forloop.counter0 }}}'>
+              hx-vals='js:{"remove_index": Array.from(event.target.closest("form").querySelectorAll(".stage-item")).indexOf(event.target.closest(".stage-item"))}'>
                 <img src="{% static '/assets/icons/close.svg' %}" alt="{% trans 'Close' %}" width="10">
               </button>
             </div>
@@ -62,7 +64,7 @@
       <div class="flex justify-end gap-2 pt-3">
         <button type="submit"
           class="text-sm px-4 py-2 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white]">
-          {% trans ' Changes' %}
+          {% trans 'Save' %}
         </button>
         <button type="button"
           class="text-sm border-[1px] border-[solid] hover:border-[#9b210f] hover:bg-primary-600 rounded-[5px] px-4 py-2 text-[#e54f38] flex gap-3 btn-with-icon border-[#e54f38] [transition:.3s] hover:text-[white]"
