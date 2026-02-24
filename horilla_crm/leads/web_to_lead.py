@@ -26,6 +26,25 @@ from horilla_core.decorators import htmx_required, permission_required_or_denied
 # Local application imports
 from .models import Lead, LeadCaptureForm, LeadStatus
 
+# Fields to exclude from web-to-lead form builder (avoid repeating in views)
+exclude_fields = [
+    "id",
+    "is_active",
+    "created_at",
+    "updated_at",
+    "is_convert",
+    "additional_info",
+    "created_by",
+    "updated_by",
+    "lead_score",
+    "message_id",
+    "lead_owner",
+    "lead_status",
+    "company",
+    "lead_source",
+    "requirements",
+]
+
 
 @method_decorator(
     permission_required_or_denied("leads.add_leadcaptureform"), name="dispatch"
@@ -41,24 +60,6 @@ class LeadFormBuilderView(LoginRequiredMixin, TemplateView):
 
         # Get all Lead model fields
         lead_fields = []
-        exclude_fields = [
-            "id",
-            "is_active",
-            "created_at",
-            "updated_at",
-            "is_convert",
-            "additional_info",
-            "created_by",
-            "updated_by",
-            "lead_score",
-            "message_id",
-            "lead_owner",
-            "lead_status",
-            "company",
-            "lead_source",
-            "requirements",
-        ]
-
         for field in Lead._meta.get_fields():
             if (
                 field.concrete
@@ -318,24 +319,6 @@ class SaveLeadFormView(LoginRequiredMixin, FormView):
         if self.request.headers.get("HX-Request"):
             # Get lead fields for the form builder
             lead_fields = []
-            exclude_fields = [
-                "id",
-                "is_active",
-                "created_at",
-                "updated_at",
-                "is_convert",
-                "additional_info",
-                "created_by",
-                "updated_by",
-                "lead_score",
-                "message_id",
-                "lead_owner",
-                "lead_status",
-                "company",
-                "lead_source",
-                "requirements",
-            ]
-
             for field in Lead._meta.get_fields():
                 if (
                     field.concrete
@@ -415,9 +398,11 @@ class RemoveFieldView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         """Handle POST request to remove a field from selected list."""
         field_name = request.POST.get("field_name")
+        # Escape for safe embedding in JavaScript (prevents XSS)
+        field_name_escaped = json.dumps(field_name) if field_name is not None else '""'
         js = f"""
         <script>
-            var btn = document.querySelector('[data-field="{field_name}"].available-field');
+            var btn = document.querySelector('[data-field=' + {field_name_escaped} + '].available-field');
             if(btn) btn.style.display = 'block';
             htmx.trigger('#colorPicker', 'change');
         </script>

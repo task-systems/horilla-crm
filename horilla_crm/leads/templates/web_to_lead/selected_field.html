@@ -17,6 +17,6 @@
 </div>
 
 <script>
-    document.querySelector('[data-field="{{ field_name }}"].available-field').style.display = 'none';
+    document.querySelector('[data-field="{{ field_name|escapejs }}"].available-field').style.display = 'none';
     htmx.trigger('#colorPicker', 'change');
 </script>
