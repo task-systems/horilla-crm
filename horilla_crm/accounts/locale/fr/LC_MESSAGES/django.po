@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-18 08:29+0000\n"
+"POT-Creation-Date: 2026-02-21 08:00+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -216,6 +216,13 @@ msgstr "Rôle du compte partenaire"
 msgid "Partner Account Roles"
 msgstr "Rôles du compte partenaire"
 
+
+msgid "Account Hierarchy"
+msgstr "Site du compte"
+
+msgid "Close"
+msgstr "Fermer"
+
 msgid "Edit"
 msgstr "Modifier"
 
@@ -245,6 +252,9 @@ msgstr "Contacts associés"
 
 msgid "Child Accounts"
 msgstr "Comptes enfants"
+
+msgid "View Hierarchy"
+msgstr "Voir la hiérarchie"
 
 msgid "Opportunities"
 msgstr "Opportunités"
