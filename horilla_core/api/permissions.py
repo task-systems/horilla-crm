@@ -11,6 +11,7 @@ class IsOwnerOrAdmin(permissions.BasePermission):
     """
 
     def has_object_permission(self, request, view, obj):
+        """Allow safe methods to all; allow write only to owner (created_by or id) or staff."""
         # Read permissions are allowed to any request
         if request.method in permissions.SAFE_METHODS:
             return True
@@ -32,6 +33,7 @@ class IsCompanyMember(permissions.BasePermission):
     """
 
     def has_object_permission(self, request, view, obj):
+        """Allow access only if object.company matches request.user.company or user is staff."""
         # Check if user belongs to the same company
         if hasattr(obj, "company") and hasattr(request.user, "company"):
             return obj.company == request.user.company or request.user.is_staff

@@ -2,6 +2,8 @@
 Serializers for horilla_core models
 """
 
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from horilla.auth.models import User
@@ -60,12 +62,24 @@ class HorillaUserSerializer(serializers.ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):
+        """Create and return a user with the given validated data."""
+        password = validated_data.get("password")
+        if password:
+            try:
+                validate_password(password)
+            except DjangoValidationError as e:
+                raise serializers.ValidationError({"password": e.messages})
         user = User.objects.create_user(**validated_data)
         return user
 
     def update(self, instance, validated_data):
+        """Update user; set password via set_password if provided."""
         if "password" in validated_data:
             password = validated_data.pop("password")
+            try:
+                validate_password(password, user=instance)
+            except DjangoValidationError as e:
+                raise serializers.ValidationError({"password": e.messages})
             instance.set_password(password)
         return super().update(instance, validated_data)
 

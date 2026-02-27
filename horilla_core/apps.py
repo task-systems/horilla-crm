@@ -45,6 +45,7 @@ class HorillaCoreConfig(AppConfig):
         ]
 
     def ready(self):
+        """Run on startup: register URLs and import registration, signals, scheduler, menu."""
         try:
             # Auto-register this app's main URLs (non-API)
             from django.urls import include, path
