@@ -10,7 +10,7 @@ from dateutil.relativedelta import relativedelta
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.http import Http404, HttpResponse, HttpResponseRedirect
+from django.http import Http404, HttpResponse
 from django.shortcuts import render  # type: ignore
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -19,14 +19,16 @@ from django.utils.functional import cached_property  # type: ignore
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView
 
-# First-party / Horilla imports
-from horilla.utils.shortcuts import get_object_or_404
-from horilla_activity.views import HorillaActivitySectionView
-from horilla_core.decorators import (
+from horilla.decorator import (
     htmx_required,
     permission_required,
     permission_required_or_denied,
 )
+
+# First-party / Horilla imports
+from horilla.http import HorillaRedirectResponse
+from horilla.utils.shortcuts import get_object_or_404
+from horilla_activity.views import HorillaActivitySectionView
 from horilla_core.utils import is_owner
 from horilla_crm.accounts.models import Account
 from horilla_crm.contacts.models import Contact, ContactAccountRelationship
@@ -82,7 +84,7 @@ class LeadView(LoginRequiredMixin, HorillaView):
             if query_string:
                 redirect_url += f"?{query_string}"
 
-            return HttpResponseRedirect(redirect_url)
+            return HorillaRedirectResponse(request=request, redirect_to=redirect_url)
 
         return super().dispatch(request, *args, **kwargs)
 

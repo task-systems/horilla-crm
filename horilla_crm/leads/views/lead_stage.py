@@ -15,21 +15,24 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView, View
 
 from horilla.auth.models import User
-from horilla.exceptions import HorillaHttp404
-
-# First party / Horilla imports
-from horilla.utils.shortcuts import get_object_or_404
-from horilla_core.decorators import (
+from horilla.decorator import (
     htmx_required,
     permission_required,
     permission_required_or_denied,
 )
-from horilla_core.initialiaze_database import InitializeRoleView
+from horilla.exceptions import HorillaHttp404
+
+# First party / Horilla imports
+from horilla.utils.shortcuts import get_object_or_404
 from horilla_core.models import Company
 from horilla_core.progress import BASE_STEPS, ProgressStepsMixin
+from horilla_core.views.initialiaze_database import InitializeRoleView
 from horilla_crm.leads.filters import LeadStatusFilter
 from horilla_crm.leads.forms import LeadStatusForm  # type: ignore
 from horilla_crm.leads.models import LeadStatus
+
+# Local imports
+from horilla_crm.leads.signals import lead_stage_created
 from horilla_generics.views import (
     HorillaListView,
     HorillaNavView,
@@ -38,9 +41,6 @@ from horilla_generics.views import (
     HorillaView,
 )
 from horilla_utils.middlewares import _thread_local
-
-# Local imports
-from .signals import lead_stage_created
 
 
 class LeadsStageView(LoginRequiredMixin, HorillaView):
@@ -100,7 +100,6 @@ class LeadStageListView(LoginRequiredMixin, HorillaListView):
     main_url = reverse_lazy("leads:lead_stage_view")
     save_to_list_option = False
     bulk_select_option = False
-    clear_session_button_enabled = False
     table_width = False
     enable_sorting = False
     table_height = False
@@ -704,10 +703,13 @@ class RemoveStageView(LoginRequiredMixin, View):
         try:
             remove_index = int(remove_index)
         except ValueError:
-            return HttpResponse(
-                '<div class="alert alert-danger">Invalid remove index.</div>',
-                status=400,
+            response = render(
+                request,
+                "common/message_fragment.html",
+                {"message": "Invalid remove index."},
             )
+            response.status_code = 400
+            return response
 
         stages = []
         for i, name in enumerate(stage_names):
@@ -776,24 +778,37 @@ class CreateStageGroupView(LoginRequiredMixin, View, ProgressStepsMixin):
                     order = int(stage_orders[i])
                     probability = float(stage_probabilities[i])
                 except (ValueError, IndexError) as e:
-                    return HttpResponse(
-                        f'<div class="alert alert-danger">Invalid numeric value for stage {i+1}: {str(e)}</div>',
-                        status=400,
+                    response = render(
+                        request,
+                        "common/message_fragment.html",
+                        {"message": f"Invalid numeric value for stage {i+1}: {str(e)}"},
                     )
+                    response.status_code = 400
+                    return response
 
                 if probability < 0 or probability > 100:
-                    return HttpResponse(
-                        f'<div class="alert alert-danger">Probability must be between 0 and 100 for stage: {stage_names[i]}</div>',
-                        status=400,
+                    response = render(
+                        request,
+                        "common/message_fragment.html",
+                        {
+                            "message": f"Probability must be between 0 and 100 for stage: {stage_names[i]}",
+                        },
                     )
+                    response.status_code = 400
+                    return response
 
                 if LeadStatus.objects.filter(
                     name=stage_names[i], company=company
                 ).exists():
-                    return HttpResponse(
-                        f'<div class="alert alert-danger">Stage "{stage_names[i]}" already exists for this company.</div>',
-                        status=400,
+                    response = render(
+                        request,
+                        "common/message_fragment.html",
+                        {
+                            "message": f'Stage "{stage_names[i]}" already exists for this company.',
+                        },
                     )
+                    response.status_code = 400
+                    return response
 
                 stage = LeadStatus.objects.create(
                     name=stage_names[i],
@@ -827,10 +842,15 @@ class CreateStageGroupView(LoginRequiredMixin, View, ProgressStepsMixin):
             return None
 
         except Exception as e:
-            return HttpResponse(
-                '<div class="alert alert-danger">An error occurred while creating stages. Please try again.</div>',
-                status=500,
+            response = render(
+                request,
+                "common/message_fragment.html",
+                {
+                    "message": "An error occurred while creating stages. Please try again."
+                },
             )
+            response.status_code = 500
+            return response
 
 
 BASE_STEPS.append({"step": 5, "title": "Lead Stages"})

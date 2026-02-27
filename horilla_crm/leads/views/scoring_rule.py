@@ -17,13 +17,15 @@ from django.utils.translation import gettext_lazy as _
 from django.views import View
 from django.views.generic import DetailView
 
-# First-party / Horilla imports
-from horilla.exceptions import HorillaHttp404
-from horilla_core.decorators import (
+from horilla.decorator import (
     htmx_required,
     permission_required,
     permission_required_or_denied,
 )
+from horilla.exceptions import HorillaHttp404
+
+# First-party / Horilla imports
+from horilla.http import HorillaRefreshResponse
 from horilla_crm.leads.filters import ScoringRuleFilter
 from horilla_crm.leads.forms import ScoringCriterionForm
 from horilla_crm.leads.models import ScoringCondition, ScoringCriterion, ScoringRule
@@ -253,7 +255,7 @@ class ScoringRuleDetailView(LoginRequiredMixin, DetailView):
         except Exception as e:
             if request.headers.get("HX-Request") == "true":
                 messages.error(self.request, e)
-                return HttpResponse(headers={"HX-Refresh": "true"})
+                return HorillaRefreshResponse(request)
             raise HorillaHttp404(e) from e
         return super().dispatch(request, *args, **kwargs)
 

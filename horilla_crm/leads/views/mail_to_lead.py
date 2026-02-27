@@ -11,7 +11,7 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 
 # First-party / Horilla imports
-from horilla_core.decorators import (
+from horilla.decorator import (
     htmx_required,
     permission_required,
     permission_required_or_denied,
@@ -81,7 +81,6 @@ class MailToLeadListView(LoginRequiredMixin, HorillaListView):
     main_url = reverse_lazy("leads:mail_to_lead_view")
     save_to_list_option = False
     bulk_select_option = False
-    clear_session_button_enabled = False
     table_width = False
     enable_sorting = False
     table_height = False

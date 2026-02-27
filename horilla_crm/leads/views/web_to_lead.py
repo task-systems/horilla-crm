@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 # Third-party imports (Django)
 from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
 from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
@@ -20,11 +20,12 @@ from django.views.generic import CreateView, FormView, TemplateView
 
 # First-party / Horilla imports
 from horilla.auth.models import User
+from horilla.decorator import htmx_required, permission_required_or_denied
 from horilla.exceptions import HorillaHttp404
-from horilla_core.decorators import htmx_required, permission_required_or_denied
+from horilla.http.response import HorillaRedirectResponse
 
 # Local application imports
-from .models import Lead, LeadCaptureForm, LeadStatus
+from horilla_crm.leads.models import Lead, LeadCaptureForm, LeadStatus
 
 # Fields to exclude from web-to-lead form builder (avoid repeating in views)
 exclude_fields = [
@@ -313,7 +314,9 @@ class SaveLeadFormView(LoginRequiredMixin, FormView):
                 },
             )
 
-        return HttpResponseRedirect(self.success_url)
+        return HorillaRedirectResponse(
+            request=self.request, redirect_to=self.success_url
+        )
 
     def form_invalid(self, form):
         if self.request.headers.get("HX-Request"):
@@ -400,14 +403,8 @@ class RemoveFieldView(LoginRequiredMixin, View):
         field_name = request.POST.get("field_name")
         # Escape for safe embedding in JavaScript (prevents XSS)
         field_name_escaped = json.dumps(field_name) if field_name is not None else '""'
-        js = f"""
-        <script>
-            var btn = document.querySelector('[data-field=' + {field_name_escaped} + '].available-field');
-            if(btn) btn.style.display = 'block';
-            htmx.trigger('#colorPicker', 'change');
-        </script>
-        """
-        response = HttpResponse(js)
+        context = {"field_name_escaped": field_name_escaped}
+        response = render(request, "web_to_lead/remove_field_script.html", context)
         response["HX-Trigger"] = "updatePreview"
         return response
 
@@ -570,8 +567,4 @@ class ToggleReturnUrlView(LoginRequiredMixin, View):
         return_url_enabled = request.POST.get("return_url_enable") == "on"
 
         context = {"return_url_enabled": return_url_enabled}
-
-        html = render_to_string(
-            "web_to_lead/conditional_fields.html", context, request=request
-        )
-        return HttpResponse(html)
+        return render(request, "web_to_lead/conditional_fields.html", context)
