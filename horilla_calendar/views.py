@@ -1,9 +1,12 @@
 """Views for the calendar app in Horilla"""
 
+# Standard library imports
 import datetime
 import json
 
 from django.contrib import messages
+
+# Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
@@ -16,8 +19,9 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 
+# First-party / Horilla imports
+from horilla.decorator import htmx_required, permission_required_or_denied
 from horilla_activity.models import Activity
-from horilla_core.decorators import htmx_required, permission_required_or_denied
 from horilla_core.utils import get_user_field_permission
 from horilla_generics.views import HorillaSingleDeleteView, HorillaSingleFormView
 from horilla_utils.middlewares import _thread_local
@@ -31,6 +35,7 @@ class CalendarView(LoginRequiredMixin, TemplateView):
     template_name = "calendar.html"
 
     def get_context_data(self, **kwargs):
+        """Build context with calendar types and user color preferences for display."""
         context = super().get_context_data(**kwargs)
         context["calendars"] = [
             {"id": "task", "name": _("Tasks"), "default_color": "#3B82F6"},
@@ -354,6 +359,7 @@ class UserAvailabilityFormView(LoginRequiredMixin, HorillaSingleFormView):
         return reverse_lazy("horilla_calendar:mark_unavailability")
 
     def get_initial(self):
+        """Set initial form data (company, user, optional start date/time from request)."""
         initial = super().get_initial()
         company = (
             getattr(_thread_local, "request", None).active_company

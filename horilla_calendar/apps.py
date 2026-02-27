@@ -28,6 +28,7 @@ class HorillaCalendarConfig(AppConfig):
         ]
 
     def ready(self):
+        """Register calendar URLs and load menu/signals; defer to parent ready()."""
         try:
             # Auto-register this app's URLs and add to installed apps
             from django.urls import include, path
