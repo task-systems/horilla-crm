@@ -63,3 +63,9 @@ LoginHistory.user_status = user_status
 LoginHistory.short_user_agent = short_user_agent
 LoginHistory.formatted_datetime = formatted_datetime
 LoginHistory.is_login_icon = is_login_icon
+LoginHistory.PROPERTY_LABELS = {
+    "user_status": "Status",
+    "short_user_agent": "Browser",
+    "formatted_datetime": "Login Time",
+    "is_login_icon": "Is Active",
+}

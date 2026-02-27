@@ -15,6 +15,7 @@ import logging
 from decimal import Decimal
 
 from django.apps import apps
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
@@ -24,7 +25,6 @@ from django.db.models.signals import post_delete, post_migrate, post_save
 from django.dispatch import Signal, receiver
 from django.utils.encoding import force_str
 
-from horilla.auth.models import User
 from horilla_core.models import (
     Company,
     DetailFieldVisibility,
@@ -176,7 +176,7 @@ def add_custom_permissions(sender, **kwargs):
 post_migrate.connect(add_custom_permissions)
 
 
-@receiver(post_save, sender=User)
+@receiver(post_save, sender="horilla_core.HorillaUser")
 def ensure_view_own_permissions(sender, instance, created, **kwargs):
     """
     Assign view_own permissions to newly created non-superuser users.
@@ -245,7 +245,7 @@ def ensure_role_view_own_permissions(sender, instance, created, **kwargs):
     transaction.on_commit(assign_permissions)
 
 
-@receiver(post_save, sender=User)
+@receiver(post_save, sender="horilla_core.HorillaUser")
 def user_default_field_permissions(sender, instance, created, **kwargs):
     """
     Assign default field permissions to newly created users.
@@ -792,4 +792,6 @@ def assign_first_company_to_all_users(sender, instance, created, **kwargs):
     """Assign the first company created to all users"""
     if created:
         if Company.objects.count() == 1:
-            User.objects.filter(company__isnull=True).update(company=instance)
+            get_user_model().objects.filter(company__isnull=True).update(
+                company=instance
+            )

@@ -355,7 +355,6 @@ class OwnerQuerysetMixin:
         # Get instance from kwargs before super() is called
         # This is important because after super().__init__(), instance might be None for new objects
         instance_from_kwargs = kwargs.get("instance")
-
         super().__init__(*args, **kwargs)
         request = kwargs.get("request") or getattr(self, "request", None)
         user = request.user if request else None
@@ -417,7 +416,6 @@ class OwnerQuerysetMixin:
         # Get company for filtering foreign key fields
         # Priority: 1. Instance's company (when editing), 2. Active company, 3. User's company
         company = None
-
         # If editing an existing object, use the object's company
         if (
             instance

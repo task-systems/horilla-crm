@@ -30,14 +30,15 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, View
 
-# First-party / Horilla imports
-from horilla.utils.shortcuts import get_object_or_404
-from horilla_activity.views import HorillaActivitySectionView
-from horilla_core.decorators import (
+from horilla.decorator import (
     htmx_required,
     permission_required,
     permission_required_or_denied,
 )
+
+# First-party / Horilla imports
+from horilla.utils.shortcuts import get_object_or_404
+from horilla_activity.views import HorillaActivitySectionView
 from horilla_core.utils import is_owner
 from horilla_crm.accounts.filters import AccountFilter
 from horilla_crm.accounts.forms import (
@@ -975,6 +976,9 @@ class AccountHierarchyView(LoginRequiredMixin, View):
     """Modal view showing account hierarchy with expand/collapse (no JS)."""
 
     def get(self, request, *args, **kwargs):
+        """
+        Get method for account hierarchy
+        """
         account_id = request.GET.get("id")
         if not account_id:
             return render(request, "error/403.html", {"modal": True})

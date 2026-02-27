@@ -1,4 +1,6 @@
-# Define your core helper methods here
+"""
+core helper methods.
+"""
 
 from horilla.registry.feature import FEATURE_CONFIG, FEATURE_REGISTRY
 

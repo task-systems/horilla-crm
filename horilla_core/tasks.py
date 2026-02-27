@@ -31,7 +31,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
 # First-party / Horilla imports
-from horilla_core.export_data import get_export_cell_value
+from horilla_core.views.export_data import get_export_cell_value
 from horilla_utils.middlewares import _thread_local
 
 logger = logging.getLogger(__name__)
