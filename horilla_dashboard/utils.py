@@ -568,7 +568,6 @@ class DefaultDashboardGenerator:
                 "bulk_export_option": False,
                 "bulk_update_option": False,
                 "bulk_delete_enabled": False,
-                "clear_session_button_enabled": False,
                 "enable_sorting": True,
                 "visible_actions": [],
                 "action_method": None,
