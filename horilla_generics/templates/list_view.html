@@ -25,7 +25,11 @@
     }
 
 </style>
-<div id="{{ view_id|safe }}" style="position: relative;">
+{% with full_query=request.GET.urlencode %}
+<div id="{{ view_id|safe }}"
+     style="position: relative;"
+     data-filter-reload-url="{% if filter_reload_url %}{{ filter_reload_url }}{% else %}{{ request.path }}{% if full_query %}?{{ full_query }}{% endif %}{% endif %}">
+{% endwith %}
     <div id="loading-indicator" class="htmx-indicator tabloading" style="z-index: 30;">
         <div class="flex justify-center items-center p-4">
             <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
@@ -429,6 +433,8 @@
             {% endif %}
         {% endif %}
     {% endif %}
+
+    <script src="{% static 'assets/js/filter_reload.js' %}"></script>
 
     <script>
         document.addEventListener('htmx:historyRestore', function() {
