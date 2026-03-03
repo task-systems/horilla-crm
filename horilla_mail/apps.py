@@ -1,11 +1,13 @@
 """Django app configuration for the Horilla mail system."""
 
-from django.apps import AppConfig
-from django.utils.translation import gettext_lazy as _
+from horilla.apps import AppLauncher
+from horilla.utils.translation import gettext_lazy as _
 
 
-class HorillaMailConfig(AppConfig):
-    """Configuration class for the Horilla mail application."""
+class HorillaMailConfig(AppLauncher):
+    """App configuration class for the Horilla mail system."""
+
+    default = True
 
     default_auto_field = "django.db.models.BigAutoField"
     name = "horilla_mail"
@@ -14,6 +16,19 @@ class HorillaMailConfig(AppConfig):
     template_files = [
         "load_template/template.json",
     ]
+
+    url_prefix = "mail/"
+    url_module = "horilla_mail.urls"
+    url_namespace = "horilla_mail"
+
+    auto_import_modules = [
+        "registration",
+        "signals",
+        "scheduler",
+        "menu",
+    ]
+
+    celery_schedule_module = "celery_schedules"
 
     def get_api_paths(self):
         """
@@ -30,38 +45,3 @@ class HorillaMailConfig(AppConfig):
                 "namespace": "horilla_mail",
             }
         ]
-
-    def ready(self):
-        """Perform app initialization: register URLs, signals, scheduler, and Celery beat."""
-        try:
-
-            # Auto-register this app's main URLs (non-API)
-            from django.urls import include, path
-
-            from horilla.urls import urlpatterns
-
-            # Add app URLs to main urlpatterns
-            urlpatterns.append(
-                path("mail/", include("horilla_mail.urls")),
-            )
-
-            __import__("horilla_mail.registration")
-            __import__("horilla_mail.signals")
-            __import__("horilla_mail.scheduler")
-            __import__("horilla_mail.menu")
-
-            from django.conf import settings
-
-            from .celery_schedules import HORILLA_BEAT_SCHEDULE
-
-            if not hasattr(settings, "CELERY_BEAT_SCHEDULE"):
-                settings.CELERY_BEAT_SCHEDULE = {}
-
-            settings.CELERY_BEAT_SCHEDULE.update(HORILLA_BEAT_SCHEDULE)
-
-        except Exception as e:
-            import logging
-
-            logging.warning("Command.ready failed: %s", e)
-
-        super().ready()
