@@ -246,8 +246,53 @@ class FiscalYearService:
             config, quarter.quarter_number, periods_info
         )
 
+        # Special handling for STANDARD fiscal year:
+        # periods should align with calendar months, not equal day splits.
+        if config.fiscal_year_type == "standard":
+            current_start = quarter.start_date
+
+            for i in range(1, quarter_periods + 1):
+                # Calculate natural month end for the current_start month
+                month_end = current_start + relativedelta(months=1) - timedelta(days=1)
+
+                # For all but the last period in the quarter, stop at month end
+                # For the last period, ensure we don't go past the quarter end date
+                if i < quarter_periods and month_end < quarter.end_date:
+                    current_end = month_end
+                else:
+                    current_end = quarter.end_date
+
+                fiscal_year_period_number = starting_period_number + i
+
+                # Name period based on month name and year (e.g., "January 2026")
+                period_name = f"{current_start.strftime('%B')} {current_start.year}"
+
+                try:
+                    period = Period.objects.get(
+                        company=quarter.company,
+                        quarter=quarter,
+                        period_number=fiscal_year_period_number,
+                    )
+                    period.name = period_name
+                    period.start_date = current_start
+                    period.end_date = current_end
+                    period.save(skip_auto_calculation=True)
+                except Period.DoesNotExist:
+                    period = Period(
+                        company=quarter.company,
+                        quarter=quarter,
+                        period_number=fiscal_year_period_number,
+                        name=period_name,
+                        start_date=current_start,
+                        end_date=current_end,
+                        is_active=True,
+                    )
+                    period.save(skip_auto_calculation=True)
+
+                current_start = current_end + timedelta(days=1)
+
         # Handle quarter-based formats (4-4-5, 4-5-4, 5-4-4)
-        if (
+        elif (
             config.format_type == "quarter_based"
             and "weeks_per_period_pattern" in periods_info
         ):
@@ -295,13 +340,13 @@ class FiscalYearService:
 
                 current_start = current_end + timedelta(days=1)
 
-        # Handle year-based and standard formats
+        # Handle year-based formats
         else:
             if config.format_type == "year_based":
                 # For year-based, each period is 4 weeks = 28 days
                 period_duration = 28
             else:
-                # For standard, divide quarter equally
+                # Fallback: divide quarter equally
                 quarter_duration = (quarter.end_date - quarter.start_date).days + 1
                 period_duration = quarter_duration // quarter_periods
 

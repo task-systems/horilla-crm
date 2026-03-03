@@ -73,7 +73,25 @@ class FiscalYearCalendarMixin:
         )  # Default to January
         start_date = datetime(current_year, month_index + 1, start_date_day)
 
-        # Define days of the week and order them based on week_start_day
+        # Normalize week_start_day (handles both short codes like "thu" and full names)
+        day_code_mapping = {
+            "sun": "sunday",
+            "mon": "monday",
+            "tue": "tuesday",
+            "wed": "wednesday",
+            "thu": "thursday",
+            "fri": "friday",
+            "sat": "saturday",
+        }
+        if week_start_day:
+            week_start_day_normalized = week_start_day.lower()
+            week_start_day_normalized = day_code_mapping.get(
+                week_start_day_normalized, week_start_day_normalized
+            )
+        else:
+            week_start_day_normalized = "monday"
+
+        # Define days of the week and order them based on normalized week_start_day
         days = [
             "monday",
             "tuesday",
@@ -83,8 +101,8 @@ class FiscalYearCalendarMixin:
             "saturday",
             "sunday",
         ]
-        if week_start_day in days:
-            start_index = days.index(week_start_day)
+        if week_start_day_normalized in days:
+            start_index = days.index(week_start_day_normalized)
             ordered_days = days[start_index:] + days[:start_index]
         else:
             ordered_days = days
@@ -100,9 +118,9 @@ class FiscalYearCalendarMixin:
 
             while days_added < days_in_week:
                 current_day_of_week = current_week_date.weekday()
-                if week_start_day == "monday":
+                if week_start_day_normalized == "monday":
                     start_day_index = current_day_of_week
-                elif week_start_day == "sunday":
+                elif week_start_day_normalized == "sunday":
                     start_day_index = (current_day_of_week + 1) % 7
                 else:
                     days_mapping = {
@@ -114,7 +132,7 @@ class FiscalYearCalendarMixin:
                         "saturday": 5,
                         "sunday": 6,
                     }
-                    week_start_index = days_mapping[week_start_day]
+                    week_start_index = days_mapping[week_start_day_normalized]
                     start_day_index = (current_day_of_week - week_start_index) % 7
 
                 row_days = [None] * 7  # Initialize with None for empty cells
@@ -171,7 +189,7 @@ class FiscalYearCalendarMixin:
                     year, month_num = fiscal_months[month_idx]
                     month_name = datetime(year, month_num, 1).strftime("%B")
 
-                    if week_start_day == "sunday":
+                    if week_start_day_normalized == "sunday":
                         cal_module.setfirstweekday(6)
                         cal = cal_module.monthcalendar(year, month_num)
                         cal_module.setfirstweekday(0)
@@ -215,7 +233,7 @@ class FiscalYearCalendarMixin:
                                 else period_week_counter
                             )
                         )
-                        week_start_day_index = days.index(week_start_day)
+                        week_start_day_index = days.index(week_start_day_normalized)
                         week_rows, current_date = create_week_data(
                             week_number, current_date, 7, week_start_day_index
                         )
@@ -262,7 +280,7 @@ class FiscalYearCalendarMixin:
                                 else period_week_counter
                             )
                         )
-                        week_start_day_index = days.index(week_start_day)
+                        week_start_day_index = days.index(week_start_day_normalized)
                         week_rows, current_date = create_week_data(
                             week_number, current_date, 7, week_start_day_index
                         )
