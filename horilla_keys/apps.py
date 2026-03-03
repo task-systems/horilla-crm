@@ -2,17 +2,29 @@
 AppConfig for the horilla_keys app
 """
 
-from django.apps import AppConfig
-from django.utils.translation import gettext_lazy as _
+from horilla.apps import AppLauncher
+from horilla.utils.translation import gettext_lazy as _
 
 
-class HorillaKeysConfig(AppConfig):
+class HorillaKeysConfig(AppLauncher):
     """App configuration class for horilla_keys."""
+
+    default = True
 
     default_auto_field = "django.db.models.BigAutoField"
     name = "horilla_keys"
     verbose_name = _("Keyboard Shortcuts")
+
     js_files = "horilla_keys/assets/js/short_key.js"
+
+    url_prefix = "shortkeys/"
+    url_module = "horilla_keys.urls"
+    url_namespace = "horilla_keys"
+
+    auto_import_modules = [
+        "menu",
+        "signals",
+    ]
 
     def get_api_paths(self):
         """
@@ -29,34 +41,3 @@ class HorillaKeysConfig(AppConfig):
                 "namespace": "horilla_keys",
             }
         ]
-
-    def ready(self):
-        """Run app initialization logic (executed after Django setup).
-        Used to auto-register URLs and connect signals if required.
-        """
-        try:
-            # Auto-register this app's main URLs (non-API)
-            from django.urls import include, path
-
-            from horilla.registry.asset_registry import register_js
-            from horilla.urls import urlpatterns
-
-            # Add app URLs to main urlpatterns
-            urlpatterns.append(
-                path("shortkeys/", include("horilla_keys.urls")),
-            )
-
-            __import__("horilla_keys.menu")
-            __import__("horilla_keys.signals")
-
-            register_js(self.js_files)
-
-        except Exception as e:
-            import logging
-
-            logging.warning(
-                "HorillaKeysConfig.ready failed during app initialization: %s",
-                e,
-            )
-
-        super().ready()
