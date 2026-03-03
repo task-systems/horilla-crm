@@ -213,47 +213,47 @@ urlpatterns = [
     path(
         "opportunity-team-view/",
         views.OpportunityTeamView.as_view(),
-        name="views_view",
+        name="opportunity_team_view",
     ),
     path(
         "opportunity-team-nav-view/",
         views.OpportunityTeamNavbar.as_view(),
-        name="views_nav_view",
+        name="opportunity_team_nav_view",
     ),
     path(
         "opportunity-team-list-view/",
         views.OpportunityTeamListView.as_view(),
-        name="views_list_view",
+        name="opportunity_team_list_view",
     ),
     path(
         "edit-opportunity-team/<int:pk>/",
         views.OpportunityTeamFormView.as_view(),
-        name="edit_views",
+        name="edit_opportunity_team",
     ),
     path(
         "create-opportunity-team/",
         views.OpportunityTeamFormView.as_view(),
-        name="create_views",
+        name="create_opportunity_team",
     ),
     path(
         "opportunity-team-detail-view/<int:pk>/",
         views.OpportunityTeamDetailView.as_view(),
-        name="views_detail_view",
+        name="opportunity_team_detail_view",
     ),
     path(
         "opportunity-team-detail-nav-view/",
         views.OpportunityTeamDetailNavbar.as_view(),
-        name="views_detail_nav_view",
+        name="opportunity_team_detail_nav_view",
     ),
     path(
         "opportunity-team-detail-list-view/",
         views.OpportunityTeamDetailListView.as_view(),
-        name="views_detail_list_view",
+        name="opportunity_team_detail_list_view",
     ),
     path(
         "create-opportunity-team-member/",
         views.OpportunityTeamMemberCreateView.as_view(),
-        name="create_views_member",
+        name="create_opportunity_team_member",
     ),
     path(
         "add-opportunity-member/",
@@ -263,7 +263,7 @@ urlpatterns = [
     path(
         "edit-opportunity-team-member/<int:pk>/",
         views.OpportunityTeamMemberUpdateView.as_view(),
-        name="edit_views_member",
+        name="edit_opportunity_team_member",
     ),
     path(
         "edit-opportunity-member/<int:pk>/",
@@ -273,12 +273,12 @@ urlpatterns = [
     path(
         "delete-opportunity-team/<int:pk>/",
         views.OpportunityTeamDeleteView.as_view(),
-        name="delete_views",
+        name="delete_opportunity_team",
     ),
     path(
         "delete-opportunity-team-member/<int:pk>/",
         views.OpportunityTeamMembersDeleteView.as_view(),
-        name="delete_views_member",
+        name="delete_opportunity_team_member",
     ),
     path(
         "delete-opportunity-member/<int:pk>/",
