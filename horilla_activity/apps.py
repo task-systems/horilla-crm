@@ -1,17 +1,30 @@
 """App configuration for the activity module."""
 
-from django.apps import AppConfig
-from django.utils.translation import gettext_lazy as _
+from horilla.apps import AppLauncher
+from horilla.utils.translation import gettext_lazy as _
 
 
-class HorillaActivityConfig(AppConfig):
+class HorillaActivityConfig(AppLauncher):
     """
     Configuration class for the Activity app in Horilla.
     """
 
+    default = True
+
     default_auto_field = "django.db.models.BigAutoField"
     name = "horilla_activity"
     verbose_name = _("Activity")
+
+    url_prefix = "activity/"
+    url_module = "horilla_activity.urls"
+    url_namespace = "horilla_activity"
+
+    auto_import_modules = [
+        "registration",
+        "methods",
+        "menu",
+        "signals",
+    ]
 
     def get_api_paths(self):
         """
@@ -28,25 +41,3 @@ class HorillaActivityConfig(AppConfig):
                 "namespace": "horilla_activity",
             }
         ]
-
-    def ready(self):
-        """Perform app initialization: register URLs and import activity modules."""
-        try:
-            from django.urls import include, path
-
-            from horilla.urls import urlpatterns
-
-            urlpatterns.append(
-                path("activity/", include("horilla_activity.urls")),
-            )
-
-            __import__("horilla_activity.registration")
-            __import__("horilla_activity.methods")
-            __import__("horilla_activity.menu")
-            __import__("horilla_activity.signals")
-        except Exception as e:
-            import logging
-
-            logging.warning("ActivityConfig.ready failed: %s", e)
-
-        super().ready()
