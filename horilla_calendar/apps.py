@@ -1,15 +1,26 @@
 """Configuration for the calendar app in Horilla."""
 
-from django.apps import AppConfig
-from django.utils.translation import gettext_lazy as _
+from horilla.apps import AppLauncher
+from horilla.utils.translation import gettext_lazy as _
 
 
-class HorillaCalendarConfig(AppConfig):
-    """Configuration class for the Horilla Calendar app."""
+class HorillaCalendarConfig(AppLauncher):
+    """App configuration class for the Horilla Calendar app."""
+
+    default = True
 
     default_auto_field = "django.db.models.BigAutoField"
     name = "horilla_calendar"
     verbose_name = _("Calendar")
+
+    url_prefix = "calendar/"
+    url_module = "horilla_calendar.urls"
+    url_namespace = "horilla_calendar"
+
+    auto_import_modules = [
+        "menu",
+        "signals",
+    ]
 
     def get_api_paths(self):
         """
@@ -26,24 +37,3 @@ class HorillaCalendarConfig(AppConfig):
                 "namespace": "horilla_calendar",
             }
         ]
-
-    def ready(self):
-        """Register calendar URLs and load menu/signals; defer to parent ready()."""
-        try:
-            # Auto-register this app's URLs and add to installed apps
-            from django.urls import include, path
-
-            from horilla.urls import urlpatterns
-
-            # Add app URLs to main urlpatterns
-            urlpatterns.append(
-                path("calendar/", include("horilla_calendar.urls")),
-            )
-
-            __import__("horilla_calendar.menu")  # noqa: F401
-            __import__("horilla_calendar.signals")  # noqa:F401
-        except ImportError:
-            # Handle errors silently to prevent app load failure
-            pass
-
-        super().ready()
