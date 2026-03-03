@@ -13,16 +13,18 @@ from django.contrib.contenttypes.models import ContentType
 from django.forms import ValidationError
 from django.http import HttpResponse
 from django.urls import reverse, reverse_lazy
-from django.utils.decorators import method_decorator
-from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView, FormView, TemplateView
 
-from horilla.decorator import htmx_required, permission_required_or_denied
-from horilla.exceptions import HorillaHttp404
-
 # First-party / Horilla imports
+from horilla.exceptions import HorillaHttp404
 from horilla.http import HorillaRefreshResponse
-from horilla.utils.shortcuts import get_object_or_404
+from horilla.shortcuts import get_object_or_404
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
 from horilla_core.methods import get_template_reverse_models
 from horilla_generics.views import (
     HorillaListView,

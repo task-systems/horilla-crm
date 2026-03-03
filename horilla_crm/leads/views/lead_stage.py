@@ -6,24 +6,23 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import redirect, render  # type: ignore
 from django.urls import reverse_lazy
-from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property  # type: ignore
-from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView, View
 
 from horilla.auth.models import User
-from horilla.decorator import (
-    htmx_required,
-    permission_required,
-    permission_required_or_denied,
-)
 from horilla.exceptions import HorillaHttp404
 
 # First party / Horilla imports
-from horilla.utils.shortcuts import get_object_or_404
+from horilla.shortcuts import get_object_or_404, redirect, render
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
 from horilla_core.models import Company
 from horilla_core.progress import BASE_STEPS, ProgressStepsMixin
 from horilla_core.views.initialiaze_database import InitializeRoleView

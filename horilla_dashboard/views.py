@@ -15,25 +15,24 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Case, Count, ForeignKey, Q, When
 from django.http import HttpResponse, JsonResponse, QueryDict
-from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
-from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.html import format_html
-from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView, View
 
-from horilla.decorator import (
-    htmx_required,
-    permission_required,
-    permission_required_or_denied,
-)
 from horilla.exceptions import HorillaHttp404
 
 # First-party / Horilla imports
 from horilla.http import HorillaRefreshResponse
+from horilla.shortcuts import get_object_or_404, redirect, render
 from horilla.utils.choices import DISPLAYABLE_FIELD_TYPES
-from horilla.utils.shortcuts import get_object_or_404
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
 from horilla_core.models import HorillaContentType
 from horilla_dashboard.filters import DashboardFilter
 from horilla_dashboard.forms import DashboardCreateForm, DashboardForm

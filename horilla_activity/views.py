@@ -16,23 +16,22 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.http import Http404, HttpResponse
-from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property  # type: ignore
-from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView
 
-from horilla.decorator import (
-    htmx_required,
-    permission_required,
-    permission_required_or_denied,
-)
 from horilla.http import HorillaRefreshResponse
 
 # First-party / Horilla imports
-from horilla.utils.shortcuts import get_object_or_404
+from horilla.shortcuts import get_object_or_404, render
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
 from horilla_activity.filters import ActivityFilter
 from horilla_activity.forms import (
     ActivityCreateForm,
@@ -1895,10 +1894,14 @@ class ActivityCreateView(LoginRequiredMixin, HorillaSingleFormView):
             model_name = self.request.GET.get("model_name")
             all_day = self.request.GET.get("is_all_day")
             toggle_is_all_day = self.request.GET.get("toggle_is_all_day")
-            date_str = self.request.GET.get("date")
+            # Use same param as Mark Unavailability (start_date_time) so clicked time is correct
+            date_str = self.request.GET.get("start_date_time") or self.request.GET.get(
+                "date"
+            )
 
             if is_create:
                 initial["activity_type"] = "event"
+                initial["owner"] = self.request.user
             else:
                 initial["activity_type"] = getattr(
                     self.object, "activity_type", None
@@ -1913,18 +1916,17 @@ class ActivityCreateView(LoginRequiredMixin, HorillaSingleFormView):
 
             if is_create and date_str:
                 try:
-                    clicked_datetime = datetime.datetime.fromisoformat(date_str)
+                    clicked_datetime = datetime.datetime.fromisoformat(
+                        date_str.replace("Z", "+00:00")
+                    )
                     clicked_date = clicked_datetime.date()
-
-                    if clicked_datetime.time() == datetime.time.min:
+                    clicked_time = clicked_datetime.time()
+                    if clicked_time == datetime.time.min:
                         clicked_time = datetime.time(9, 0)
-                    else:
-                        clicked_time = clicked_datetime.time()
-
                     start_datetime = timezone.make_aware(
                         datetime.datetime.combine(clicked_date, clicked_time)
                     )
-                    end_datetime = start_datetime + datetime.timedelta(hours=1)
+                    end_datetime = start_datetime + datetime.timedelta(minutes=30)
 
                     initial["start_datetime"] = start_datetime
                     initial["end_datetime"] = end_datetime

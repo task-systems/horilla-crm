@@ -12,21 +12,19 @@ from django.apps import apps
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
-from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.utils.decorators import method_decorator
-from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, View
 
-from horilla.decorator import (
+# First-party / Horilla imports
+from horilla.shortcuts import get_object_or_404, render
+from horilla.utils.decorators import (
     htmx_required,
+    method_decorator,
     permission_required,
     permission_required_or_denied,
 )
-
-# First-party / Horilla imports
-from horilla.utils.shortcuts import get_object_or_404
+from horilla.utils.translation import gettext_lazy as _
 from horilla_activity.views import HorillaActivitySectionView
 from horilla_crm.campaigns.filters import CampaignFilter
 from horilla_crm.campaigns.forms import (

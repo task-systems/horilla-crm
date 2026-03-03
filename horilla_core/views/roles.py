@@ -11,20 +11,20 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from django.urls import reverse_lazy
-from django.utils.decorators import method_decorator
-from django.utils.translation import gettext_lazy as _
 from django.views import View
 from django.views.generic import TemplateView
 
 from horilla.auth.models import User
-from horilla.decorator import (
+
+# First-party / Horilla imports
+from horilla.shortcuts import get_object_or_404
+from horilla.utils.decorators import (
     htmx_required,
+    method_decorator,
     permission_required,
     permission_required_or_denied,
 )
-
-# First-party / Horilla imports
-from horilla.utils.shortcuts import get_object_or_404
+from horilla.utils.translation import gettext_lazy as _
 from horilla_core.filters import RoleFilter, UserFilter
 from horilla_core.forms import AddUsersToRoleForm
 from horilla_core.models import Role

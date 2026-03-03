@@ -15,19 +15,21 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
-from django.utils.decorators import method_decorator
-from django.utils.translation import gettext_lazy as _
 from django.views import View
 from django.views.generic import TemplateView
 
 from horilla.auth.models import User
-from horilla.decorator import htmx_required, permission_required_or_denied
 from horilla.registry.permission_registry import PERMISSION_EXEMPT_MODELS
 
 # First-party / Horilla imports
-from horilla.utils.shortcuts import get_object_or_404
+from horilla.shortcuts import get_object_or_404, redirect, render
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
 from horilla_core.forms import AddSuperUsersForm
 from horilla_core.models import FieldPermission, Role
 from horilla_generics.views import (

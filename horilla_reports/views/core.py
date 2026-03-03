@@ -27,26 +27,24 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import ForeignKey, Q
 from django.http import Http404, HttpResponse, QueryDict
-from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
-from django.utils.decorators import method_decorator
-from django.utils.translation import gettext_lazy as _
 from django.views import View
 from django.views.decorators.http import require_POST
 from django.views.generic import DetailView
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
-from horilla.decorator import (
-    htmx_required,
-    permission_required,
-    permission_required_or_denied,
-)
-
 # First-party / Horilla imports
 from horilla.exceptions import HorillaHttp404
 from horilla.http import HorillaRefreshResponse
+from horilla.shortcuts import get_object_or_404, redirect, render
 from horilla.utils.choices import TABLE_FALLBACK_FIELD_TYPES
-from horilla.utils.shortcuts import get_object_or_404
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required,
+    permission_required_or_denied,
+)
+from horilla.utils.translation import gettext_lazy as _
 from horilla_generics.forms import HorillaModelForm
 from horilla_generics.mixins import RecentlyViewedMixin
 from horilla_generics.views import (

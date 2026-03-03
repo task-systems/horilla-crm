@@ -17,18 +17,17 @@ from django.contrib.auth.views import redirect_to_login
 from django.http import HttpResponse
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.utils.decorators import method_decorator
 from django.utils.html import format_html
-from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView, TemplateView, View
 
 from horilla.auth.models import User
-from horilla.decorator import htmx_required
 from horilla.exceptions import HorillaHttp404
 
 # First-party / Horilla imports
 from horilla.http import HorillaRefreshResponse
-from horilla.utils.shortcuts import get_object_or_404
+from horilla.shortcuts import get_object_or_404
+from horilla.utils.decorators import htmx_required, method_decorator
+from horilla.utils.translation import gettext_lazy as _
 from horilla_crm.opportunities.filters import (
     OpportunityTeamFilter,
     OpportunityTeamMembersFilter,
