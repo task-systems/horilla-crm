@@ -12,11 +12,14 @@ from django.conf import settings
 # Third-party imports (Django)
 from django.db import models
 
-# First-party / Horilla imports
+from horilla.registry.limiters import limit_content_types
+
+# First-party imports (Horilla)
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
+
+# First-party / Horilla apps
 from horilla_core.models import HorillaContentType, HorillaCoreModel
-from horilla_reports.methods import limit_content_types
 from horilla_utils.methods import render_template
 
 
@@ -110,7 +113,7 @@ class Report(HorillaCoreModel):
         HorillaContentType,
         on_delete=models.CASCADE,
         verbose_name=_("Module"),
-        limit_choices_to=limit_content_types,
+        limit_choices_to=limit_content_types("report_models"),
     )
     folder = models.ForeignKey(
         ReportFolder,

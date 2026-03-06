@@ -2,7 +2,7 @@
 
 from django.db import migrations, models
 import django.db.models.deletion
-import horilla_reports.methods
+import horilla.registry.limiters
 
 
 class Migration(migrations.Migration):
@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
             model_name="report",
             name="module",
             field=models.ForeignKey(
-                limit_choices_to=horilla_reports.methods.limit_content_types,
+                limit_choices_to=horilla.registry.limiters.ContentTypeLimiter('report_models'),
                 on_delete=django.db.models.deletion.CASCADE,
                 to="horilla_core.horillacontenttype",
                 verbose_name="Module",
