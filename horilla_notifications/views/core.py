@@ -4,9 +4,10 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import models
-from django.http import HttpResponse
 from django.utils.formats import date_format
 from django.views import View
+
+from horilla.http import HttpResponse
 
 # First-party / Horilla imports
 from horilla.shortcuts import render

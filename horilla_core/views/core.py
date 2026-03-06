@@ -15,7 +15,6 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.staticfiles.storage import staticfiles_storage
-from django.http import FileResponse, HttpResponse, JsonResponse
 from django.utils._os import safe_join
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
@@ -29,7 +28,14 @@ from rest_framework_simplejwt.tokens import UntypedToken
 # First-party / Horilla imports
 from horilla import settings
 from horilla.auth.models import User
-from horilla.http import HorillaRedirectResponse, HttpNotFound, safe_url
+from horilla.http import (
+    FileResponse,
+    HttpNotFound,
+    HttpResponse,
+    JsonResponse,
+    RedirectResponse,
+    safe_url,
+)
 from horilla.shortcuts import redirect, render
 from horilla.urls import reverse_lazy
 from horilla.utils.branding import load_branding
@@ -317,7 +323,7 @@ class SwitchCompanyView(LoginRequiredMixin, View):
             or request.user.company_id == company_id
         ):
             request.session["active_company_id"] = company_id
-        return HorillaRedirectResponse(self.request)
+        return RedirectResponse(self.request)
 
 
 @method_decorator(htmx_required, name="dispatch")

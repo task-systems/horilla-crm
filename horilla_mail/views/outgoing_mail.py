@@ -10,12 +10,12 @@ from functools import cached_property
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.mail import EmailMultiAlternatives
-from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.views.generic import FormView, TemplateView
 
 # First-party / Horilla imports
+from horilla.http import HttpResponse
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,

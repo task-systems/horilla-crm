@@ -7,16 +7,15 @@ import logging
 from functools import cached_property
 from urllib.parse import urlencode
 
+# Third-party imports (Django)
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-
-# Third-party imports (Django)
-from django.http import HttpResponse
 from django.utils import timezone
 from django.views.generic import FormView, View
 
 # First-party / Horilla imports
 from horilla.apps import apps
+from horilla.http import HttpResponse
 from horilla.shortcuts import get_object_or_404, render
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import (

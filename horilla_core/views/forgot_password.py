@@ -11,17 +11,16 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage
 from django.db.models import Q
-from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes, force_str
 from django.utils.html import strip_tags
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views import View
 
-from horilla.auth.models import User
-
 # First-party / Horilla imports
+from horilla.auth.models import User
 from horilla.core.exceptions import ValidationError
+from horilla.http import HttpResponse
 from horilla.shortcuts import redirect, render
 
 # First-party / Horilla apps

@@ -9,8 +9,9 @@ import logging
 from django.contrib import messages
 
 # Third-party imports (Django)
-from django.http import HttpResponse
 from django.template.loader import render_to_string
+
+from horilla.http import HttpResponse
 
 # First-party imports (Horilla)
 from horilla.shortcuts import render

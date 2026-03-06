@@ -8,10 +8,10 @@ import re
 # Third-party imports (Django)
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import JsonResponse
 from django.views.generic import TemplateView, View
 
 # First-party / Horilla imports
+from horilla.http import JsonResponse
 from horilla.shortcuts import redirect
 from horilla.utils.translation import gettext_lazy as _
 from horilla_dashboard.models import Dashboard, DefaultHomeLayoutOrder

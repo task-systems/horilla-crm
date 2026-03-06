@@ -9,9 +9,9 @@ import json
 from django import forms
 from django.core.exceptions import FieldDoesNotExist
 from django.db import models
-from django.http import HttpResponse, QueryDict
 from django.template.loader import render_to_string
 
+from horilla.http import HttpResponse, QueryDict
 from horilla.utils.translation import gettext_lazy as _
 from horilla_core.mixins import OwnerQuerysetMixin
 from horilla_generics.forms import HorillaModelForm

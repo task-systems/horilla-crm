@@ -9,11 +9,10 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import redirect_to_login
 from django.db.models import Case, When
-from django.http import HttpResponse
 from django.utils.functional import cached_property
 from django.views.generic import TemplateView
 
-from horilla.http import HorillaRefreshResponse, HttpNotFound
+from horilla.http import HttpNotFound, HttpResponse, RefreshResponse
 from horilla.shortcuts import get_object_or_404, redirect, render
 
 # First-party / Horilla imports
@@ -227,7 +226,7 @@ class DashboardDetailView(RecentlyViewedMixin, LoginRequiredMixin, TemplateView)
         except Exception as e:
             if request.headers.get("HX-Request") == "true":
                 messages.error(self.request, e)
-                return HorillaRefreshResponse(request)
+                return RefreshResponse(request)
             raise HttpNotFound(e)
         return super().dispatch(request, *args, **kwargs)
 

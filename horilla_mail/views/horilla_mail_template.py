@@ -11,12 +11,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
-from django.http import HttpResponse, JsonResponse
 from django.views import View
 from django.views.generic import DetailView, FormView, TemplateView
 
 from horilla.core.exceptions import ValidationError
-from horilla.http import HorillaRefreshResponse, HttpNotFound
+from horilla.http import HttpNotFound, HttpResponse, JsonResponse, RefreshResponse
 from horilla.shortcuts import get_object_or_404, render
 
 # First-party (Horilla)
@@ -508,7 +507,7 @@ class MailTemplateDetailView(LoginRequiredMixin, DetailView):
         except Exception as e:
             if request.headers.get("HX-Request") == "true":
                 messages.error(self.request, e)
-                return HorillaRefreshResponse(request)
+                return RefreshResponse(request)
             raise HttpNotFound(e)
         return super().dispatch(request, *args, **kwargs)
 

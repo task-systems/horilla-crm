@@ -6,10 +6,10 @@ from decimal import Decimal
 # Third-party imports (Django)
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
 from django.views.generic import TemplateView, View
 
 from horilla.auth.models import User
+from horilla.http import HttpResponse
 from horilla.shortcuts import get_object_or_404, render
 
 # First-party / Horilla imports

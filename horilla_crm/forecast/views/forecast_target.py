@@ -8,14 +8,14 @@ from functools import cached_property
 
 # Third party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
 from django.utils import timezone
 from django.views import View
 
 from horilla.auth.models import User
-from horilla.shortcuts import render
 
 # First-party / Horilla imports
+from horilla.http import HttpResponse
+from horilla.shortcuts import render
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,

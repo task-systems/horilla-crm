@@ -8,11 +8,11 @@ from pathlib import Path
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
-from django.http import HttpResponse
 from django.views.generic import TemplateView, View
 
 # First-party (Horilla) imports
 from horilla.apps import apps
+from horilla.http import HttpResponse
 from horilla.utils.decorators import htmx_required, method_decorator
 from horilla_reports.models import Report, ReportFolder
 

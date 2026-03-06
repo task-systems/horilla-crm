@@ -12,12 +12,12 @@ import pandas as pd
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
-from django.http import HttpResponse
 from django.views import View
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
+from horilla.http import HttpNotFound, HttpResponse, RefreshResponse
+
 # First-party / Horilla imports
-from horilla.http import HorillaRefreshResponse, HttpNotFound
 from horilla.shortcuts import get_object_or_404
 from horilla.utils.decorators import method_decorator, permission_required_or_denied
 from horilla.utils.translation import gettext_lazy as _
@@ -47,7 +47,7 @@ class ReportExportView(ReportPreviewMixin, LoginRequiredMixin, View):
         except Exception as e:
             if request.headers.get("HX-Request") == "true":
                 messages.error(self.request, e)
-                return HorillaRefreshResponse(request)
+                return RefreshResponse(request)
             raise HttpNotFound(e)
         export_format = request.GET.get("format", "excel")
 

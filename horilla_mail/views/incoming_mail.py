@@ -7,8 +7,9 @@ from functools import cached_property
 
 # Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
 from django.views.generic import TemplateView
+
+from horilla.http import HttpResponse
 
 # First-party / Horilla imports
 from horilla.urls import reverse_lazy

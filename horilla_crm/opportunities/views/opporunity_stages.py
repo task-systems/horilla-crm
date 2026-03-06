@@ -14,16 +14,15 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import models, transaction
-from django.http import HttpResponse, JsonResponse
 from django.utils.html import format_html
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView, View
 
 from horilla.auth.models import User
+from horilla.http import HttpNotFound, HttpResponse, JsonResponse
+from horilla.shortcuts import get_object_or_404, redirect, render
 
 # First-party / Horilla imports
-from horilla.http import HttpNotFound
-from horilla.shortcuts import get_object_or_404, redirect, render
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,

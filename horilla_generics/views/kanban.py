@@ -11,13 +11,12 @@ from django.contrib import messages
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError, transaction
 from django.db.models import ForeignKey, Max
-from django.http import HttpResponse, QueryDict
 from django.template.loader import render_to_string
 
 # First-party (Horilla)
 from horilla.apps import apps
 from horilla.core.exceptions import FieldDoesNotExist, FieldError, ImproperlyConfigured
-from horilla.http import HttpNotFound
+from horilla.http import HttpNotFound, HttpResponse, QueryDict
 from horilla.shortcuts import redirect
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import htmx_required, method_decorator

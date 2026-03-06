@@ -12,14 +12,13 @@ from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
 from django.db.models import ForeignKey
-from django.http import Http404, HttpResponse, QueryDict
 from django.template.loader import render_to_string
 from django.views.generic import DetailView
 
 # First-party (Horilla)
 from horilla.apps import apps
 from horilla.core.exceptions import FieldDoesNotExist, ValidationError
-from horilla.http import HorillaRefreshResponse, HttpNotFound
+from horilla.http import Http404, HttpNotFound, HttpResponse, QueryDict, RefreshResponse
 from horilla.shortcuts import redirect, render
 from horilla.urls import resolve, reverse, reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
@@ -89,7 +88,7 @@ class HorillaDetailView(DetailView):
         except Exception as e:
             if request.headers.get("HX-Request") == "true":
                 messages.error(request, e)
-                return HorillaRefreshResponse(request)
+                return RefreshResponse(request)
             raise HttpNotFound(e)
 
         app = self.model._meta.app_label

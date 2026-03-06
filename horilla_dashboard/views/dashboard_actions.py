@@ -6,10 +6,10 @@ import logging
 # Third-party imports (Django)
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse, JsonResponse
 from django.utils.functional import cached_property
 from django.views.generic import View
 
+from horilla.http import HttpResponse, JsonResponse
 from horilla.shortcuts import get_object_or_404, render
 
 # First-party / Horilla imports

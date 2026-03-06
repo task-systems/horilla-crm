@@ -7,11 +7,11 @@ import logging
 
 # Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
 from django.utils.functional import cached_property  # type: ignore
 from django.views.generic import TemplateView
 
 # First-party / Horilla imports
+from horilla.http import HttpResponse
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,

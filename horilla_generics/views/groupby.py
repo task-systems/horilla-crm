@@ -9,11 +9,11 @@ import logging
 # Django / third-party imports
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import ForeignKey
-from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.text import slugify
 
 from horilla.core.exceptions import FieldError
+from horilla.http import HttpResponse
 from horilla.shortcuts import render
 
 # First-party (Horilla)

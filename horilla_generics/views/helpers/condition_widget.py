@@ -10,7 +10,6 @@ import logging
 # Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import models
-from django.http import HttpResponse
 from django.template import Context, Template
 from django.utils.encoding import force_str
 from django.utils.html import escape, format_html, format_html_join
@@ -19,6 +18,7 @@ from django.views import View
 
 # First-party (Horilla)
 from horilla.apps import apps
+from horilla.http import HttpResponse
 from horilla.shortcuts import render
 from horilla.utils.choices import FIELD_TYPE_MAP
 from horilla.utils.decorators import htmx_required, method_decorator

@@ -13,13 +13,13 @@ from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.http import HttpResponse, JsonResponse
 from django.views import View
 from django.views.generic import TemplateView
 
 # First-party / Horilla imports
 from horilla.apps import apps
 from horilla.auth.models import User
+from horilla.http import HttpResponse, JsonResponse
 from horilla.registry.permission_registry import PERMISSION_EXEMPT_MODELS
 from horilla.shortcuts import get_object_or_404, redirect, render
 from horilla.urls import reverse_lazy

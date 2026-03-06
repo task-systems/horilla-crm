@@ -8,12 +8,11 @@ forecast types and their associated conditions.
 # Standard library imports
 from functools import cached_property
 
+# Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
 
-# Third-party imports (Django)
-from django.http import HttpResponse
-
 # First-party / Horilla imports
+from horilla.http import HttpResponse
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,

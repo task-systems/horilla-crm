@@ -10,12 +10,11 @@ from dateutil.relativedelta import relativedelta
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.http import Http404, HttpResponse
 from django.utils import timezone
 from django.utils.functional import cached_property  # type: ignore
 from django.views.generic import FormView
 
-from horilla.http import HorillaRedirectResponse
+from horilla.http import Http404, HttpResponse, RedirectResponse
 from horilla.shortcuts import get_object_or_404, render
 
 # First-party / Horilla imports
@@ -83,7 +82,7 @@ class LeadView(LoginRequiredMixin, HorillaView):
             if query_string:
                 redirect_url += f"?{query_string}"
 
-            return HorillaRedirectResponse(request=request, redirect_to=redirect_url)
+            return RedirectResponse(request=request, redirect_to=redirect_url)
 
         return super().dispatch(request, *args, **kwargs)
 

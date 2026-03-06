@@ -12,12 +12,13 @@ from io import BytesIO
 
 from django.db.models import ForeignKey
 from django.db.models.fields.related import ManyToManyField
-from django.http import HttpResponse
 from django.utils import timezone
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+
+from horilla.http import HttpResponse
 
 logger = logging.getLogger(__name__)
 

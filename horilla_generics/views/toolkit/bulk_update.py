@@ -15,8 +15,9 @@ from auditlog.models import LogEntry
 # Third-party imports (Django)
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
-from django.http import HttpResponse
 from django.utils import timezone
+
+from horilla.http import HttpResponse
 
 # First-party imports (Horilla)
 from horilla.shortcuts import render

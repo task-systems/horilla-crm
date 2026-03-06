@@ -11,7 +11,7 @@ from django.views import View
 from django.views.decorators.http import require_POST
 
 # First-party / Horilla imports
-from horilla.http import HorillaRefreshResponse
+from horilla.http import RefreshResponse
 from horilla.shortcuts import get_object_or_404, render
 from horilla.utils.decorators import method_decorator, permission_required_or_denied
 from horilla.utils.translation import gettext_lazy as _
@@ -44,7 +44,7 @@ class ToggleAggregateView(LoginRequiredMixin, View):
             report = get_object_or_404(Report, pk=pk)
         except Exception as e:
             messages.error(request, str(e))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
 
         field_name = request.POST.get("field_name")
         session_key = f"report_preview_{report.pk}"
@@ -61,7 +61,7 @@ class ToggleAggregateView(LoginRequiredMixin, View):
                         "Invalid field '{}'. This field does not exist on the model."
                     ).format(field_name),
                 )
-                return HorillaRefreshResponse(request)
+                return RefreshResponse(request)
 
         preview_data = request.session.get(session_key, {})
         current_aggregate = preview_data.get(
@@ -113,7 +113,7 @@ class UpdateAggregateFunctionView(LoginRequiredMixin, View):
             report = get_object_or_404(Report, pk=pk)
         except Exception as e:
             messages.error(request, str(e))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
         aggfunc = request.POST.get("aggfunc")
         field_name = request.POST.get("field_name")
         session_key = f"report_preview_{report.pk}"
@@ -162,7 +162,7 @@ class AddColumnView(ReportPreviewMixin, LoginRequiredMixin, View):
             report = get_object_or_404(Report, pk=pk)
         except Exception as e:
             messages.error(request, str(e))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
 
         field_name = request.POST.get("field_name")
 
@@ -178,7 +178,7 @@ class AddColumnView(ReportPreviewMixin, LoginRequiredMixin, View):
                         "Invalid field '{}'. This field does not exist on the model."
                     ).format(field_name),
                 )
-                return HorillaRefreshResponse(request)
+                return RefreshResponse(request)
 
         # Get current preview data or start from original
         preview_data = self.get_preview_data(request, report)
@@ -219,7 +219,7 @@ class RemoveColumnView(ReportPreviewMixin, LoginRequiredMixin, View):
             report = get_object_or_404(Report, pk=pk)
         except Exception as e:
             messages.error(request, str(e))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
 
         field_name = request.POST.get("field_name")
 
@@ -264,7 +264,7 @@ class AddFilterFieldView(LoginRequiredMixin, View):
             report = get_object_or_404(Report, pk=pk)
         except Exception as e:
             messages.error(request, str(e))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
 
         field_name = request.POST.get("field_name")
         session_key = f"report_preview_{report.pk}"
@@ -281,7 +281,7 @@ class AddFilterFieldView(LoginRequiredMixin, View):
                         "Invalid field '{}'. This field does not exist on the model."
                     ).format(field_name),
                 )
-                return HorillaRefreshResponse(request)
+                return RefreshResponse(request)
 
         # Get current preview data or start from original
         preview_data = request.session.get(session_key, {})
@@ -376,7 +376,7 @@ class UpdateFilterOperatorView(View):
             report = get_object_or_404(Report, pk=pk)
         except Exception as e:
             messages.error(request, str(e))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
         field_name = request.POST.get("field_name")
         operator = request.POST.get("operator")
         session_key = f"report_preview_{report.pk}"
@@ -426,7 +426,7 @@ class UpdateFilterOperatorView(View):
             else:
                 request.session.pop(session_key, None)
             messages.error(request, _("Invalid filter value: {}").format(str(e)))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
 
         return response
 
@@ -483,7 +483,7 @@ class UpdateFilterValueView(LoginRequiredMixin, View):
             report = get_object_or_404(Report, pk=pk)
         except Exception as e:
             messages.error(request, str(e))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
 
         field_name = request.POST.get("field_name")
         value = request.POST.get("value")
@@ -535,7 +535,7 @@ class UpdateFilterValueView(LoginRequiredMixin, View):
             else:
                 request.session.pop(session_key, None)
             messages.error(request, _("Invalid filter value: {}").format(str(e)))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
 
         return response
 
@@ -592,7 +592,7 @@ class UpdateFilterLogicView(LoginRequiredMixin, View):
             report = get_object_or_404(Report, pk=pk)
         except Exception as e:
             messages.error(request, str(e))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
         field_name = request.POST.get(
             "field_name"
         )  # This is the unique field name (e.g., field_name_1)
@@ -632,7 +632,7 @@ class UpdateFilterLogicView(LoginRequiredMixin, View):
             else:
                 request.session.pop(session_key, None)
             messages.error(request, _("Invalid filter value: {}").format(str(e)))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
 
         return render(request, "report_detail.html", context)
 
@@ -663,7 +663,7 @@ class RemoveFilterView(LoginRequiredMixin, View):
             report = get_object_or_404(Report, pk=pk)
         except Exception as e:
             messages.error(request, str(e))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
         field_name = request.POST.get("field_name")
         session_key = f"report_preview_{report.pk}"
 
@@ -735,7 +735,7 @@ class ToggleRowGroupView(ReportPreviewMixin, LoginRequiredMixin, View):
             report = get_object_or_404(Report, pk=pk)
         except Exception as e:
             messages.error(request, str(e))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
         field_name = request.POST.get("field_name")
 
         # Validate the field name exists on the model
@@ -750,7 +750,7 @@ class ToggleRowGroupView(ReportPreviewMixin, LoginRequiredMixin, View):
                         "Invalid field '{}'. This field does not exist on the model."
                     ).format(field_name),
                 )
-                return HorillaRefreshResponse(request)
+                return RefreshResponse(request)
 
         # Get current preview data or start from original
         preview_data = self.get_preview_data(request, report)
@@ -790,7 +790,7 @@ class RemoveRowGroupView(ReportPreviewMixin, LoginRequiredMixin, View):
             report = get_object_or_404(Report, pk=pk)
         except Exception as e:
             messages.error(request, str(e))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
         field_name = request.POST.get("field_name")
 
         # Get current preview data or start from original
@@ -840,7 +840,7 @@ class ToggleColumnGroupView(ReportPreviewMixin, LoginRequiredMixin, View):
             report = get_object_or_404(Report, pk=pk)
         except Exception as e:
             messages.error(request, str(e))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
         field_name = request.POST.get("field_name")
 
         # Validate the field name exists on the model
@@ -855,7 +855,7 @@ class ToggleColumnGroupView(ReportPreviewMixin, LoginRequiredMixin, View):
                         "Invalid field '{}'. This field does not exist on the model."
                     ).format(field_name),
                 )
-                return HorillaRefreshResponse(request)
+                return RefreshResponse(request)
 
         preview_data = self.get_preview_data(request, report)
 
@@ -894,7 +894,7 @@ class RemoveColumnGroupView(ReportPreviewMixin, LoginRequiredMixin, View):
             report = get_object_or_404(Report, pk=pk)
         except Exception as e:
             messages.error(request, str(e))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
 
         field_name = request.POST.get("field_name")
 
@@ -935,7 +935,7 @@ class RemoveAggregateColumnView(LoginRequiredMixin, View):
             report = get_object_or_404(Report, pk=pk)
         except Exception as e:
             messages.error(request, str(e))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
 
         field_name = request.POST.get("field_name")
         session_key = f"report_preview_{report.pk}"

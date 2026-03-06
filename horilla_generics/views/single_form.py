@@ -13,12 +13,12 @@ from urllib.parse import urlencode
 from django import forms
 from django.contrib import messages
 from django.db import IntegrityError, models
-from django.http import HttpResponse
 from django.views.generic import FormView
 
 from horilla.core.exceptions import FieldDoesNotExist
 
 # First-party (Horilla)
+from horilla.http import HttpResponse
 from horilla.urls import reverse, reverse_lazy
 from horilla.utils.choices import TABLE_FALLBACK_FIELD_TYPES
 from horilla.utils.translation import gettext_lazy as _

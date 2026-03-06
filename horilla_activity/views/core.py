@@ -9,13 +9,12 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
-from django.http import HttpResponse
 from django.utils.functional import cached_property  # type: ignore
 from django.views.generic import DetailView
 
-from horilla.http import HorillaRefreshResponse
+from horilla.http import HttpResponse, RefreshResponse
 
-# First-party / Horilla imports
+# First-party imports (Horilla)
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,
@@ -26,6 +25,8 @@ from horilla.utils.decorators import (
 from horilla.utils.translation import gettext_lazy as _
 from horilla_activity.filters import ActivityFilter
 from horilla_activity.models import Activity
+
+# First-party / Horilla apps
 from horilla_activity.views.list_view import AllActivityListView
 from horilla_generics.mixins import RecentlyViewedMixin
 from horilla_generics.views import (
@@ -57,7 +58,7 @@ class HorillaActivitySectionView(DetailView):
             self.object = self.get_object()
         except Exception as e:
             messages.error(self.request, e)
-            return HorillaRefreshResponse(self.request)
+            return RefreshResponse(self.request)
         return super().dispatch(request, *args, **kwargs)
 
     def add_task_button(self):

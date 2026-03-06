@@ -8,8 +8,8 @@ from django.contrib import messages
 
 # Third-party imports (Django)
 from django.db import models
-from django.http import HttpResponse
 
+from horilla.http import HttpResponse
 from horilla.shortcuts import get_object_or_404, render
 
 # First-party imports (Horilla)

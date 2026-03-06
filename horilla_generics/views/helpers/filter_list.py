@@ -10,11 +10,10 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import IntegrityError
-from django.http import HttpResponse
 from django.views import View
 from django.views.generic import FormView
 
-from horilla.http import HorillaRedirectResponse
+from horilla.http import HttpResponse, RedirectResponse
 
 # First-party (Horilla)
 from horilla.shortcuts import render
@@ -131,9 +130,7 @@ class SaveFilterListView(LoginRequiredMixin, FormView):
                 }
                 query_params["view_type"] = view_type
                 redirect_url = f"{main_url}?{urlencode(query_params)}"
-                return HorillaRedirectResponse(
-                    request=self.request, redirect_to=redirect_url
-                )
+                return RedirectResponse(request=self.request, redirect_to=redirect_url)
             except (
                 ValueError,
                 self.request.user.saved_filter_lists.model.DoesNotExist,
@@ -168,9 +165,7 @@ class SaveFilterListView(LoginRequiredMixin, FormView):
             query_params["view_type"] = view_type
 
             redirect_url = f"{main_url}?{urlencode(query_params)}"
-            return HorillaRedirectResponse(
-                request=self.request, redirect_to=redirect_url
-            )
+            return RedirectResponse(request=self.request, redirect_to=redirect_url)
         except IntegrityError:
             form.add_error(
                 "list_name", "A list with this name already exists for this model."
@@ -248,7 +243,7 @@ class DeleteSavedListView(LoginRequiredMixin, View):
 
         if not saved_list_id:
             messages.error(request, "Invalid saved list ID.")
-            response = HorillaRedirectResponse(request=request, redirect_to=main_url)
+            response = RedirectResponse(request=request, redirect_to=main_url)
             response["HX-Push-Url"] = "true"  # Add HTMX header
             return response
 
@@ -280,6 +275,6 @@ class DeleteSavedListView(LoginRequiredMixin, View):
         view_type = pinned_view.view_type if pinned_view else "all"
         query_params["view_type"] = view_type
         redirect_url = f"{main_url}?{urlencode(query_params)}"
-        response = HorillaRedirectResponse(request=request, redirect_to=redirect_url)
+        response = RedirectResponse(request=request, redirect_to=redirect_url)
         response["HX-Push-Url"] = "true"
         return response

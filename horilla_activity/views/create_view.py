@@ -10,12 +10,12 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.http import Http404, HttpResponse
 from django.utils import timezone
 from django.utils.functional import cached_property  # type: ignore
 
-# First-party / Horilla imports
+# First-party imports (Horilla)
 from horilla.apps import apps
+from horilla.http import Http404, HttpResponse
 from horilla.shortcuts import get_object_or_404, render
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import htmx_required, method_decorator
@@ -27,6 +27,8 @@ from horilla_activity.forms import (
     MeetingsForm,
 )
 from horilla_activity.models import Activity
+
+# First-party / Horilla apps
 from horilla_generics.views import HorillaSingleFormView
 
 
@@ -764,7 +766,8 @@ class ActivityCreateView(LoginRequiredMixin, HorillaSingleFormView):
 
         return initial
 
-    def get_form_class(self):
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
         activity_type = (
             self.request.POST.get("activity_type")
             or self.request.GET.get("activity_type")
@@ -774,42 +777,15 @@ class ActivityCreateView(LoginRequiredMixin, HorillaSingleFormView):
         if not activity_type:
             activity_type = list(self.ACTIVITY_FIELD_MAP.keys())[0]
 
+        # Pass the list of fields that should remain visible for this activity_type
+        # to the form. The form will hide all other fields.
         selected_fields = self.ACTIVITY_FIELD_MAP.get(
             activity_type, self.ACTIVITY_FIELD_MAP["event"]
         )
+        kwargs["visible_fields"] = selected_fields
 
-        class DynamicActivityForm(ActivityCreateForm):
-            """
-            Creates and returns a dynamically generated Activity form class with fields and widgets
-            customized based on the selected fields and the base ActivityCreateForm configuration.
-            """
-
-            class Meta(ActivityCreateForm.Meta):
-                """
-                Defines dynamic Meta options for the form, setting the model, fields, and widgets
-                based on the selected fields and the base ActivityCreateForm configuration.
-                """
-
-                model = self.model
-                fields = selected_fields
-                widgets = (
-                    ActivityCreateForm.Meta.widgets.copy()
-                    if hasattr(ActivityCreateForm.Meta, "widgets")
-                    else {}
-                )
-
-        return DynamicActivityForm
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        activity_type = (
-            self.request.POST.get("activity_type")
-            or self.request.GET.get("activity_type")
-            or (getattr(self, "object", None) and self.object.activity_type)
-        )
-        if activity_type:
-            kwargs["initial"] = kwargs.get("initial", {})
-            kwargs["initial"]["activity_type"] = activity_type
+        kwargs["initial"] = kwargs.get("initial", {})
+        kwargs["initial"]["activity_type"] = activity_type
 
         if self.request.method == "GET":
             kwargs["initial"] = kwargs.get("initial", {})

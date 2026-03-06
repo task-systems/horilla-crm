@@ -11,13 +11,12 @@ from django.contrib import messages
 
 # Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
 from django.views import View
 from django.views.generic import DetailView, TemplateView
 from django.views.generic.edit import FormView
 
 # First-party / Horilla imports
-from horilla.http import HttpNotFound
+from horilla.http import HttpNotFound, HttpResponse
 from horilla.shortcuts import get_object_or_404, render
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import htmx_required, method_decorator

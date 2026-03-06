@@ -13,12 +13,11 @@ import logging
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
 from django.db.models import CharField, Q, TextField
-from django.http import JsonResponse
 from django.views import View
 
 # First-party (Horilla)
 from horilla.apps import apps
-from horilla.http import HttpNotFound
+from horilla.http import HttpNotFound, JsonResponse
 from horilla.shortcuts import render
 from horilla.utils.translation import gettext_lazy as _
 from horilla_generics.methods import get_dynamic_form_for_model

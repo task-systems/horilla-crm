@@ -10,12 +10,12 @@ from functools import cached_property
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils.dateparse import parse_date
 from django.views import View
 from django.views.generic import TemplateView
 from django.views.generic.edit import FormView
 
+from horilla.http import HttpResponse, HttpResponseBadRequest
 from horilla.shortcuts import render
 
 # First-party / Horilla imports

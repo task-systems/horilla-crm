@@ -14,13 +14,12 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import redirect_to_login
-from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.html import format_html
 from django.views.generic import DetailView, TemplateView, View
 
 from horilla.auth.models import User
-from horilla.http import HorillaRefreshResponse, HttpNotFound
+from horilla.http import HttpNotFound, HttpResponse, RefreshResponse
 from horilla.shortcuts import get_object_or_404
 
 # First-party / Horilla imports
@@ -295,7 +294,7 @@ class OpportunityTeamDetailView(LoginRequiredMixin, DetailView):
         except Exception as e:
             if request.headers.get("HX-Request") == "true":
                 messages.error(self.request, e)
-                return HorillaRefreshResponse(request)
+                return RefreshResponse(request)
             raise HttpNotFound(e) from e
         return super().dispatch(request, *args, **kwargs)
 

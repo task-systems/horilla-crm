@@ -18,7 +18,7 @@ from django.http import (
 )
 
 from .url_safety import safe_url
-from .response import HttpNotFound, HorillaRedirectResponse, HorillaRefreshResponse
+from .response import HttpNotFound, RedirectResponse, RefreshResponse
 
 __all__ = [
     "safe_url",
@@ -32,6 +32,6 @@ __all__ = [
     "HttpResponseNotFound",
     "HttpResponseNotAllowed",
     "HttpResponseBadRequest",
-    "HorillaRedirectResponse",
-    "HorillaRefreshResponse",
+    "RedirectResponse",
+    "RefreshResponse",
 ]

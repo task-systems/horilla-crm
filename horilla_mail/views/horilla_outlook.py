@@ -10,12 +10,11 @@ from functools import cached_property
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core import cache
-from django.http import HttpResponse
 from django.utils import timezone
 from django.views import View
 from requests_oauthlib import OAuth2Session
 
-from horilla.http import HorillaRedirectResponse
+from horilla.http import HttpResponse, RedirectResponse
 from horilla.shortcuts import redirect
 
 # First-party / Horilla imports
@@ -291,4 +290,4 @@ class OutlookRefreshTokenView(View):
                 _("Token refresh failed: {error}").format(error=str(e)),
             )
 
-        return HorillaRedirectResponse(request)
+        return RedirectResponse(request)

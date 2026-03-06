@@ -9,12 +9,11 @@ from urllib.parse import urlencode
 # Third-party imports (Django)
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
 from django.utils.functional import cached_property
 from django.views import View
 from django.views.generic import DetailView
 
-from horilla.http import HorillaRefreshResponse, HttpNotFound
+from horilla.http import HttpNotFound, HttpResponse, RefreshResponse
 
 # First-party / Horilla imports
 from horilla.urls import reverse_lazy
@@ -254,7 +253,7 @@ class ScoringRuleDetailView(LoginRequiredMixin, DetailView):
         except Exception as e:
             if request.headers.get("HX-Request") == "true":
                 messages.error(self.request, e)
-                return HorillaRefreshResponse(request)
+                return RefreshResponse(request)
             raise HttpNotFound(e) from e
         return super().dispatch(request, *args, **kwargs)
 

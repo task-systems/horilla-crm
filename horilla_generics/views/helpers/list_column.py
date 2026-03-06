@@ -14,7 +14,6 @@ from urllib.parse import urlparse
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.cache import cache
 from django.db.models.fields import Field
-from django.http import HttpResponse, JsonResponse
 from django.template import Context, Template
 from django.utils import translation
 from django.utils.encoding import force_str
@@ -23,6 +22,7 @@ from django.views.generic import FormView
 
 # First-party (Horilla)
 from horilla.apps import apps
+from horilla.http import HttpResponse, JsonResponse
 from horilla.utils.decorators import htmx_required, method_decorator
 from horilla.utils.translation import gettext_lazy as _
 from horilla_core.models import ListColumnVisibility
@@ -311,6 +311,15 @@ class ListColumnSelectFormView(LoginRequiredMixin, FormView):
             f[1] if isinstance(f, (list, tuple)) and len(f) >= 2 else f
             for f in visible_fields
         ]
+        # For choice fields: view/store uses raw name (e.g. lead_source) but all_fields
+        # uses get_x_display; treat both as visible so the field does not appear in both panels
+        visible_field_names_set = set(visible_field_names)
+        for name in visible_field_names:
+            visible_field_names_set.add(f"get_{name}_display")
+        for name in list(visible_field_names_set):
+            if name.startswith("get_") and name.endswith("_display"):
+                raw = name[4:-8]  # strip get_ and _display
+                visible_field_names_set.add(raw)
 
         related_field_parents = set()
         for _, field_name in visible_fields + removed_custom_field_lists:
@@ -352,7 +361,7 @@ class ListColumnSelectFormView(LoginRequiredMixin, FormView):
         context["available_fields"] = [
             [verbose_name, field_name]
             for verbose_name, field_name in combined_fields
-            if field_name not in visible_field_names
+            if field_name not in visible_field_names_set
             and field_name not in related_field_parents
             and field_name not in exclude_fields_list
             and field_name not in sensitive_fields

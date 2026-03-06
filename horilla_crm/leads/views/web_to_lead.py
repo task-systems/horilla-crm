@@ -7,7 +7,6 @@ from urllib.parse import urlparse
 # Third-party imports (Django)
 from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import translation
 from django.views import View
@@ -16,7 +15,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import CreateView, FormView, TemplateView
 
 from horilla.auth.models import User
-from horilla.http import HorillaRedirectResponse, HttpNotFound
+from horilla.http import HttpNotFound, HttpResponse, RedirectResponse
 from horilla.shortcuts import render
 
 # First-party / Horilla imports
@@ -317,9 +316,7 @@ class SaveLeadFormView(LoginRequiredMixin, FormView):
                 },
             )
 
-        return HorillaRedirectResponse(
-            request=self.request, redirect_to=self.success_url
-        )
+        return RedirectResponse(request=self.request, redirect_to=self.success_url)
 
     def form_invalid(self, form):
         if self.request.headers.get("HX-Request"):

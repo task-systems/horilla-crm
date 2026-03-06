@@ -12,14 +12,16 @@ from auditlog.models import LogEntry
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
 from django.views.generic import FormView, TemplateView
 
-# Horilla first-party imports
+# First-party imports (Horilla)
 from horilla.auth.models import User
+from horilla.http import HttpResponse
 from horilla.shortcuts import render
 from horilla.utils.decorators import htmx_required, method_decorator
 from horilla.utils.translation import gettext_lazy as _
+
+# First-party / Horilla imports
 from horilla_core.forms import ChangePasswordForm
 
 

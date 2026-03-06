@@ -14,12 +14,11 @@ from urllib.parse import urlencode
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import redirect_to_login
-from django.http import HttpResponse, QueryDict
 from django.views import View
 from django.views.decorators.http import require_POST
 from django.views.generic import DetailView
 
-from horilla.http import HorillaRefreshResponse, HttpNotFound
+from horilla.http import HttpNotFound, HttpResponse, QueryDict, RefreshResponse
 from horilla.shortcuts import get_object_or_404, render
 
 # First-party / Horilla imports
@@ -495,7 +494,7 @@ class ReportFolderDetailView(LoginRequiredMixin, HorillaListView):
         except Exception as e:
             if request.headers.get("HX-Request") == "true":
                 messages.error(self.request, e)
-                return HorillaRefreshResponse(request)
+                return RefreshResponse(request)
             raise HttpNotFound(e)
 
         return super().get(request, *args, **kwargs)
@@ -697,7 +696,7 @@ class SearchAvailableFieldsView(LoginRequiredMixin, DetailView):
         except Exception as e:
             if request.headers.get("HX-Request") == "true":
                 messages.error(self.request, e)
-                return HorillaRefreshResponse(request)
+                return RefreshResponse(request)
             raise HttpNotFound(e)
         return super().dispatch(request, *args, **kwargs)
 

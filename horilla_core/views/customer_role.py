@@ -5,10 +5,11 @@ This view handles the methods for team role view
 # Third-party imports (Django)
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
 from django.utils.functional import cached_property
 
-# First-party imports (Horilla core & apps)
+from horilla.http import HttpResponse
+
+# First-party imports (Horilla)
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,
@@ -17,6 +18,8 @@ from horilla.utils.decorators import (
     permission_required_or_denied,
 )
 from horilla.utils.translation import gettext_lazy as _
+
+# First-party / Horilla apps
 from horilla_core.filters import CustomerRoleFilter
 from horilla_core.models import CustomerRole
 from horilla_generics.views import (

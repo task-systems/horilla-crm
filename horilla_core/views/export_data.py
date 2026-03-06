@@ -18,7 +18,6 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 # Django imports (third-party)
 from django.db.models import ForeignKey
 from django.db.models.fields.related import ManyToManyField
-from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.text import slugify
 from django.views import View
@@ -32,6 +31,7 @@ from reportlab.pdfgen import canvas
 
 # First-party (Horilla)
 from horilla.apps import apps
+from horilla.http import HttpResponse
 from horilla.registry.feature import FEATURE_REGISTRY
 from horilla.shortcuts import render
 from horilla.utils.decorators import (

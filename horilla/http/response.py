@@ -55,7 +55,7 @@ class HttpNotFound(Exception):
         )
 
 
-class HorillaRedirectResponse(HttpResponseRedirect):
+class RedirectResponse(HttpResponseRedirect):
     """
     Safe redirect class to prevent open redirect vulnerabilities.
     Validates the target URL before redirecting.
@@ -88,7 +88,7 @@ class HorillaRedirectResponse(HttpResponseRedirect):
             super().__init__(previous_url)
 
 
-class HorillaRefreshResponse(HttpResponse):
+class RefreshResponse(HttpResponse):
     """
     HTTP response that triggers a full page refresh in HTMX clients.
     For HTMX requests: sets HX-Refresh header to reload the current page.

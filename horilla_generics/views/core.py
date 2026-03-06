@@ -12,14 +12,13 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
 from django.db import models
-from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.html import escapejs
 from django.views.generic import DetailView, FormView, TemplateView
 
 # First-party (Horilla)
 from horilla.apps import apps
-from horilla.http import HorillaRefreshResponse
+from horilla.http import HttpResponse, RefreshResponse
 from horilla.shortcuts import render
 from horilla.utils.decorators import htmx_required, method_decorator
 from horilla.utils.translation import gettext_lazy as _
@@ -105,7 +104,7 @@ class HorillaHistorySectionView(DetailView):
             self.object = self.get_object()
         except Exception as e:
             messages.error(self.request, e)
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):

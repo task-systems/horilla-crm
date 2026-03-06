@@ -10,7 +10,7 @@ from django.contrib.auth.views import redirect_to_login
 from django.db.models import ForeignKey, Q
 from django.views.generic import DetailView
 
-from horilla.http import HorillaRefreshResponse, HttpNotFound
+from horilla.http import HttpNotFound, RefreshResponse
 from horilla.shortcuts import render
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import method_decorator, permission_required_or_denied
@@ -45,7 +45,7 @@ class ReportDetailView(ReportDetailDataMixin, RecentlyViewedMixin, DetailView):
         except Exception as e:
             if request.headers.get("HX-Request") == "true":
                 messages.error(self.request, e)
-                return HorillaRefreshResponse(request)
+                return RefreshResponse(request)
             raise HttpNotFound(e)
         return super().dispatch(request, *args, **kwargs)
 

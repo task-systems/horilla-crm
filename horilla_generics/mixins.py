@@ -11,11 +11,11 @@ from urllib.parse import urlparse
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.cache import cache
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.http import HttpResponse, QueryDict
 from django.utils import translation
 
 from horilla.auth.models import User
 from horilla.core.exceptions import FieldDoesNotExist
+from horilla.http import HttpResponse, QueryDict
 from horilla.shortcuts import redirect, render
 
 # First-party / Horilla imports

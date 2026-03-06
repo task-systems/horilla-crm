@@ -8,12 +8,12 @@ import logging
 from typing import Any
 
 from django.contrib import messages
-from django.http import HttpResponse
 
 # Django / third-party imports
 from django.views.generic import DetailView
 
 from horilla.core.exceptions import FieldDoesNotExist
+from horilla.http import HttpResponse
 
 # First-party (Horilla)
 from horilla.shortcuts import render

@@ -6,14 +6,13 @@ This view handles the methods for Big deal alert view
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.views.generic import View
 
-from horilla.shortcuts import render
-
 # First-party / Horilla imports
+from horilla.http import HttpResponse
+from horilla.shortcuts import render
 from horilla.urls import reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,

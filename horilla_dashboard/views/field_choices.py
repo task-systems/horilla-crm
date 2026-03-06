@@ -4,11 +4,11 @@
 import logging
 
 # Third-party imports (Django)
-from django.http import HttpResponse
 from django.views.generic import View
 
 # First-party / Horilla imports
 from horilla.apps import apps
+from horilla.http import HttpResponse
 from horilla.shortcuts import render
 from horilla.utils.choices import DISPLAYABLE_FIELD_TYPES
 from horilla.utils.decorators import (

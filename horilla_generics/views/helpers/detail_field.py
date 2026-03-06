@@ -10,12 +10,12 @@ import logging
 # Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models.fields import Field
-from django.http import HttpResponse
 from django.utils.encoding import force_str
 from django.views import View
 
 # First-party (Horilla)
 from horilla.apps import apps
+from horilla.http import HttpResponse
 from horilla.shortcuts import render
 from horilla.urls import resolve, reverse
 from horilla.utils.decorators import htmx_required, method_decorator

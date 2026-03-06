@@ -7,11 +7,10 @@ from urllib.parse import urlencode
 # Third-party imports (Django)
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse, QueryDict
 from django.utils.functional import cached_property
 from django.views.generic import View
 
-from horilla.http import HorillaRefreshResponse, HttpNotFound
+from horilla.http import HttpNotFound, HttpResponse, QueryDict, RefreshResponse
 from horilla.shortcuts import get_object_or_404, render
 
 # First-party / Horilla imports
@@ -225,7 +224,7 @@ class FolderDetailListView(LoginRequiredMixin, HorillaListView):
         except Exception as e:
             if request.headers.get("HX-Request") == "true":
                 messages.error(self.request, e)
-                return HorillaRefreshResponse(request)
+                return RefreshResponse(request)
             raise HttpNotFound(e)
         return super().get(request, *args, **kwargs)
 

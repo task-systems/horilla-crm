@@ -9,11 +9,11 @@ import logging
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
-from django.http import Http404, HttpResponse
 
 # Django / third-party imports
 from django.views.generic import DetailView, FormView
 
+from horilla.http import Http404, HttpResponse
 from horilla.shortcuts import get_object_or_404, render
 
 # First-party (Horilla)
@@ -175,7 +175,7 @@ class HorillaNotesAttachementSectionView(DetailView):
         try:
             content_type = ContentType.objects.get_for_model(model=self.model)
         except ContentType.DoesNotExist:
-            from django.http import HttpResponseNotFound
+            from horilla.http import HttpResponseNotFound
 
             return HttpResponseNotFound("Model not found")
 

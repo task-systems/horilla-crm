@@ -9,7 +9,6 @@ import logging
 
 from django.contrib import messages
 from django.db import transaction
-from django.http import HttpResponse
 
 # Django / third-party imports
 from django.views.generic import DeleteView
@@ -21,7 +20,7 @@ from horilla.core.exceptions import (
     ObjectDoesNotExist,
     PermissionDenied,
 )
-from horilla.http import HttpNotFound
+from horilla.http import HttpNotFound, HttpResponse
 from horilla.shortcuts import redirect, render
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _

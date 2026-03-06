@@ -10,15 +10,14 @@ This module provides middleware for:
 import logging
 
 # Django imports
-from django.http import HttpResponse, HttpResponseNotAllowed
 from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
 
-from horilla.http import HttpNotFound
+from horilla.http import HttpNotFound, HttpResponse, HttpResponseNotAllowed
 from horilla.menu.sub_section_menu import sub_section_menu as menu_registry
 from horilla.shortcuts import redirect, render
 
-# Local application imports
+# First-party imports (Horilla)
 from horilla.urls import Resolver404, resolve
 
 from .models import Company

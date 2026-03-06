@@ -14,9 +14,10 @@ from django import forms
 from django.contrib import messages
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import models
-from django.http import HttpResponse
 from django.utils.dateparse import parse_date, parse_datetime
 from django.views.generic import FormView
+
+from horilla.http import HttpResponse
 
 # First-party (Horilla)
 from horilla.urls import reverse

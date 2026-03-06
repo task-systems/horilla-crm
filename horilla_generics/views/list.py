@@ -11,9 +11,10 @@ from operator import or_
 
 # Django / third-party imports
 from django.db.models import Case, Q, When
-from django.http import HttpResponse, QueryDict
 from django.utils.dateparse import parse_date, parse_datetime, parse_time
 from django.views.generic import ListView
+
+from horilla.http import HttpResponse, QueryDict
 
 # First-party (Horilla)
 from horilla.shortcuts import render

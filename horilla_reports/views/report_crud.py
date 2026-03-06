@@ -9,12 +9,11 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.contenttypes.models import ContentType
-from django.http import Http404, HttpResponse
 from django.views import View
 from django.views.decorators.http import require_POST
 from django.views.generic import DetailView
 
-from horilla.http import HorillaRefreshResponse, HttpNotFound
+from horilla.http import Http404, HttpNotFound, HttpResponse, RefreshResponse
 from horilla.shortcuts import get_object_or_404, redirect, render
 
 # First-party / Horilla imports
@@ -475,7 +474,7 @@ class ReportUpdateView(LoginRequiredMixin, DetailView):
         except Exception as e:
             if request.headers.get("HX-Request") == "true":
                 messages.error(self.request, e)
-                return HorillaRefreshResponse(request)
+                return RefreshResponse(request)
             raise HttpNotFound(e)
         return super().dispatch(request, *args, **kwargs)
 
@@ -539,7 +538,7 @@ class DiscardReportChangesView(LoginRequiredMixin, View):
             report = get_object_or_404(Report, pk=pk)
         except Exception as e:
             messages.error(request, str(e))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
 
         session_key = f"report_preview_{pk}"
 
@@ -579,7 +578,7 @@ class SaveReportChangesView(LoginRequiredMixin, View):
             report = get_object_or_404(Report, pk=pk)
         except Exception as e:
             messages.error(request, str(e))
-            return HorillaRefreshResponse(request)
+            return RefreshResponse(request)
 
         session_key = f"report_preview_{report.pk}"
         preview_data = request.session.get(session_key, {})
