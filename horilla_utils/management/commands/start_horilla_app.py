@@ -129,35 +129,29 @@ class Command(BaseCommand):
         # Convert app_name to verbose name with spaces (e.g., 'my_app' -> 'My App')
         verbose_name = " ".join(word.capitalize() for word in app_name.split("_"))
 
-        apps_py_content = f'''"""
-                            App configuration for the {app_name} app.
-                            """
-
-                            from horilla.apps import AppLauncher
-                            from horilla.utils.translation import gettext_lazy as _
-
-
-                            class {class_name}(AppLauncher):
-                                """
-                                Configuration class for the {app_name} app in Horilla.
-                                """
-
-                                default = True
-
-                                default_auto_field = "django.db.models.BigAutoField"
-                                name = "{app_name}"
-                                verbose_name = _("{verbose_name}")
-
-                                url_prefix = "{app_name}/"
-                                url_module = "{app_name}.urls"
-                                url_namespace = "{app_name}"
-
-                                auto_import_modules = [
-                                    "registration",
-                                    "signals",
-                                    "menu",
-                                ]
-                            '''
+        apps_py_content = (
+            f'"""\n'
+            f"App configuration for the {app_name} app.\n"
+            f'"""\n\n'
+            f"from horilla.apps import AppLauncher\n"
+            f"from horilla.utils.translation import gettext_lazy as _\n\n\n"
+            f"class {class_name}(AppLauncher):\n"
+            f'    """\n'
+            f"    Configuration class for the {app_name} app in Horilla.\n"
+            f'    """\n\n'
+            f"    default = True\n\n"
+            f'    default_auto_field = "django.db.models.BigAutoField"\n'
+            f'    name = "{app_name}"\n'
+            f'    verbose_name = _("{verbose_name}")\n\n'
+            f'    url_prefix = "{app_name}/"\n'
+            f'    url_module = "{app_name}.urls"\n'
+            f'    url_namespace = "{app_name}"\n\n'
+            f"    auto_import_modules = [\n"
+            f'        "registration",\n'
+            f'        "signals",\n'
+            f'        "menu",\n'
+            f"    ]\n"
+        )
 
         with open(os.path.join(target_dir, "apps.py"), "w", encoding="utf-8") as f:
             f.write(apps_py_content)
