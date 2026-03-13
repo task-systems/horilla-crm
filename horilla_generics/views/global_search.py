@@ -33,7 +33,17 @@ class GlobalSearchView(LoginRequiredMixin, View):
     """View for performing cross-model global searches across registered models."""
 
     template_name = "global_search.html"
-    include_models = FEATURE_REGISTRY.get("global_search_models", [])
+
+    @classmethod
+    def get_include_models(cls):
+        """
+        Models registered for global search, read from the feature registry at call time.
+
+        Must not be cached on the class: registration runs in AppConfig.ready() after
+        URL/view imports, so reading FEATURE_REGISTRY at import time leaves an empty
+        list and global search would always return no results.
+        """
+        return list(FEATURE_REGISTRY.get("global_search_models", []))
 
     # Standard fields to exclude from column display
     exclude_standard_fields = [
@@ -95,8 +105,9 @@ class GlobalSearchView(LoginRequiredMixin, View):
         model_config = {}
         all_models = apps.get_models()
 
+        include_models = self.get_include_models()
         include_models_lower = [
-            model._meta.model_name.lower() for model in self.include_models
+            model._meta.model_name.lower() for model in include_models
         ]
 
         for model in all_models:
@@ -317,7 +328,6 @@ class GlobalSearchView(LoginRequiredMixin, View):
         list_view.kwargs = {}
         list_view.paginate_by = 100
         list_view.object_list = results
-        list_view.table_height = False
         list_view.table_height_as_class = "h-[calc(_100vh_-_160px_)]"
         list_view.bulk_select_option = False
         list_view.table_width = False
