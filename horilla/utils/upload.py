@@ -6,8 +6,10 @@ uploaded files (e.g. app_label/model_name/field_name/slug-uuid.ext) to avoid
 collisions and keep uploads organized by app, model, and field.
 """
 
+# Standard library imports
 from uuid import uuid4
 
+# Third-party imports (Django)
 from django.utils.text import slugify
 
 

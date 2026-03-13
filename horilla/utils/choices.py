@@ -6,8 +6,10 @@ currency formats, number grouping, months, days, and operators used throughout
 the Horilla application.
 """
 
+# Standard library imports
 from zoneinfo import available_timezones
 
+# Third-party imports (Django)
 from django.utils.translation import gettext_lazy as _
 
 TIMEZONE_CHOICES = sorted([(tz, tz) for tz in available_timezones()])
