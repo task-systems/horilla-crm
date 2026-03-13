@@ -3,18 +3,15 @@
 # Third-party imports (Django)
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db import models
 from django.utils.formats import date_format
 from django.views import View
 
-from horilla.http import HttpResponse
-
 # First-party / Horilla imports
+from horilla.db import models
+from horilla.http import HttpResponse
 from horilla.shortcuts import render
 from horilla.utils.decorators import htmx_required, method_decorator
 from horilla.utils.translation import gettext_lazy as _
-
-# Local application imports
 from horilla_notifications.models import Notification
 
 
@@ -180,4 +177,4 @@ class OpenNotificationView(LoginRequiredMixin, View):
             return response
 
         except Notification.DoesNotExist:
-            return render(request, "error/403.html", status=404)
+            return render(request, "403.html", status=404)

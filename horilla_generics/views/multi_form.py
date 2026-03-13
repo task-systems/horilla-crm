@@ -13,13 +13,12 @@ from urllib.parse import urlencode
 from django import forms
 from django.contrib import messages
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import models
 from django.utils.dateparse import parse_date, parse_datetime
 from django.views.generic import FormView
 
-from horilla.http import HttpResponse
-
 # First-party (Horilla)
+from horilla.db import models
+from horilla.http import HttpResponse
 from horilla.urls import reverse
 from horilla.utils.translation import gettext_lazy as _
 from horilla_generics.forms import HorillaMultiStepForm
@@ -46,7 +45,7 @@ class HorillaMultiStepFormView(FormViewCommonMixin, FormView):
     pk_url_kwarg = "pk"
     permission_required = None
     check_object_permission = True
-    permission_denied_template = "error/403.html"
+    permission_denied_template = "403.html"
     skip_permission_check = False
     view_id = ""
     single_step_url_name = None

@@ -6,13 +6,12 @@ including settings and about system information.
 # Standard library imports
 import logging
 
-# Django imports
-from django.db import models
-
 # First-party / Horilla imports
+from horilla.db import models
 from horilla.registry.permission_registry import permission_exempt_model
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import HorillaCoreModel
+
+from .base import HorillaCoreModel
 
 logger = logging.getLogger(__name__)
 

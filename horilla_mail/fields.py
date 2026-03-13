@@ -5,8 +5,10 @@ This module provides encrypted field implementations for storing sensitive
 data such as email passwords in an encrypted format.
 """
 
-from django.db import models
+# First-party / Horilla imports
+from horilla.db import models
 
+# Local import
 from .encryption_utils import encrypt_password
 
 

@@ -12,12 +12,13 @@ from decimal import Decimal
 
 # Django imports
 from django import forms
-from django.db import models
 from django.db.models.fields.files import ImageFieldFile
 
 # Third-party imports
 from django_countries.fields import Country, CountryField
 
+# First-party / Horilla imports
+from horilla.db import models
 from horilla.utils.translation import gettext_lazy as _
 from horilla_generics.forms.form_class_mixin import (
     WIDGET_INPUT_CSS_CLASS,

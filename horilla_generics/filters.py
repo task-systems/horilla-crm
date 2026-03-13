@@ -11,8 +11,10 @@ import logging
 import django_filters
 
 # Third-party imports (Django)
-from django.db import models
 from django.db.models import Q
+
+# First-party / Horilla imports
+from horilla.db import models
 
 # String-like field types where "empty" means NULL or empty string
 STRING_LIKE_FIELDS = (

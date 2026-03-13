@@ -4,12 +4,13 @@ Models for managing accounts in the CRM system, including account details,
 
 # Third-party imports (Django)
 from django.conf import settings
-from django.db import models
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 
-# First-party / Horilla imports
 from horilla.apps import apps
+
+# First-party / Horilla imports
+from horilla.db import models
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
 from horilla_core.models import HorillaCoreModel

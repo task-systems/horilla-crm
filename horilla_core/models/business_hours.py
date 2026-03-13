@@ -5,24 +5,25 @@ holidays in the Horilla CRM application.
 
 # Standard library imports
 import logging
+
+# Third-party imports
 from datetime import time
 
 # Django imports
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models
 from django.utils.formats import time_format
 from django.utils.html import format_html, format_html_join
-
-# Third-party imports
 from multiselectfield import MultiSelectField
 
 # First-party / Horilla imports
+from horilla.db import models
 from horilla.urls import reverse_lazy
 from horilla.utils.choices import DAY_CHOICES, MONTH_CHOICES, TIMEZONE_CHOICES
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import HorillaCoreModel
 from horilla_utils.methods import render_template
+
+from .base import HorillaCoreModel
 
 logger = logging.getLogger(__name__)
 

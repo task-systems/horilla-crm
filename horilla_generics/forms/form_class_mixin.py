@@ -7,11 +7,10 @@ widget/initial configuration used by both HorillaModelForm and HorillaMultiStepF
 
 # Third-party imports (Django)
 from django import forms
-from django.db import models
-
-from horilla.urls import reverse_lazy
 
 # First-party / Horilla imports
+from horilla.db import models
+from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
 
 # Shared widget CSS classes (single-step and multi-step use the same styling)

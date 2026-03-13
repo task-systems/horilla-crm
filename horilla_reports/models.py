@@ -7,18 +7,14 @@ for presentation and serialization used by the reports UI.
 # Standard library imports
 import json
 
+# Third-party imports (Django)
 from django.conf import settings
 
-# Third-party imports (Django)
-from django.db import models
-
-from horilla.registry.limiters import limit_content_types
-
 # First-party imports (Horilla)
+from horilla.db import models
+from horilla.registry.limiters import limit_content_types
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
-
-# First-party / Horilla apps
 from horilla_core.models import HorillaContentType, HorillaCoreModel
 from horilla_utils.methods import render_template
 
@@ -100,6 +96,11 @@ class Report(HorillaCoreModel):
         ("stacked_vertical", _("Stacked Vertical Chart")),
         ("stacked_horizontal", _("Stacked Horizontal Chart")),
         ("scatter", _("Scatter Chart")),
+        ("treemap", _("Treemap")),
+        ("area", _("Area Chart")),
+        ("heatmap", _("Heatmap")),
+        ("sankey", _("Sankey")),
+        ("radar", _("Radar Chart")),
     ]
     report_owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,

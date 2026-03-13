@@ -9,14 +9,15 @@ from datetime import date, datetime
 
 # Django imports
 from django.conf import settings
-from django.db import models
 from django.utils import timezone
 
 # First-party / Horilla imports
+from horilla.db import models
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import Company, CompanyFilteredManager
 from horilla_utils.middlewares import _thread_local
+
+from .base import Company, CompanyFilteredManager
 
 
 class RecycleBin(models.Model):

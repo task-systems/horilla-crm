@@ -7,16 +7,18 @@ import logging
 
 # Django imports
 from django.conf import settings
-from django.db import models
 from django.utils.html import format_html
 
-# First-party / Horilla imports
 from horilla.apps import apps
+
+# First-party / Horilla imports
+from horilla.db import models
 from horilla.urls import reverse_lazy
 from horilla.utils.choices import DAY_CHOICES
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import HorillaCoreModel
 from horilla_utils.methods import render_template
+
+from .base import HorillaCoreModel
 
 logger = logging.getLogger(__name__)
 

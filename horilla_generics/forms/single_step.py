@@ -10,12 +10,13 @@ import logging
 
 # Third-party imports (Django)
 from django import forms
-from django.db import models
 from django.db.models import Q
 from django.templatetags.static import static
 
-# First-party / Horilla imports
 from horilla.auth.models import User
+
+# First-party / Horilla imports
+from horilla.db import models
 from horilla.utils.translation import gettext_lazy as _
 from horilla_generics.forms import condition_fields as condition_fields_module
 from horilla_generics.forms.form_class_mixin import (

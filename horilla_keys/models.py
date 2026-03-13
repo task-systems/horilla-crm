@@ -5,15 +5,14 @@ Models for the horilla_keys app
 from django.conf import settings
 
 # Third-party imports (Django)
-from django.db import models
 from django.utils.html import format_html
 
+# First-party / Horilla imports
+from horilla.db import models
 from horilla.menu.main_section_menu import get_main_section_menu
 from horilla.menu.my_settings_menu import get_my_settings_menu
 from horilla.menu.settings_menu import get_settings_menu
 from horilla.menu.sub_section_menu import get_sub_section_menu
-
-# First-party / Horilla imports
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
 from horilla_core.models import HorillaCoreModel

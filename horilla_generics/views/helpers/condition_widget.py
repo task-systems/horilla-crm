@@ -9,15 +9,16 @@ import logging
 
 # Third-party imports (Django)
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db import models
 from django.template import Context, Template
 from django.utils.encoding import force_str
 from django.utils.html import escape, format_html, format_html_join
 from django.utils.safestring import mark_safe
 from django.views import View
 
-# First-party (Horilla)
 from horilla.apps import apps
+
+# First-party (Horilla)
+from horilla.db import models
 from horilla.http import HttpResponse
 from horilla.shortcuts import render
 from horilla.utils.choices import FIELD_TYPE_MAP

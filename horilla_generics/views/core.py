@@ -11,13 +11,14 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
-from django.db import models
 from django.template.loader import render_to_string
 from django.utils.html import escapejs
 from django.views.generic import DetailView, FormView, TemplateView
 
-# First-party (Horilla)
 from horilla.apps import apps
+
+# First-party (Horilla)
+from horilla.db import models
 from horilla.http import HttpResponse, RefreshResponse
 from horilla.shortcuts import render
 from horilla.utils.decorators import htmx_required, method_decorator
@@ -39,10 +40,14 @@ class HorillaView(TemplateView):
     list_url: str = ""
     kanban_url: str = ""
     group_by_url: str = ""
+    card_url: str = ""
+    timeline_url: str = ""
+    split_view_url: str = ""
+    chart_url: str = ""
     nav_url: str = ""
 
     def get_context_data(self, **kwargs):
-        """Add nav/list/kanban/group_by URLs and filter_form trigger to template context."""
+        """Add nav/list/kanban/group_by/card/split_view URLs and filter_form trigger to template context."""
         context = super().get_context_data(**kwargs)
         filter_form = self.request.headers.get("HX-Trigger")
         if filter_form == "filter-form":
@@ -51,6 +56,10 @@ class HorillaView(TemplateView):
         context["list_url"] = self.list_url
         context["kanban_url"] = self.kanban_url
         context["group_by_url"] = self.group_by_url
+        context["card_url"] = getattr(self, "card_url", "") or ""
+        context["timeline_url"] = getattr(self, "timeline_url", "") or ""
+        context["split_view_url"] = getattr(self, "split_view_url", "") or ""
+        context["chart_url"] = getattr(self, "chart_url", "") or ""
         return context
 
 
@@ -258,7 +267,7 @@ class HorillaDynamicCreateView(LoginRequiredMixin, FormView):
             permissions = [f"{app_label}.add_{model_name}"]
 
         if not any(request.user.has_perm(perm) for perm in permissions):
-            return render(request, "error/403.html", {"modal": True})
+            return render(request, "403.html", {"modal": True})
 
         return super().dispatch(request, *args, **kwargs)
 

@@ -8,17 +8,16 @@ from decimal import ROUND_HALF_UP, Decimal
 
 # Third-party imports
 from dateutil.relativedelta import relativedelta
-
-# Django imports
-from django.db import models
 from djmoney.settings import CURRENCY_CHOICES
 
 # First-party / Horilla imports
+from horilla.db import models
 from horilla.urls import reverse_lazy
 from horilla.utils.choices import CURRENCY_FORMAT_CHOICES, DAY_CHOICES, MONTH_CHOICES
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import Company, HorillaCoreModel
 from horilla_utils.methods import render_template
+
+from .base import Company, HorillaCoreModel
 
 
 class MultipleCurrency(HorillaCoreModel):

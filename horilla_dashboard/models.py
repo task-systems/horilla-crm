@@ -7,10 +7,12 @@ import logging
 # Third-party imports (Django)
 from django.conf import settings
 from django.core.validators import MinValueValidator
-from django.db import models, transaction
+from django.db import transaction
+
+from horilla.apps import apps
 
 # First-party imports (Horilla)
-from horilla.apps import apps
+from horilla.db import models
 from horilla.registry.limiters import limit_content_types
 from horilla.registry.permission_registry import permission_exempt_model
 from horilla.urls import reverse_lazy
@@ -19,8 +21,6 @@ from horilla.utils.translation import gettext_lazy as _
 from horilla.utils.upload import upload_path
 from horilla_core.models import HorillaContentType, HorillaCoreModel
 from horilla_reports.models import Report
-
-# First-party / Horilla apps
 from horilla_utils.methods import render_template
 
 logger = logging.getLogger(__name__)
@@ -235,6 +235,12 @@ class DashboardComponent(HorillaCoreModel):
         ("donut", _("Donut")),
         ("stacked_vertical", _("Stacked Vertical Chart")),
         ("stacked_horizontal", _("Stacked Horizontal Chart")),
+        ("scatter", _("Scatter")),
+        ("heatmap", _("Heat Map")),
+        ("treemap", _("Tree Map")),
+        ("area", _("Area Chart")),
+        ("sankey", _("Sankey Chart")),
+        ("radar", _("Radar Chart")),
     ]
 
     METRIC_TYPES = [
@@ -299,12 +305,10 @@ class DashboardComponent(HorillaCoreModel):
         max_length=100,
         blank=True,
         null=True,
-        verbose_name=_("Secondary Grouping (For Stacked)"),
+        verbose_name=_("Secondary Grouping"),
     )
 
-    columns = models.CharField(
-        max_length=100, blank=True, null=True, verbose_name=_("Table Columns")
-    )
+    columns = models.TextField(blank=True, null=True, verbose_name=_("Table Columns"))
 
     # Display and positioning
     sequence = models.PositiveIntegerField(

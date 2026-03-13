@@ -5,7 +5,6 @@ import json as json_module
 import re
 
 # Third-party imports (Django)
-from django.db import models
 from django.db.models import Manager, QuerySet
 from django.forms import BaseForm
 from django.templatetags.static import static
@@ -13,8 +12,10 @@ from django.utils.encoding import force_str
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 
-# First-party / Horilla imports
 from horilla.apps import apps
+
+# First-party / Horilla imports
+from horilla.db import models
 from horilla.urls import reverse
 from horilla.utils.translation import gettext_lazy as _
 from horilla_core.utils import get_currency_display_value
@@ -181,27 +182,26 @@ def render_action_button(action, obj):
         other_classes = [c for c in classes if c not in size_classes]
         image_class = " ".join(other_classes)
 
+        # action_tooltip.js reads title for pill text (fixed; not clipped by overflow-hidden)
         return format_html(
-            "<button {} class='group relative w-10 h-7 bg-dark-25 flex-1 flex justify-center border-r border-r-[white] hover:bg-dark-50 transition duration-300 items-center'>"
-            '<img src="{}" alt="{}" width="16" class="{}" />'
-            '<div class="min-w-max z-40 absolute h-auto py-[3px] px-[15px] right-[40px] top-0 bg-[#000000] text-[.7rem] rounded-[5px] text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">'
-            "<p>{}</p>"
-            "</div>"
+            "<button {} class='w-10 h-7 bg-dark-25 flex-1 flex justify-center border-r border-r-[white] hover:bg-dark-50 transition duration-300 items-center' title='{}' aria-label='{}'>"
+            '<img src="{}" alt="" width="16" class="{}" />'
             "</button>",
             mark_safe(attrs),
+            escape(tooltip),
+            escape(tooltip),
             escape(static_url),
-            escape(tooltip),
             escape(image_class),
-            escape(tooltip),
         )
 
     if "icon" in action:
         icon_name = action.get("icon", "")
         icon_class = action.get("icon_class", "")
         return format_html(
-            '<button class="w-10 h-7 bg-dark-25 flex-1 flex justify-center border-r border-r-[white] hover:bg-dark-50 transition duration-300 items-center" {} title="{}">'
+            '<button class="w-10 h-7 bg-dark-25 flex-1 flex justify-center border-r border-r-[white] hover:bg-dark-50 transition duration-300 items-center" aria-label="{}" {} title="{}">'
             '<i class="{} {}"></i>'
             "</button>",
+            escape(tooltip),
             mark_safe(attrs),
             escape(tooltip),
             escape(icon_name),

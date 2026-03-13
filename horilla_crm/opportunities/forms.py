@@ -6,11 +6,11 @@ import logging
 # Django imports
 from django import forms
 from django.core.exceptions import FieldDoesNotExist
-from django.db import models
 
 from horilla.auth.models import User
 
 # Horilla / first-party imports
+from horilla.db import models
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
 from horilla_core.mixins import OwnerQuerysetMixin

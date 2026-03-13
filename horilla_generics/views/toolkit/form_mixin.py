@@ -4,15 +4,13 @@ Provides shared permission checks, dynamic create field filtering, related model
 permission-denied response, object resolution, alternate form URL, and field permissions.
 """
 
+# Third-party imports (Django)
 from django.contrib import messages
 
-# Third-party imports (Django)
-from django.db import models
-
+# First-party imports (Horilla)
+from horilla.db import models
 from horilla.http import HttpResponse
 from horilla.shortcuts import get_object_or_404, render
-
-# First-party imports (Horilla)
 from horilla.urls import reverse
 from horilla_core.utils import get_field_permissions_for_model
 
@@ -79,7 +77,7 @@ class FormViewCommonMixin:
         """Return the standard 403 response when the user lacks permission."""
         return render(
             request,
-            getattr(self, "permission_denied_template", "error/403.html"),
+            getattr(self, "permission_denied_template", "403.html"),
             {"modal": True},
         )
 
@@ -153,8 +151,12 @@ class FormViewCommonMixin:
         Check if the user has the required permissions.
         Automatically checks both model permissions and object-level permissions.
         Supports duplicate_mode (single form).
+        Superusers are always allowed (same as has_any_perms / Django convention).
         """
         user = self.request.user
+        if getattr(user, "is_superuser", False):
+            return True
+
         permissions = self.permission_required or self.get_auto_permissions()
 
         if isinstance(permissions, str):

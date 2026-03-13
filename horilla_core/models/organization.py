@@ -7,12 +7,13 @@ import logging
 
 # Django imports
 from django.contrib.auth.models import Permission
-from django.db import models
 
 # First-party / Horilla imports
+from horilla.db import models
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
-from horilla_core.models import HorillaCoreModel
+
+from .base import HorillaCoreModel
 
 logger = logging.getLogger(__name__)
 

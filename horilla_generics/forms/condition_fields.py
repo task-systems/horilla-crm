@@ -12,10 +12,11 @@ import logging
 
 # Third-party imports (Django)
 from django import forms
-from django.db import models
+
+from horilla.apps import apps
 
 # First-party / Horilla imports
-from horilla.apps import apps
+from horilla.db import models
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
 

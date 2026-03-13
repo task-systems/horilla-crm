@@ -12,12 +12,13 @@ from urllib.parse import urlencode
 # Django / third-party imports
 from django import forms
 from django.contrib import messages
-from django.db import IntegrityError, models
+from django.db import IntegrityError
 from django.views.generic import FormView
 
 from horilla.core.exceptions import FieldDoesNotExist
 
-# First-party (Horilla)
+# First-party / Horilla apps
+from horilla.db import models
 from horilla.http import HttpResponse
 from horilla.urls import reverse, reverse_lazy
 from horilla.utils.choices import TABLE_FALLBACK_FIELD_TYPES
@@ -27,8 +28,6 @@ from horilla_generics.views.toolkit.form_mixin import FormViewCommonMixin
 from horilla_generics.views.toolkit.single_form_builder import (
     fill_mandatory_condition_defaults,
 )
-
-# First-party / Horilla apps
 from horilla_utils.middlewares import _thread_local
 
 logger = logging.getLogger(__name__)
@@ -65,7 +64,7 @@ class HorillaSingleFormView(FormViewCommonMixin, FormView):
     hx_attrs: dict = {}
     permission_required = None
     check_object_permission = True
-    permission_denied_template = "error/403.html"
+    permission_denied_template = "403.html"
     skip_permission_check = False
 
     multi_step_url_name = None

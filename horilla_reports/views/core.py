@@ -18,10 +18,10 @@ from django.views import View
 from django.views.decorators.http import require_POST
 from django.views.generic import DetailView
 
+# First-party / Horilla imports
+from horilla.db import models
 from horilla.http import HttpNotFound, HttpResponse, QueryDict, RefreshResponse
 from horilla.shortcuts import get_object_or_404, render
-
-# First-party / Horilla imports
 from horilla.urls import reverse, reverse_lazy
 from horilla.utils.decorators import (
     htmx_required,
@@ -71,7 +71,7 @@ class ReportNavbar(LoginRequiredMixin, HorillaNavView):
         super().__init__(**kwargs)
         request = getattr(_thread_local, "request", None)
         title = request.GET.get("title")
-        self.all_view_types = True if title == "Reports" else False
+        self.all_view_types = title == "Reports"
 
     def get_context_data(self, **kwargs):
         """Add navigation title from query params into the context."""
@@ -473,7 +473,6 @@ class ReportFolderDetailView(LoginRequiredMixin, HorillaListView):
 
     def get_queryset(self):
         folder_id = self.kwargs.get("pk")
-        from django.db import models
 
         folders = ReportFolder.objects.filter(parent__id=folder_id).annotate(
             content_type=models.Value("folder", output_field=models.CharField())
@@ -488,7 +487,7 @@ class ReportFolderDetailView(LoginRequiredMixin, HorillaListView):
         if not self.model.objects.filter(
             report_folder_owner_id=self.request.user, pk=self.kwargs["pk"]
         ).first() and not self.request.user.has_perm("horilla_reports.view_report"):
-            return render(self.request, "error/403.html")
+            return render(self.request, "403.html")
         try:
             ReportFolder.objects.get(pk=folder_id)
         except Exception as e:
@@ -615,7 +614,7 @@ class MarkFolderAsFavouriteView(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         """Return 403 error page for GET requests."""
-        return render(request, "error/403.html")
+        return render(request, "403.html")
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -647,7 +646,7 @@ class MarkReportAsFavouriteView(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         """Return 403 error page for GET requests."""
-        return render(request, "error/403.html")
+        return render(request, "403.html")
 
 
 @method_decorator(htmx_required, name="dispatch")

@@ -3,14 +3,15 @@ Models for managing contacts in the CRM system, including contact details,
 """
 
 from django.conf import settings
-from django.db import models
 
 # Third-party imports (Django)
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 
-# First-party / Horilla imports
 from horilla.apps import apps
+
+# First-party / Horilla imports
+from horilla.db import models
 from horilla.urls import reverse_lazy
 from horilla.utils.choices import LANGUAGE_CHOICES
 from horilla.utils.translation import gettext_lazy as _

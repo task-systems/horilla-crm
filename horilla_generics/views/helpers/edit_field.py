@@ -12,13 +12,14 @@ from zoneinfo import ZoneInfo
 # Third-party imports (Django)
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db import models
 from django.template import Context, Template
 from django.utils import timezone
 from django.views import View
 
-# First-party (Horilla)
 from horilla.apps import apps
+
+# First-party (Horilla)
+from horilla.db import models
 from horilla.http import HttpResponse
 from horilla.shortcuts import get_object_or_404, render
 from horilla.utils.decorators import htmx_required, method_decorator

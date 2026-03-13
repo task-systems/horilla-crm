@@ -8,13 +8,14 @@ import threading
 from decimal import Decimal
 
 # Third-party imports (Django)
-from django.db import models
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import Signal, receiver
 
-# First-party / Horilla imports
 from horilla.apps import apps
 from horilla.auth.models import User
+
+# First-party / Horilla imports
+from horilla.db import models
 from horilla.shortcuts import render
 from horilla.urls import reverse_lazy
 from horilla_core.models import TeamRole

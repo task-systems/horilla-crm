@@ -27,6 +27,7 @@ from horilla_core.models.activity import (
 from horilla_core.models.attachments import HorillaAttachment
 from horilla_core.models.filters import (
     KanbanGroupBy,
+    TimelineSpanBy,
     SavedFilterList,
     PinnedView,
     QuickFilter,
@@ -84,6 +85,7 @@ __all__ = [
     "RecentlyViewed",
     "HorillaAttachment",
     "KanbanGroupBy",
+    "TimelineSpanBy",
     "SavedFilterList",
     "PinnedView",
     "QuickFilter",
