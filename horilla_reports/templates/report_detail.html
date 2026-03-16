@@ -174,16 +174,6 @@
                                                   >{% trans 'Change Chart' %}
                                                 </a>
                                             </li>
-                                            {% if total_groups_count > 1 %}
-                                                <li>
-                                                    <a href="#" class="block px-3 py-1.5 hover:text-primary-600 transition duration-300 text-[.8rem]"
-                                                        hx-get="{% url 'horilla_reports:change_chart_field' report.pk %}"
-                                                        hx-on:click="openModal();"
-                                                        hx-target="#modalBox"
-                                                        hx-swap="innerHTML"
-                                                    >{% trans 'Change Field' %}</a>
-                                                </li>
-                                            {% endif %}
                                             <li>
                                                 <a href="#" class="block px-3 py-1.5 hover:text-primary-600 transition duration-300 text-[.8rem]"
                                                     onclick="exportChartAsPDF('chart-{{ report.pk }}', 'report_{{ report.pk }}')">{% trans "Export as PDF" %}

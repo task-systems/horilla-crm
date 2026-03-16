@@ -14,6 +14,7 @@ TEMP_REPORT_FIELDS = (
     "chart_type",
     "chart_field",
     "chart_field_stacked",
+    "chart_value_field",
 )
 
 

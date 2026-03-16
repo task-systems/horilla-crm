@@ -137,6 +137,12 @@ class Report(HorillaCoreModel):
     chart_field_stacked = models.CharField(
         max_length=200, blank=True, null=True, verbose_name=_("Secondary Field")
     )
+    chart_value_field = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name=_("Value Field (Y-axis)"),
+    )
 
     is_favourite = models.BooleanField(default=False)
     shared_with = models.ManyToManyField(

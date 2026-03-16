@@ -122,6 +122,21 @@ class ReportDetailView(ReportDetailDataMixin, RecentlyViewedMixin, DetailView):
             if agg.get("field"):
                 fields.append(agg["field"])
 
+        # Ensure selected Y-axis (value) field is present in the DataFrame so
+        # chart_value_field can be aggregated instead of just counts.
+        raw_value = getattr(temp_report, "chart_value_field", None)
+        value_field = None
+        if raw_value:
+            if "__" in raw_value:
+                # New style: "metric__fieldname"
+                _, f = raw_value.split("__", 1)
+                value_field = f
+            else:
+                # Backward compatibility: plain field name
+                value_field = raw_value
+        if value_field:
+            fields.append(value_field)
+
         # Remove duplicates while preserving order
         fields = list(dict.fromkeys(fields))
 
@@ -381,6 +396,24 @@ class ReportDetailView(ReportDetailDataMixin, RecentlyViewedMixin, DetailView):
         model_class = report.model_class
         section_info = get_section_info_for_model(model_class)
 
+        # Optional Y-axis: when set and present in DataFrame, aggregate that
+        # column instead of using record counts. Supports metric+field
+        # configuration like "sum__amount", "avg__amount", etc.
+        raw_value = getattr(report, "chart_value_field", None)
+        metric = "sum"
+        value_field = None
+        if raw_value:
+            if "__" in raw_value:
+                m, f = raw_value.split("__", 1)
+                if f in df.columns:
+                    value_field = f
+                    metric = m.lower() or "sum"
+            elif raw_value in df.columns:
+                # Backward compatibility: plain field name implies sum
+                value_field = raw_value
+                metric = "sum"
+        has_value_field = bool(value_field)
+
         total_groups = len(report.row_groups_list) + len(report.column_groups_list)
         chart_data["has_multiple_groups"] = total_groups >= 2
 
@@ -434,12 +467,22 @@ class ReportDetailView(ReportDetailDataMixin, RecentlyViewedMixin, DetailView):
                     chart_field = report.chart_field
 
                 if chart_field:
-                    grouped = df.groupby(chart_field).size()
+                    if has_value_field:
+                        if metric == "avg":
+                            grouped_series = df.groupby(chart_field)[value_field].mean()
+                        elif metric == "min":
+                            grouped_series = df.groupby(chart_field)[value_field].min()
+                        elif metric == "max":
+                            grouped_series = df.groupby(chart_field)[value_field].max()
+                        else:
+                            grouped_series = df.groupby(chart_field)[value_field].sum()
+                    else:
+                        grouped_series = df.groupby(chart_field).size()
 
                     display_labels = []
                     display_count = {}
 
-                    for k in grouped.index:
+                    for k in grouped_series.index:
                         display_info = self.get_display_value(
                             k, chart_field, model_class, fk_cache
                         )
@@ -460,12 +503,12 @@ class ReportDetailView(ReportDetailDataMixin, RecentlyViewedMixin, DetailView):
                         display_labels.append(unique_label)
 
                     chart_data["labels"] = display_labels
-                    chart_data["data"] = [float(v) for v in grouped.values]
+                    chart_data["data"] = [float(v) for v in grouped_series.values]
                     chart_data["label_field"] = self.get_verbose_name(
                         chart_field, model_class
                     )
                     urls = []
-                    for value in grouped.index:
+                    for value in grouped_series.index:
                         query = urlencode(
                             {
                                 "section": section_info["section"],
@@ -610,13 +653,44 @@ class ReportDetailView(ReportDetailDataMixin, RecentlyViewedMixin, DetailView):
                     report.save(update_fields=fields_to_update)
 
             try:
-                pivot_table = pd.pivot_table(
-                    df,
-                    index=[primary_field],
-                    columns=[secondary_field],
-                    aggfunc="size",
-                    fill_value=0,
-                )
+                # Support metric + field configuration for stacked charts as well.
+                raw_value = getattr(report, "chart_value_field", None)
+                metric = "sum"
+                value_field = None
+                if raw_value:
+                    if "__" in raw_value:
+                        m, f = raw_value.split("__", 1)
+                        if f in df.columns:
+                            value_field = f
+                            metric = m.lower() or "sum"
+                    elif raw_value in df.columns:
+                        value_field = raw_value
+                        metric = "sum"
+
+                if value_field and value_field in df.columns:
+                    aggfunc = "sum"
+                    if metric == "avg":
+                        aggfunc = "mean"
+                    elif metric == "min":
+                        aggfunc = "min"
+                    elif metric == "max":
+                        aggfunc = "max"
+                    pivot_table = pd.pivot_table(
+                        df,
+                        index=[primary_field],
+                        columns=[secondary_field],
+                        values=value_field,
+                        aggfunc=aggfunc,
+                        fill_value=0,
+                    )
+                else:
+                    pivot_table = pd.pivot_table(
+                        df,
+                        index=[primary_field],
+                        columns=[secondary_field],
+                        aggfunc="size",
+                        fill_value=0,
+                    )
             except Exception:
                 return self._fallback_chart_data(df, report, model_class, fk_cache)
 
@@ -753,12 +827,35 @@ class ReportDetailView(ReportDetailDataMixin, RecentlyViewedMixin, DetailView):
 
         if fallback_field:
             try:
-                grouped = df.groupby(fallback_field).size()
+                raw_value = getattr(report, "chart_value_field", None)
+                metric = "sum"
+                value_field = None
+                if raw_value:
+                    if "__" in raw_value:
+                        m, f = raw_value.split("__", 1)
+                        if f in df.columns:
+                            value_field = f
+                            metric = m.lower() or "sum"
+                    elif raw_value in df.columns:
+                        value_field = raw_value
+                        metric = "sum"
+
+                if value_field and value_field in df.columns:
+                    if metric == "avg":
+                        grouped_series = df.groupby(fallback_field)[value_field].mean()
+                    elif metric == "min":
+                        grouped_series = df.groupby(fallback_field)[value_field].min()
+                    elif metric == "max":
+                        grouped_series = df.groupby(fallback_field)[value_field].max()
+                    else:
+                        grouped_series = df.groupby(fallback_field)[value_field].sum()
+                else:
+                    grouped_series = df.groupby(fallback_field).size()
 
                 display_labels = []
                 display_count = {}
 
-                for k in grouped.index:
+                for k in grouped_series.index:
                     display_info = self.get_display_value(
                         k, fallback_field, model_class, fk_cache
                     )
@@ -777,7 +874,7 @@ class ReportDetailView(ReportDetailDataMixin, RecentlyViewedMixin, DetailView):
                     display_labels.append(unique_label)
 
                 urls = []
-                for value in grouped.index:
+                for value in grouped_series.index:
                     query = urlencode(
                         {
                             "section": section_info["section"],
@@ -791,7 +888,7 @@ class ReportDetailView(ReportDetailDataMixin, RecentlyViewedMixin, DetailView):
 
                 return {
                     "labels": display_labels,
-                    "data": [float(v) for v in grouped.values],
+                    "data": [float(v) for v in grouped_series.values],
                     "urls": urls,
                     "stacked_data": {},
                     "label_field": self.get_verbose_name(fallback_field, model_class),
