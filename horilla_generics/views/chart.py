@@ -7,10 +7,22 @@ field; chart types aligned with reports/dashboards (horilla_charts.js).
 import json
 import logging
 from collections import defaultdict
+from decimal import Decimal
 from urllib.parse import urlencode
 
 # Django
-from django.db.models import BooleanField, Count, ForeignKey
+from django.db.models import (
+    Avg,
+    BooleanField,
+    Count,
+    DateField,
+    DateTimeField,
+    ForeignKey,
+    Max,
+    Min,
+    Sum,
+)
+from django.db.models.functions import TruncMonth
 from django.utils.text import slugify
 
 # First-party
@@ -43,8 +55,25 @@ CHART_TYPE_CHOICES = [
 ]
 CHART_TYPE_VALUES = tuple(c[0] for c in CHART_TYPE_CHOICES)
 
+CHART_METRIC_CHOICES = [
+    ("sum", _("Sum")),
+    ("avg", _("Average")),
+    ("min", _("Minimum")),
+    ("max", _("Maximum")),
+]
 
-@method_decorator(htmx_required, name="dispatch")
+
+class ChartConfigJSONEncoder(json.JSONEncoder):
+    """Encode chart config for template: Decimal -> float, date -> str."""
+
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        if hasattr(obj, "isoformat"):  # date, datetime
+            return obj.isoformat()
+        return super().default(obj)
+
+
 class HorillaChartView(HorillaListView):
     """
     Chart view: aggregates the filtered queryset by a dimension field (FK, choice,
@@ -60,7 +89,7 @@ class HorillaChartView(HorillaListView):
     allowed_chart_types = CHART_TYPE_VALUES
     chart_group_by_param = "chart_group_by"
     chart_stack_by_param = "chart_stack_by"
-    # Sentinel for "Single dimension" in radar Stack by dropdown (Select2 doesn't handle value="" well)
+    chart_value_field_param = "chart_y_field"
     chart_stack_by_single = "__single__"
     STACKED_CHART_TYPES = (
         "stacked_vertical",
@@ -77,11 +106,17 @@ class HorillaChartView(HorillaListView):
         return exclude_fields, include_fields
 
     def _field_is_chart_dimension(self, field):
-        """True if we can aggregate queryset.values(field)."""
+        """
+        True if we can aggregate queryset.values(field).
+
+        - Always allow FK and Date/DateTime fields (even when non-editable, like
+          auto_now_add timestamps such as created_at).
+        - Other field types must be editable and either boolean or have choices.
+        """
+        if isinstance(field, (ForeignKey, DateField, DateTimeField)):
+            return True
         if getattr(field, "editable", True) is False:
             return False
-        if isinstance(field, ForeignKey):
-            return True
         if isinstance(field, BooleanField):
             return True
         if isinstance(field, horilla_models.CharField) and field.choices:
@@ -90,6 +125,22 @@ class HorillaChartView(HorillaListView):
         if getattr(field, "choices", None):
             return True
         return False
+
+    def _field_is_numeric_for_chart(self, field):
+        """
+        True if field is a numeric type suitable for Y-axis aggregation (sum).
+        Uses internal type name so it works with custom Horilla subclasses.
+        """
+        internal = getattr(field, "get_internal_type", lambda: "")()
+        return internal in {
+            "IntegerField",
+            "BigIntegerField",
+            "PositiveIntegerField",
+            "PositiveSmallIntegerField",
+            "SmallIntegerField",
+            "DecimalField",
+            "FloatField",
+        }
 
     def get_chart_dimension_choices(self):
         """
@@ -107,7 +158,11 @@ class HorillaChartView(HorillaListView):
                 continue
             if not getattr(field, "concrete", True):
                 continue
-            if getattr(field, "editable", True) is False:
+            # Allow non-editable Date/DateTime/FK fields (e.g. created_at),
+            # but skip other non-editable fields.
+            if getattr(field, "editable", True) is False and not isinstance(
+                field, (ForeignKey, DateField, DateTimeField)
+            ):
                 continue
             if field.name in exclude_fields:
                 continue
@@ -124,6 +179,51 @@ class HorillaChartView(HorillaListView):
             field_names = [c[0] for c in choices]
             allowed = filter_hidden_fields(self.request.user, self.model, field_names)
             choices = [c for c in choices if c[0] in allowed]
+        return choices
+
+    def get_chart_numeric_choices(self):
+        """
+        (field_name, verbose_name) for numeric fields that can be used as
+        Y-axis. Respects hidden field permissions.
+        """
+        choices = []
+        for field in self.model._meta.get_fields():
+            if not getattr(field, "name", None):
+                continue
+            if getattr(field, "many_to_many", False):
+                continue
+            if not getattr(field, "concrete", True):
+                continue
+            if getattr(field, "editable", True) is False:
+                continue
+            if not self._field_is_numeric_for_chart(field):
+                continue
+            choices.append(
+                (field.name, str(getattr(field, "verbose_name", None) or field.name))
+            )
+        if self.request.user and choices:
+            from horilla_core.utils import filter_hidden_fields
+
+            field_names = [c[0] for c in choices]
+            allowed = filter_hidden_fields(self.request.user, self.model, field_names)
+            choices = [c for c in choices if c[0] in allowed]
+        return choices
+
+    def get_chart_y_axis_choices(self):
+        """
+        Y-axis options in Zoho style: Record count + "Sum of X", "Average of X",
+        "Minimum of X", "Maximum of X" for each numeric field.
+        Returns [(value, label), ...] with value "" for count or "metric__fieldname".
+        """
+        choices = [("", _("Record count"))]
+        for field_name, verbose_name in self.get_chart_numeric_choices():
+            for mkey, mlabel in CHART_METRIC_CHOICES:
+                value = f"{mkey}__{field_name}"
+                label = _("%(metric)s of %(field)s") % {
+                    "metric": mlabel,
+                    "field": verbose_name,
+                }
+                choices.append((value, label))
         return choices
 
     def _get_allowed_group_by_fields(self, view_type="group_by"):
@@ -308,7 +408,7 @@ class HorillaChartView(HorillaListView):
 
     def _chart_field_supports_aggregation(self, field):
         """Whether values(field).annotate(Count) is valid."""
-        if isinstance(field, (ForeignKey, BooleanField)):
+        if isinstance(field, (ForeignKey, BooleanField, DateField, DateTimeField)):
             return True
         if hasattr(field, "choices") and field.choices:
             return True
@@ -316,28 +416,73 @@ class HorillaChartView(HorillaListView):
             return True
         return False
 
-    def build_chart_payload(self, queryset, group_by):
-        """Return {labels, data, urls} for EChartsConfig."""
-        field = self.model._meta.get_field(group_by)
-        if not self._chart_field_supports_aggregation(field):
+    def build_chart_payload(
+        self, queryset, group_by, value_field=None, value_metric=None
+    ):
+        """
+        Return {labels, data, urls} for EChartsConfig.
+
+        - group_by: categorical / dimension field (X-axis)
+        - value_field: optional numeric field for Y-axis (sum); when omitted,
+          the value is Count("pk").
+        """
+        dim_field = self.model._meta.get_field(group_by)
+        if not self._chart_field_supports_aggregation(dim_field):
             return None, _("This field cannot be used as chart dimension.")
 
-        rows = list(
-            queryset.values(group_by).annotate(_count=Count("pk")).order_by("-_count")
-        )
+        # Date/DateTime: bucket by month so charts stay readable.
+        is_date_dimension = isinstance(dim_field, (DateField, DateTimeField))
+        group_expr = group_by
+        if is_date_dimension:
+            group_expr = "_chart_month"
+            queryset = queryset.annotate(_chart_month=TruncMonth(group_by))
+
+        agg_field_name = "_value"
+        if value_field:
+            metric = (value_metric or "sum").lower()
+            agg_map = {
+                "sum": Sum,
+                "avg": Avg,
+                "min": Min,
+                "max": Max,
+            }
+            agg_cls = agg_map.get(metric, Sum)
+            num_field = self.model._meta.get_field(value_field)
+            if not self._field_is_numeric_for_chart(num_field):
+                return None, _("Selected Y-axis field must be numeric.")
+            rows = list(
+                queryset.values(group_expr)
+                .annotate(**{agg_field_name: agg_cls(value_field)})
+                .order_by(group_expr if is_date_dimension else f"-{agg_field_name}")
+            )
+        else:
+            agg_field_name = "_count"
+            rows = list(
+                queryset.values(group_expr)
+                .annotate(_count=Count("pk"))
+                .order_by(group_expr if is_date_dimension else "-_count")
+            )
         labels = []
         data = []
         urls = []
         list_url = getattr(self, "search_url", None) or ""
         if hasattr(list_url, "__str__"):
             list_url = str(list_url)
+        # For date-bucketed dimensions we currently skip drill-down URLs, since
+        # applying a month range filter via the existing exact-operator filter
+        # API would require additional changes.
+        if is_date_dimension:
+            list_url = ""
 
         for row in rows:
-            key = row[group_by]
-            count = row["_count"]
-            label = self._label_for_group_key(field, key)
+            key = row[group_expr]
+            value = row[agg_field_name] or 0
+            if is_date_dimension:
+                label = key.strftime("%Y-%m") if key is not None else str(_("(empty)"))
+            else:
+                label = self._label_for_group_key(dim_field, key)
             labels.append(label)
-            data.append(count)
+            data.append(value)
             if list_url:
                 val = (
                     ""
@@ -375,7 +520,14 @@ class HorillaChartView(HorillaListView):
             return None
         return allowed[0]
 
-    def build_stacked_payload(self, queryset, primary, secondary):
+    def build_stacked_payload(
+        self,
+        queryset,
+        primary,
+        secondary,
+        value_field=None,
+        value_metric=None,
+    ):
         """
         Build stackedData for EChartsConfig: categories (X) + series (stack segments).
         Each series has name + data array aligned with categories.
@@ -387,9 +539,43 @@ class HorillaChartView(HorillaListView):
         ) or not self._chart_field_supports_aggregation(field_s):
             return None, _("Both fields must support chart grouping.")
 
-        rows = list(
-            queryset.values(primary, secondary).annotate(_count=Count("pk")).order_by()
-        )
+        # Support month bucketing for date/datetime primary/secondary axes.
+        primary_is_date = isinstance(field_p, (DateField, DateTimeField))
+        secondary_is_date = isinstance(field_s, (DateField, DateTimeField))
+        group_p = primary
+        group_s = secondary
+        if primary_is_date:
+            queryset = queryset.annotate(_chart_month_p=TruncMonth(primary))
+            group_p = "_chart_month_p"
+        if secondary_is_date:
+            queryset = queryset.annotate(_chart_month_s=TruncMonth(secondary))
+            group_s = "_chart_month_s"
+
+        agg_field_name = "_value"
+        if value_field:
+            metric = (value_metric or "sum").lower()
+            agg_map = {
+                "sum": Sum,
+                "avg": Avg,
+                "min": Min,
+                "max": Max,
+            }
+            agg_cls = agg_map.get(metric, Sum)
+            num_field = self.model._meta.get_field(value_field)
+            if not self._field_is_numeric_for_chart(num_field):
+                return None, _("Selected Y-axis field must be numeric.")
+            rows = list(
+                queryset.values(group_p, group_s)
+                .annotate(**{agg_field_name: agg_cls(value_field)})
+                .order_by()
+            )
+        else:
+            agg_field_name = "_count"
+            rows = list(
+                queryset.values(group_p, group_s)
+                .annotate(_count=Count("pk"))
+                .order_by()
+            )
         # pivot[pkey][skey] = count
         pivot = defaultdict(lambda: defaultdict(int))
         primary_keys = []
@@ -397,8 +583,8 @@ class HorillaChartView(HorillaListView):
         seen_p = set()
         seen_s = set()
         for row in rows:
-            pk, sk = row[primary], row[secondary]
-            pivot[pk][sk] += row["_count"]
+            pk, sk = row[group_p], row[group_s]
+            pivot[pk][sk] += row[agg_field_name] or 0
             if pk not in seen_p:
                 seen_p.add(pk)
                 primary_keys.append(pk)
@@ -409,16 +595,27 @@ class HorillaChartView(HorillaListView):
         if not primary_keys or not secondary_keys_order:
             return None, _("Not enough data for stacked chart.")
 
-        categories = [self._label_for_group_key(field_p, k) for k in primary_keys]
+        categories = []
+        for k in primary_keys:
+            if primary_is_date:
+                categories.append(
+                    k.strftime("%Y-%m") if k is not None else str(_("(empty)"))
+                )
+            else:
+                categories.append(self._label_for_group_key(field_p, k))
         secondary_keys = secondary_keys_order
 
         list_url = str(getattr(self, "search_url", "") or "")
+        # Skip drill-down URLs when any axis is date-bucketed by month, as we
+        # would need range filters instead of exact matches.
+        if primary_is_date or secondary_is_date:
+            list_url = ""
         series = []
         for sk in secondary_keys:
             name = self._label_for_group_key(field_s, sk)
             row_data = []
             for pk in primary_keys:
-                v = int(pivot[pk].get(sk, 0))
+                v = pivot[pk].get(sk, 0) or 0
                 if list_url and v > 0:
                     row_data.append(
                         {
@@ -459,15 +656,36 @@ class HorillaChartView(HorillaListView):
 
         dimension_choices = self.get_chart_dimension_choices()
         context["chart_dimension_choices"] = dimension_choices
+        context["chart_numeric_field_choices"] = self.get_chart_y_axis_choices()
         context["chart_group_by_param"] = self.chart_group_by_param
         context["chart_stack_by_param"] = self.chart_stack_by_param
+        context["chart_value_field_param"] = self.chart_value_field_param
         context["chart_stack_by_single"] = self.chart_stack_by_single
         context["stack_dimension_choices"] = []
         context["stack_by_field"] = None
+        context["value_field"] = None
         context["chart_push_url_json"] = "null"
 
         group_by = self.get_group_by_field()
         context["group_by_field"] = group_by
+
+        # Y-axis: "" => record count; "sum__fieldname" => metric + numeric field (Zoho style).
+        requested = (self.request.GET.get(self.chart_value_field_param) or "").strip()
+        context["chart_y_axis_value"] = requested
+        value_field = None
+        metric = "sum"
+        agg_map = {"sum": Sum, "avg": Avg, "min": Min, "max": Max}
+        numeric_field_names = {c[0] for c in self.get_chart_numeric_choices()}
+        if requested:
+            if "__" in requested:
+                parts = requested.split("__", 1)
+                m, f = parts[0].lower(), parts[1]
+                if f in numeric_field_names and m in agg_map:
+                    value_field = f
+                    metric = m
+            elif requested in numeric_field_names:
+                value_field = requested
+        context["value_field"] = value_field
 
         if not group_by:
             context["chart_add_to_dashboard_url"] = None
@@ -483,7 +701,9 @@ class HorillaChartView(HorillaListView):
             return context
 
         try:
-            payload, err = self.build_chart_payload(queryset, group_by)
+            payload, err = self.build_chart_payload(
+                queryset, group_by, value_field, metric
+            )
         except Exception as e:
             logger.exception("Chart payload build failed")
             context["chart_error"] = str(e)
@@ -521,7 +741,7 @@ class HorillaChartView(HorillaListView):
             ]
             if stack_by:
                 stacked_payload, stacked_err = self.build_stacked_payload(
-                    queryset, group_by, stack_by
+                    queryset, group_by, stack_by, value_field, metric
                 )
             else:
                 stacked_payload, stacked_err = None, None
@@ -556,7 +776,7 @@ class HorillaChartView(HorillaListView):
                 "labelField": label_field,
                 "urls": payload.get("urls") or [],
             }
-        context["chart_config_json"] = json.dumps(config)
+        context["chart_config_json"] = json.dumps(config, cls=ChartConfigJSONEncoder)
         context["chart_type"] = chart_type
         context["chart_type_choices"] = CHART_TYPE_CHOICES
         context["chart_error"] = None

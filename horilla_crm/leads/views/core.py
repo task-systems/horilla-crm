@@ -548,17 +548,49 @@ class LeadChartView(LoginRequiredMixin, HorillaChartView):
             queryset = queryset.filter(is_convert=False)
         return queryset
 
-    def build_chart_payload(self, queryset, group_by):
-        """Omit final lead stages from chart (same as LeadGroupByView grouped_items)."""
+    def build_chart_payload(
+        self, queryset, group_by, value_field=None, value_metric=None
+    ):
+        """
+        Omit final lead stages from chart (same as LeadGroupByView grouped_items).
+        Supports optional numeric Y-axis (sum) while preserving this filtering.
+        """
         if group_by != "lead_status":
-            return super().build_chart_payload(queryset, group_by)
+            return super().build_chart_payload(queryset, group_by, value_field)
 
-        from django.db.models import Count
+        from django.db.models import Count, Sum
 
         field = self.model._meta.get_field(group_by)
-        rows = list(
-            queryset.values(group_by).annotate(_count=Count("pk")).order_by("-_count")
-        )
+
+        # Decide aggregation: metric(value_field) or Count("pk")
+        agg_field_name = "_value"
+        if value_field:
+            from django.db.models import Avg, Max, Min, Sum
+
+            metric = (value_metric or "sum").lower()
+            agg_map = {
+                "sum": Sum,
+                "avg": Avg,
+                "min": Min,
+                "max": Max,
+            }
+            agg_cls = agg_map.get(metric, Sum)
+            num_field = self.model._meta.get_field(value_field)
+            if not self._field_is_numeric_for_chart(num_field):
+                return None, _("Selected Y-axis field must be numeric.")
+            rows = list(
+                queryset.values(group_by)
+                .annotate(**{agg_field_name: agg_cls(value_field)})
+                .order_by(f"-{agg_field_name}")
+            )
+        else:
+            agg_field_name = "_count"
+            rows = list(
+                queryset.values(group_by)
+                .annotate(_count=Count("pk"))
+                .order_by("-_count")
+            )
+
         labels, data, urls = [], [], []
         list_url = str(self.search_url) if self.search_url else ""
 
@@ -570,22 +602,29 @@ class LeadChartView(LoginRequiredMixin, HorillaChartView):
                         continue
                 except Exception:
                     pass
-            count = row["_count"]
+            value = row[agg_field_name] or 0
             label = self._label_for_group_key(field, key)
             labels.append(label)
-            data.append(count)
+            data.append(value)
             if list_url and key is not None:
                 urls.append(self._list_drill_url(group_by, key))
             else:
                 urls.append("#")
         return {"labels": labels, "data": data, "urls": urls}, None
 
-    def build_stacked_payload(self, queryset, primary, secondary):
-        """Drop final lead stages from stacked segments when lead_status is an axis."""
-        from django.db.models import Count
+    def build_stacked_payload(
+        self, queryset, primary, secondary, value_field=None, value_metric=None
+    ):
+        """
+        Drop final lead stages from stacked segments when lead_status is an axis.
+        Supports optional numeric Y-axis (sum) while preserving this filtering.
+        """
+        from django.db.models import Count, Sum
 
         if primary != "lead_status" and secondary != "lead_status":
-            return super().build_stacked_payload(queryset, primary, secondary)
+            return super().build_stacked_payload(
+                queryset, primary, secondary, value_field, value_metric
+            )
 
         def is_final_pk(pk):
             if pk is None:
@@ -595,9 +634,34 @@ class LeadChartView(LoginRequiredMixin, HorillaChartView):
             except Exception:
                 return False
 
-        rows = list(
-            queryset.values(primary, secondary).annotate(_count=Count("pk")).order_by()
-        )
+        # Decide aggregation: metric(value_field) or Count("pk")
+        agg_field_name = "_value"
+        if value_field:
+            from django.db.models import Avg, Max, Min, Sum
+
+            metric = (value_metric or "sum").lower()
+            agg_map = {
+                "sum": Sum,
+                "avg": Avg,
+                "min": Min,
+                "max": Max,
+            }
+            agg_cls = agg_map.get(metric, Sum)
+            num_field = self.model._meta.get_field(value_field)
+            if not self._field_is_numeric_for_chart(num_field):
+                return None, _("Selected Y-axis field must be numeric.")
+            rows = list(
+                queryset.values(primary, secondary)
+                .annotate(**{agg_field_name: agg_cls(value_field)})
+                .order_by()
+            )
+        else:
+            agg_field_name = "_count"
+            rows = list(
+                queryset.values(primary, secondary)
+                .annotate(_count=Count("pk"))
+                .order_by()
+            )
         filtered = []
         for row in rows:
             pk, sk = row[primary], row[secondary]
@@ -619,7 +683,7 @@ class LeadChartView(LoginRequiredMixin, HorillaChartView):
         seen_p, seen_s = set(), set()
         for row in filtered:
             pk, sk = row[primary], row[secondary]
-            pivot[pk][sk] += row["_count"]
+            pivot[pk][sk] += row[agg_field_name] or 0
             if pk not in seen_p:
                 seen_p.add(pk)
                 primary_keys.append(pk)

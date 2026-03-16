@@ -1241,6 +1241,7 @@ var EChartsConfig = {
             }
             ],
             visualMap: {
+                show: true,
                 type: 'continuous',
                 min: 0,
                 max: Math.max(maxVal, 1),
@@ -1256,7 +1257,8 @@ var EChartsConfig = {
                 },
                 outOfRange: {
                     color: [heatmapColors[0]]
-                }
+                },
+                seriesIndex: [catIds.length + serIds.length]
             },
             series: phantomCats.concat(phantomSeries).concat([{
                 name: labelField || 'Heatmap',
@@ -1323,11 +1325,13 @@ var EChartsConfig = {
                 const v = typeof raw === 'object' && raw !== null && raw.value !== undefined
                     ? Number(raw.value) || 0
                     : Number(raw) || 0;
+                const url = typeof raw === 'object' && raw !== null && raw.url ? raw.url : null;
                 if (v > 0) {
                     links.push({
                         source: sourceName,
                         target: targetId,
-                        value: v
+                        value: v,
+                        url: url
                     });
                 }
             }
@@ -2040,7 +2044,18 @@ var EChartsConfig = {
         chartInstance.on('click', function(params) {
             let targetUrl = null;
 
-            if (params.seriesType === 'heatmap' && Array.isArray(params.data) && params.data.length >= 1) {
+            // Sankey: prefer edge-level URL (two-dimensional filter)
+            if (config && config.type === 'sankey' && params.seriesType === 'sankey') {
+                if (params.dataType === 'edge' && params.data && params.data.url && params.data.url !== '#') {
+                    targetUrl = params.data.url;
+                } else if (params.dataType === 'node' && params.name && config.stackedData && Array.isArray(config.stackedData.categories)) {
+                    // Left-side node click falls back to primary-dimension URL
+                    const idx = config.stackedData.categories.indexOf(params.name);
+                    if (idx >= 0 && idx < urls.length && urls[idx] && urls[idx] !== '#') {
+                        targetUrl = urls[idx];
+                    }
+                }
+            } else if (params.seriesType === 'heatmap' && Array.isArray(params.data) && params.data.length >= 1) {
                 if (params.data.length >= 4 && params.data[3] && params.data[3] !== '#') {
                     targetUrl = params.data[3];
                 } else if (params.data[0] != null && urls[params.data[0]] && urls[params.data[0]] !== '#') {

@@ -37,8 +37,8 @@
       <h3 class="text-sm font-semibold text-gray-700">{% trans "Chart view" %}</h3>
       <div class="flex flex-wrap items-center gap-3">
         {% if chart_dimension_choices %}
-        <div class="flex items-center gap-2 w-[200px]">
-          <label for="chartGroupBySelect" class="text-xs text-gray-500 whitespace-nowrap">{% trans "Group by" %}</label>
+        <div class="flex flex-col items-start gap-1 w-[220px]">
+          <label for="chartGroupBySelect" class="text-xs text-gray-500">{% trans "X-axis (Group by)" %}</label>
           <select id="chartGroupBySelect"
             name="{{ chart_group_by_param }}"
             class="js-example-basic-single headselect w-full"
@@ -46,7 +46,7 @@
             hx-target="#{{ view_id|safe }}"
             hx-select="#{{ view_id|safe }}"
             hx-swap="outerHTML"
-            hx-include="[name='search'], #filtercontainer input, #filtercontainer select, #chartTypeSelect{% if stack_dimension_choices %}, #chartStackBySelect{% endif %}"
+            hx-include="[name='search'], #filtercontainer input, #filtercontainer select, #chartTypeSelect{% if stack_dimension_choices %}, #chartStackBySelect{% endif %}{% if chart_numeric_field_choices %}, #chartValueFieldSelect{% endif %}"
             hx-trigger="change"
             hx-push-url="false">
             {% for value, label in chart_dimension_choices %}
@@ -55,9 +55,28 @@
           </select>
         </div>
         {% endif %}
+        {% if chart_numeric_field_choices %}
+        <div class="flex flex-col items-start gap-1 w-[220px]">
+          <label for="chartValueFieldSelect" class="text-xs text-gray-500">{% trans "Y-axis (Value)" %}</label>
+          <select id="chartValueFieldSelect"
+            name="{{ chart_value_field_param }}"
+            class="js-example-basic-single headselect w-full"
+            hx-get="{{ chart_htmx_url }}"
+            hx-target="#{{ view_id|safe }}"
+            hx-select="#{{ view_id|safe }}"
+            hx-swap="outerHTML"
+            hx-include="[name='search'], #filtercontainer input, #filtercontainer select, #chartTypeSelect, #chartGroupBySelect{% if stack_dimension_choices %}, #chartStackBySelect{% endif %}"
+            hx-trigger="change"
+            hx-push-url="false">
+            {% for value, label in chart_numeric_field_choices %}
+              <option value="{{ value }}" {% if chart_y_axis_value == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
         {% if stack_dimension_choices %}
-        <div class="flex items-center gap-2 w-[200px]">
-          <label for="chartStackBySelect" class="text-xs text-gray-500 whitespace-nowrap">{% trans "Stack by" %}</label>
+        <div class="flex flex-col items-start gap-1 w-[220px]">
+          <label for="chartStackBySelect" class="text-xs text-gray-500">{% trans "Stack by" %}</label>
           <select id="chartStackBySelect"
             name="{{ chart_stack_by_param }}"
             class="js-example-basic-single headselect w-full"
@@ -65,7 +84,7 @@
             hx-target="#{{ view_id|safe }}"
             hx-select="#{{ view_id|safe }}"
             hx-swap="outerHTML"
-            hx-include="[name='search'], #filtercontainer input, #filtercontainer select, #chartTypeSelect, #chartGroupBySelect"
+            hx-include="[name='search'], #filtercontainer input, #filtercontainer select, #chartTypeSelect, #chartGroupBySelect{% if chart_numeric_field_choices %}, #chartValueFieldSelect{% endif %}"
             hx-trigger="change"
             hx-push-url="false">
             {% if chart_type == 'radar' and chart_stack_by_single %}
@@ -77,8 +96,8 @@
           </select>
         </div>
         {% endif %}
-        <div class="flex items-center gap-2 w-[250px]">
-          <label for="chartTypeSelect" class="text-xs text-gray-500 whitespace-nowrap">{% trans "Chart type" %}</label>
+        <div class="flex flex-col items-start gap-1 w-[220px]">
+          <label for="chartTypeSelect" class="text-xs text-gray-500">{% trans "Chart type" %}</label>
           <select id="chartTypeSelect"
             name="chart_type"
             class="js-example-basic-single headselect w-full"
@@ -86,7 +105,7 @@
             hx-target="#{{ view_id|safe }}"
             hx-select="#{{ view_id|safe }}"
             hx-swap="outerHTML"
-            hx-include="[name='search'], #filtercontainer input, #filtercontainer select, #chartGroupBySelect{% if stack_dimension_choices %}, #chartStackBySelect{% endif %}"
+            hx-include="[name='search'], #filtercontainer input, #filtercontainer select, #chartGroupBySelect{% if stack_dimension_choices %}, #chartStackBySelect{% endif %}{% if chart_numeric_field_choices %}, #chartValueFieldSelect{% endif %}"
             hx-trigger="change"
             hx-push-url="false">
             {% for value, label in chart_type_choices %}
@@ -154,13 +173,13 @@
     <script>
     (function() {
       if (typeof htmx !== 'undefined') {
-        ['chartGroupBySelect','chartStackBySelect','chartTypeSelect'].forEach(function(id) {
+        ['chartGroupBySelect','chartStackBySelect','chartTypeSelect','chartValueFieldSelect'].forEach(function(id) {
           var el = document.getElementById(id);
           if (el) htmx.process(el);
         });
       }
       if (window.$ && $.fn.select2) {
-        $('#chartGroupBySelect, #chartStackBySelect, #chartTypeSelect').select2({
+        $('#chartGroupBySelect, #chartStackBySelect, #chartTypeSelect, #chartValueFieldSelect').select2({
           width: 'resolve',
           minimumResultsForSearch: 10
         }).on('select2:select', function() {
