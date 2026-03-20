@@ -19,7 +19,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Install Python dependencies
 COPY requirements.txt .
-RUN pip install --upgrade pip \
+RUN pip install --upgrade "pip>=26.0" \
     && pip install --no-cache-dir -r requirements.txt uvicorn[standard] psycopg2-binary
 
 # Production stage - minimal runtime image
