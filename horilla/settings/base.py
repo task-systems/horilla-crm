@@ -82,6 +82,7 @@ INSTALLED_APPS = [
     "horilla_activity",
     "horilla_calendar",
     "horilla_keys",
+    "horilla_theme",
 ]
 
 
@@ -176,8 +177,7 @@ ASGI_APPLICATION = "horilla.asgi.application"
 # -----------------------------------------------------------------------------
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer",
-        # "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
         # "CONFIG": {
         #     "hosts": [("127.0.0.1", 6379)],  # Redis server
         # },
