@@ -263,7 +263,7 @@ class OpportunityStage(HorillaCoreModel):
 
 
 class Opportunity(HorillaCoreModel):
-    """Django model based on Salesforce Opportunity object"""
+    """Django model based on  Opportunity object"""
 
     TYPE_CHOICES = [
         ("existing_customer_upgrade", "Existing Customer - Upgrade"),
@@ -859,7 +859,7 @@ class OpportunitySettings(HorillaCoreModel):
 
 class OpportunitySplitType(HorillaCoreModel):
     """
-    Defines split types (Revenue, Overlay, etc.) - Similar to Salesforce Split Types Setup.
+    Defines split types (Revenue, Overlay, etc.) .
     Each split type can be configured to total 100% or allow overlays.
     """
 

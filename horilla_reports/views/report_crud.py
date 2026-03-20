@@ -127,7 +127,6 @@ class ChangeChartTypeView(LoginRequiredMixin, HorillaSingleFormView):
 
         field_choices.insert(0, ("", "-- Select Field --"))
 
-        # Y-axis (value) choices: Zoho-style metric + field (Record count, Sum of X, etc.)
         CHART_METRIC_CHOICES = [
             ("sum", _("Sum")),
             ("avg", _("Average")),

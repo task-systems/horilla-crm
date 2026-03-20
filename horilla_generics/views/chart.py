@@ -1,5 +1,5 @@
 """
-Chart layout view (Zoho-style): same filters as list; group by any FK/choice/boolean
+Chart layout view  same filters as list; group by any FK/choice/boolean
 field; chart types aligned with reports/dashboards (horilla_charts.js).
 """
 
@@ -211,7 +211,7 @@ class HorillaChartView(HorillaListView):
 
     def get_chart_y_axis_choices(self):
         """
-        Y-axis options in Zoho style: Record count + "Sum of X", "Average of X",
+        Y-axis options in  Record count + "Sum of X", "Average of X",
         "Minimum of X", "Maximum of X" for each numeric field.
         Returns [(value, label), ...] with value "" for count or "metric__fieldname".
         """
@@ -669,7 +669,6 @@ class HorillaChartView(HorillaListView):
         group_by = self.get_group_by_field()
         context["group_by_field"] = group_by
 
-        # Y-axis: "" => record count; "sum__fieldname" => metric + numeric field (Zoho style).
         requested = (self.request.GET.get(self.chart_value_field_param) or "").strip()
         context["chart_y_axis_value"] = requested
         value_field = None
