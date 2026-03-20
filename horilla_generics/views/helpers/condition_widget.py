@@ -5,6 +5,7 @@ HTMX views for dynamic condition rows and field-value widgets in filter/automati
 """
 
 # Standard library
+import json
 import logging
 
 # Third-party imports (Django)
@@ -21,79 +22,14 @@ from horilla.apps import apps
 from horilla.db import models
 from horilla.http import HttpResponse
 from horilla.shortcuts import render
+from horilla.urls import reverse_lazy
 from horilla.utils.choices import FIELD_TYPE_MAP
 from horilla.utils.decorators import htmx_required, method_decorator
 from horilla.utils.translation import gettext_lazy as _
 from horilla_core.models import HorillaContentType
+from horilla_generics.filters import OPERATOR_CHOICES
 
 logger = logging.getLogger(__name__)
-
-
-# Condition form: operator values (from horilla.utils.choices) allowed per field type.
-# Mirrors filter operator logic so conditions use operators matching the field type.
-CONDITION_OPERATORS_BY_FIELD_TYPE = {
-    "boolean": ["equals", "not_equals"],
-    "text": [
-        "equals",
-        "not_equals",
-        "contains",
-        "not_contains",
-        "starts_with",
-        "ends_with",
-        "is_empty",
-        "is_not_empty",
-    ],
-    "number": [
-        "equals",
-        "not_equals",
-        "greater_than",
-        "greater_than_equal",
-        "less_than",
-        "less_than_equal",
-        "is_empty",
-        "is_not_empty",
-    ],
-    "float": [
-        "equals",
-        "not_equals",
-        "greater_than",
-        "greater_than_equal",
-        "less_than",
-        "less_than_equal",
-        "is_empty",
-        "is_not_empty",
-    ],
-    "decimal": [
-        "equals",
-        "not_equals",
-        "greater_than",
-        "greater_than_equal",
-        "less_than",
-        "less_than_equal",
-        "is_empty",
-        "is_not_empty",
-    ],
-    "date": [
-        "equals",
-        "not_equals",
-        "greater_than",
-        "less_than",
-        "is_empty",
-        "is_not_empty",
-    ],
-    "datetime": [
-        "equals",
-        "not_equals",
-        "greater_than",
-        "less_than",
-        "is_empty",
-        "is_not_empty",
-    ],
-    "foreignkey": ["equals", "not_equals", "is_empty", "is_not_empty"],
-    "manytomany": ["equals", "not_equals", "is_empty", "is_not_empty"],
-    "choice": ["equals", "not_equals", "is_empty", "is_not_empty"],
-    "other": ["equals", "not_equals", "contains", "is_empty", "is_not_empty"],
-}
 
 
 @method_decorator(htmx_required, name="dispatch")
@@ -124,15 +60,29 @@ class GetFieldValueWidgetView(LoginRequiredMixin, View):
         row_id = request.GET.get("row_id", "")
         field_name = request.GET.get(f"field_{row_id}", request.GET.get("field", ""))
         model_name = request.GET.get("model_name", "")
+        # Resolve model_name from content type id when missing (e.g. automation create, operator-triggered request)
+        if not model_name and field_name:
+            model_id = request.GET.get("model", "")
+            if model_id and str(model_id).isdigit():
+                try:
+                    ct = HorillaContentType.objects.get(pk=model_id)
+                    model_name = ct.model
+                except (HorillaContentType.DoesNotExist, ValueError):
+                    pass
         condition_model_str = request.GET.get("condition_model", "")
 
-        # Try to get existing value from the request
+        # Try to get existing value from the request (single value or combined for "between")
         existing_value = request.GET.get(f"value_{row_id}", "")
         existing_operator = request.GET.get(f"operator_{row_id}", "")
+        if existing_operator == "between":
+            start_val = request.GET.get(f"value_start_{row_id}", "").strip()
+            end_val = request.GET.get(f"value_end_{row_id}", "").strip()
+            if start_val or end_val:
+                existing_value = f"{start_val},{end_val}"
 
-        # Get the model field to determine appropriate widget
+        # Get the model field to determine appropriate widget (pass operator for "between" two-input)
         widget_html = self._get_value_widget_html(
-            field_name, model_name, row_id, existing_value
+            field_name, model_name, row_id, existing_value, existing_operator
         )
 
         # For single-form condition fields: update operator dropdown by field type
@@ -194,51 +144,11 @@ class GetFieldValueWidgetView(LoginRequiredMixin, View):
                 return ""
 
             field_type = self._get_field_type_for_condition(model_field)
-            allowed_operators = set(
-                CONDITION_OPERATORS_BY_FIELD_TYPE.get(
-                    field_type, CONDITION_OPERATORS_BY_FIELD_TYPE["other"]
-                )
-            )
 
-            # Resolve condition model and get full operator choices
-            condition_model = None
-            parts = condition_model_str.split(".")
-            model_name_part = parts[-1] if parts else ""
-            app_label_part = (
-                ".".join(parts[:-1]) if len(parts) > 1 else (parts[0] if parts else "")
+            filter_ops_for_type = OPERATOR_CHOICES.get(
+                field_type, OPERATOR_CHOICES.get("other", [])
             )
-            try:
-                condition_model = apps.get_model(app_label_part, model_name_part)
-            except LookupError:
-                pass
-            if not condition_model:
-                for app_config in apps.get_app_configs():
-                    try:
-                        candidate = apps.get_model(
-                            app_label=app_config.label,
-                            model_name=model_name_part,
-                        )
-                        if (
-                            candidate
-                            and f"{candidate._meta.app_label}.{candidate._meta.model_name}"
-                            == condition_model_str
-                        ):
-                            condition_model = candidate
-                            break
-                    except LookupError:
-                        continue
-            if not condition_model:
-                return ""
-            try:
-                op_field = condition_model._meta.get_field("operator")
-                full_choices = list(getattr(op_field, "choices", []) or [])
-            except Exception:
-                return ""
-
-            # Restrict to operators allowed for this field type (like filter)
-            operator_choices = [("", "---------")] + [
-                (v, label) for v, label in full_choices if v in allowed_operators
-            ]
+            operator_choices = [("", "---------")] + list(filter_ops_for_type)
 
             options_iter = (
                 (
@@ -257,22 +167,43 @@ class GetFieldValueWidgetView(LoginRequiredMixin, View):
                 '<option value="{}" {}>{}</option>',
                 options_iter,
             )
+            # HTMX so changing operator refetches value widget (e.g. "between" -> two inputs)
+            hx_vals = json.dumps(
+                {
+                    "model_name": model_name or "",
+                    "row_id": row_id,
+                    "condition_model": condition_model_str,
+                }
+            )
+            hx_include = (
+                f'[name="field_{row_id}"],[name="operator_{row_id}"],'
+                f'[name="value_{row_id}"],[name="value_start_{row_id}"],[name="value_end_{row_id}"],[name="model"]'
+            )
+            get_widget_url = reverse_lazy("horilla_generics:get_field_value_widget")
             return format_html(
                 '<div id="id_operator_{}_container" hx-swap-oob="true">'
                 '<select name="operator_{}" id="id_operator_{}" '
                 'class="js-example-basic-single headselect" '
-                'data-placeholder="Select Operator">{}</select></div>',
+                'data-placeholder="Select Operator" '
+                'hx-get="{}" hx-target="#id_value_{}_container" hx-swap="innerHTML" '
+                'hx-vals="{}" hx-include="{}" hx-trigger="change">{}</select></div>',
                 row_id,
                 row_id,
                 row_id,
+                get_widget_url,
+                row_id,
+                escape(hx_vals),
+                hx_include,
                 options_html,
             )
         except Exception as e:
             logger.debug("GetFieldValueWidgetView operator OOB: %s", e)
             return ""
 
-    def _get_value_widget_html(self, field_name, model_name, row_id, existing_value=""):
-        """Generate appropriate widget HTML based on selected field"""
+    def _get_value_widget_html(
+        self, field_name, model_name, row_id, existing_value="", existing_operator=""
+    ):
+        """Generate appropriate widget HTML based on selected field and operator."""
 
         if not field_name or not model_name:
             # Return default text input
@@ -298,6 +229,21 @@ class GetFieldValueWidgetView(LoginRequiredMixin, View):
                 model_field = model._meta.get_field(field_name)
             except Exception:
                 return self._render_text_input(row_id, existing_value)
+
+            # For date/datetime with operator "between", show two inputs
+            if existing_operator == "between":
+                if isinstance(model_field, models.DateField):
+                    parts = [p.strip() for p in (existing_value or "").split(",", 1)]
+                    start_val = parts[0] if len(parts) > 0 else ""
+                    end_val = parts[1] if len(parts) > 1 else ""
+                    return self._render_date_between_input(row_id, start_val, end_val)
+                if isinstance(model_field, models.DateTimeField):
+                    parts = [p.strip() for p in (existing_value or "").split(",", 1)]
+                    start_val = parts[0] if len(parts) > 0 else ""
+                    end_val = parts[1] if len(parts) > 1 else ""
+                    return self._render_datetime_between_input(
+                        row_id, start_val, end_val
+                    )
 
             # Determine widget type based on field type
             if isinstance(model_field, models.ManyToManyField):
@@ -442,6 +388,62 @@ class GetFieldValueWidgetView(LoginRequiredMixin, View):
             row_id,
             row_id,
             existing_value,
+        )
+
+    def _render_date_between_input(self, row_id, existing_start="", existing_end=""):
+        """Two date inputs for operator 'between' (start and end) in a single row, no labels."""
+        # Reuse the same input classes as the normal date input
+        input_class = (
+            "text-color-600 p-2 placeholder:text-xs w-full border border-dark-50 "
+            "rounded-md focus-visible:outline-0 placeholder:text-dark-100 text-sm "
+            "[transition:.3s] focus:border-primary-600"
+        )
+        return format_html(
+            '<div class="flex items-center gap-0.5">'
+            '<div class="w-1/2">'
+            '<input type="date" name="value_start_{}" id="id_value_start_{}" value="{}" class="{}">'
+            "</div>"
+            '<div class="w-1/2">'
+            '<input type="date" name="value_end_{}" id="id_value_end_{}" value="{}" class="{}">'
+            "</div>"
+            "</div>",
+            row_id,
+            row_id,
+            existing_start,
+            input_class,
+            row_id,
+            row_id,
+            existing_end,
+            input_class,
+        )
+
+    def _render_datetime_between_input(
+        self, row_id, existing_start="", existing_end=""
+    ):
+        """Two datetime inputs for operator 'between' (start and end) in a single row, no labels."""
+        # Reuse the same input classes as the normal datetime input
+        input_class = (
+            "text-color-600 p-2 placeholder:text-xs w-full border border-dark-50 "
+            "rounded-md focus-visible:outline-0 placeholder:text-dark-100 text-sm "
+            "[transition:.3s] focus:border-primary-600"
+        )
+        return format_html(
+            '<div class="flex items-center gap-0.5">'
+            '<div class="w-1/2">'
+            '<input type="datetime-local" name="value_start_{}" id="id_value_start_{}" value="{}" class="{}">'
+            "</div>"
+            '<div class="w-1/2">'
+            '<input type="datetime-local" name="value_end_{}" id="id_value_end_{}" value="{}" class="{}">'
+            "</div>"
+            "</div>",
+            row_id,
+            row_id,
+            existing_start,
+            input_class,
+            row_id,
+            row_id,
+            existing_end,
+            input_class,
         )
 
     def _render_time_input(self, row_id, existing_value=""):

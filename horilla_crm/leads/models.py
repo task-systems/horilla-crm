@@ -19,6 +19,7 @@ from django.db import transaction
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
+from django.utils.dateparse import parse_date, parse_datetime
 from django_countries.fields import CountryField
 
 from horilla.core.exceptions import ValidationError
@@ -666,51 +667,120 @@ class ScoringCondition(HorillaCoreModel):
         Returns True if the condition is met, False otherwise
         """
         try:
-            # Get the field value from the instance
-            field_value = getattr(instance, self.field, None)
+            field = instance._meta.get_field(self.field)
+            raw_value = getattr(instance, self.field, None)
+            field_type = getattr(field, "get_internal_type", lambda: "")()
+            is_date_field = field_type == "DateField"
+            is_datetime_field = field_type == "DateTimeField"
+            value = self.value or ""
+            op = self.operator
 
-            # Convert field_value to string for comparison
-            if field_value is None:
-                field_value = ""
-            else:
-                field_value = str(field_value)
+            # Filter-style and date/datetime: exact, gt, lt, between, isnull, isnotnull
+            if is_date_field or is_datetime_field:
+                if op in ("isnull", "is_empty"):
+                    return raw_value is None
+                if op in ("isnotnull", "is_not_empty"):
+                    return raw_value is not None
+                if op in ("exact", "equals", "gt", "lt", "between"):
+                    if op == "exact":
+                        op = "equals"
+                    if op == "equals":
+                        comp = (
+                            parse_date(value)
+                            if is_date_field
+                            else parse_datetime(value)
+                        )
+                        if comp is None:
+                            return str(raw_value) == value
+                        return raw_value is not None and raw_value == comp
+                    if op == "gt":
+                        comp = (
+                            parse_date(value)
+                            if is_date_field
+                            else parse_datetime(value)
+                        )
+                        return (
+                            comp is not None
+                            and raw_value is not None
+                            and raw_value > comp
+                        )
+                    if op == "lt":
+                        comp = (
+                            parse_date(value)
+                            if is_date_field
+                            else parse_datetime(value)
+                        )
+                        return (
+                            comp is not None
+                            and raw_value is not None
+                            and raw_value < comp
+                        )
+                    if op == "between":
+                        parts = [p.strip() for p in value.split(",", 1) if p.strip()]
+                        if len(parts) >= 2:
+                            start_val = (
+                                parse_date(parts[0])
+                                if is_date_field
+                                else parse_datetime(parts[0])
+                            )
+                            end_val = (
+                                parse_date(parts[1])
+                                if is_date_field
+                                else parse_datetime(parts[1])
+                            )
+                            if start_val and end_val and raw_value is not None:
+                                return start_val <= raw_value <= end_val
+                        return False
 
-            # Perform comparison based on operator
-            if self.operator == "equals":
-                return field_value == self.value
-            if self.operator == "not_equals":
-                return field_value != self.value
-            if self.operator == "contains":
-                return self.value.lower() in field_value.lower()
-            if self.operator == "not_contains":
-                return self.value.lower() not in field_value.lower()
-            if self.operator == "starts_with":
-                return field_value.lower().startswith(self.value.lower())
-            if self.operator == "ends_with":
-                return field_value.lower().endswith(self.value.lower())
-            if self.operator == "greater_than":
+            # Map filter-style to legacy for non-date
+            if op == "exact":
+                op = "equals"
+            if op == "gt":
+                op = "greater_than"
+            if op == "lt":
+                op = "less_than"
+            if op == "isnull":
+                op = "is_empty"
+            if op == "isnotnull":
+                op = "is_not_empty"
+
+            field_value = "" if raw_value is None else str(raw_value)
+
+            if op == "equals":
+                return field_value == value
+            if op == "not_equals":
+                return field_value != value
+            if op == "contains":
+                return value.lower() in field_value.lower()
+            if op == "not_contains":
+                return value.lower() not in field_value.lower()
+            if op == "starts_with":
+                return field_value.lower().startswith(value.lower())
+            if op == "ends_with":
+                return field_value.lower().endswith(value.lower())
+            if op == "greater_than":
                 try:
-                    return float(field_value) > float(self.value)
+                    return float(field_value) > float(value)
                 except (ValueError, TypeError):
                     return False
-            if self.operator == "greater_than_equal":
+            if op == "greater_than_equal":
                 try:
-                    return float(field_value) >= float(self.value)
+                    return float(field_value) >= float(value)
                 except (ValueError, TypeError):
                     return False
-            if self.operator == "less_than":
+            if op == "less_than":
                 try:
-                    return float(field_value) < float(self.value)
+                    return float(field_value) < float(value)
                 except (ValueError, TypeError):
                     return False
-            if self.operator == "less_than_equal":
+            if op == "less_than_equal":
                 try:
-                    return float(field_value) <= float(self.value)
+                    return float(field_value) <= float(value)
                 except (ValueError, TypeError):
                     return False
-            if self.operator == "is_empty":
+            if op == "is_empty":
                 return not field_value or field_value.strip() == ""
-            if self.operator == "is_not_empty":
+            if op == "is_not_empty":
                 return bool(field_value and field_value.strip())
 
             return False

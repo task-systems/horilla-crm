@@ -11,6 +11,7 @@ from urllib.parse import urlencode, urlparse
 from django.db import transaction
 from django.template import engines
 from django.utils import timezone
+from django.utils.dateparse import parse_date, parse_datetime
 
 # First-party / Horilla imports
 from horilla.auth.models import User
@@ -78,8 +79,10 @@ def evaluate_condition(condition, instance):
         # Get the field object to determine its type
         field = instance._meta.get_field(condition.field)
 
-        # Check if field is numeric
+        # Check if field is numeric / date / datetime
         is_numeric_field = False
+        is_date_field = False
+        is_datetime_field = False
         field_type = None
         if hasattr(field, "get_internal_type"):
             field_type = field.get_internal_type()
@@ -93,6 +96,8 @@ def evaluate_condition(condition, instance):
                 "FloatField",
             ]
             is_numeric_field = field_type in numeric_types
+            is_date_field = field_type == "DateField"
+            is_datetime_field = field_type == "DateTimeField"
 
         # Handle ForeignKey fields - get the ID
         if hasattr(field, "related_model"):
@@ -106,29 +111,97 @@ def evaluate_condition(condition, instance):
             else:
                 field_value = ""
         else:
-            # Convert field_value to string for comparison
+            # Convert field_value to string for comparison (unless we'll use date/datetime comparison)
             if field_value is None:
                 field_value = ""
             else:
                 field_value = str(field_value)
 
         value = condition.value or ""
+        op = condition.operator
+
+        # Filter-style operators for date/datetime: exact, gt, lt, between, isnull, isnotnull
+        if is_date_field or is_datetime_field:
+            if op in ("isnull", "is_empty"):
+                return field_value in (None, "") or (
+                    getattr(instance, condition.field, None) is None
+                )
+            if op in ("isnotnull", "is_not_empty"):
+                return getattr(instance, condition.field, None) is not None
+            # Normalize for single-value comparisons
+            if op == "exact":
+                op = "equals"
+            if op in ("gt", "lt", "between", "equals"):
+                raw_value = getattr(instance, condition.field, None)
+                if op == "equals":
+                    comp_value = (
+                        parse_date(value) if is_date_field else parse_datetime(value)
+                    )
+                    if comp_value is None:
+                        return str(raw_value) == value
+                    return raw_value is not None and raw_value == comp_value
+                if op == "gt":
+                    comp_value = (
+                        parse_date(value) if is_date_field else parse_datetime(value)
+                    )
+                    if comp_value is None:
+                        return False
+                    return raw_value is not None and raw_value > comp_value
+                if op == "lt":
+                    comp_value = (
+                        parse_date(value) if is_date_field else parse_datetime(value)
+                    )
+                    if comp_value is None:
+                        return False
+                    return raw_value is not None and raw_value < comp_value
+                if op == "between":
+                    parts = [p.strip() for p in value.split(",") if p.strip()]
+                    if len(parts) >= 2:
+                        start_val = (
+                            parse_date(parts[0])
+                            if is_date_field
+                            else parse_datetime(parts[0])
+                        )
+                        end_val = (
+                            parse_date(parts[1])
+                            if is_date_field
+                            else parse_datetime(parts[1])
+                        )
+                        if (
+                            start_val is not None
+                            and end_val is not None
+                            and raw_value is not None
+                        ):
+                            return start_val <= raw_value <= end_val
+                    return False
+
+        # Map filter-style operators to legacy for non-date handling below
+        if op == "exact":
+            op = "equals"
+        if op == "gt":
+            op = "greater_than"
+        if op == "lt":
+            op = "less_than"
+        if op == "isnull":
+            op = "is_empty"
+        if op == "isnotnull":
+            op = "is_not_empty"
 
         # For numeric fields with equals/not_equals, do numeric comparison
-        if is_numeric_field and condition.operator in ["equals", "not_equals"]:
+        if is_numeric_field and op in ["equals", "not_equals"]:
             try:
                 # Convert both to float for comparison (handles Decimal, Float, Integer)
                 field_num = float(field_value) if field_value else None
                 value_num = float(value) if value else None
 
-                if condition.operator == "equals":
+                if op == "equals":
                     # Handle None/empty values
                     if field_num is None and value_num is None:
                         return True
                     if field_num is None or value_num is None:
                         return False
                     return field_num == value_num
-                if condition.operator == "not_equals":
+                if op == "not_equals":
                     # Handle None/empty values
                     if field_num is None and value_num is None:
                         return False
@@ -140,41 +213,41 @@ def evaluate_condition(condition, instance):
                 pass
 
         # Perform comparison based on operator (string comparison for non-numeric or fallback)
-        if condition.operator == "equals":
+        if op == "equals":
             return field_value == value
-        if condition.operator == "not_equals":
+        if op == "not_equals":
             return field_value != value
-        if condition.operator == "contains":
+        if op == "contains":
             return value.lower() in field_value.lower()
-        if condition.operator == "not_contains":
+        if op == "not_contains":
             return value.lower() not in field_value.lower()
-        if condition.operator == "starts_with":
+        if op == "starts_with":
             return field_value.lower().startswith(value.lower())
-        if condition.operator == "ends_with":
+        if op == "ends_with":
             return field_value.lower().endswith(value.lower())
-        if condition.operator == "greater_than":
+        if op == "greater_than":
             try:
                 return float(field_value) > float(value)
             except (ValueError, TypeError):
                 return False
-        if condition.operator == "greater_than_equal":
+        if op == "greater_than_equal":
             try:
                 return float(field_value) >= float(value)
             except (ValueError, TypeError):
                 return False
-        if condition.operator == "less_than":
+        if op == "less_than":
             try:
                 return float(field_value) < float(value)
             except (ValueError, TypeError):
                 return False
-        if condition.operator == "less_than_equal":
+        if op == "less_than_equal":
             try:
                 return float(field_value) <= float(value)
             except (ValueError, TypeError):
                 return False
-        if condition.operator == "is_empty":
+        if op == "is_empty":
             return not field_value or field_value.strip() == ""
-        if condition.operator == "is_not_empty":
+        if op == "is_not_empty":
             return bool(field_value and field_value.strip())
 
         return False
@@ -260,7 +333,7 @@ def resolve_mail_recipients(mail_to, instance, user):
                         break
 
                 # If value is a User object, get its email
-                if value and hasattr(value, "email"):
+                if value and hasattr(value, "email") and getattr(value, "email", None):
                     recipients.append(value.email)
                 # If value is already an email string
                 elif isinstance(value, str) and "@" in value:
@@ -273,7 +346,10 @@ def resolve_mail_recipients(mail_to, instance, user):
             logger.error("Error resolving recipient '%s': %s", recipient_spec, str(e))
             continue
 
-    return recipients
+    # De-duplicate and drop empties
+    return [
+        r for r in dict.fromkeys([r.strip() for r in recipients if r and r.strip()])
+    ]
 
 
 def resolve_notification_users(mail_to, instance, user):
@@ -451,8 +527,16 @@ def send_automation_email(automation, instance, recipients, context, user):
 
         # Create HorillaMail instance
 
+        actor = (
+            user
+            or getattr(instance, "updated_by", None)
+            or getattr(instance, "created_by", None)
+            or getattr(automation, "updated_by", None)
+            or getattr(automation, "created_by", None)
+        )
+
         company = context.get("active_company") or (
-            user.company if hasattr(user, "company") and user else None
+            actor.company if hasattr(actor, "company") and actor else None
         )
 
         content_type = HorillaContentType.objects.get_for_model(instance)
@@ -484,7 +568,8 @@ def send_automation_email(automation, instance, recipients, context, user):
             content_type=content_type,
             object_id=instance.pk,
             mail_status="draft",
-            created_by=user,
+            created_by=actor,
+            updated_by=actor,
             company=company,
             created_at=timezone.now(),
             updated_at=timezone.now(),
@@ -509,7 +594,7 @@ def send_automation_email(automation, instance, recipients, context, user):
 
                 from horilla_automations.tasks import MockRequest
 
-                mock_request = MockRequest(user, company, {})
+                mock_request = MockRequest(actor, company, {})
                 setattr(_thread_local, "request", mock_request)
 
                 # Send the mail using HorillaMailManager (uses horilla_backends)

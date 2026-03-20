@@ -239,6 +239,29 @@ def add_condition_fields(form):
         except Exception as e:
             logger.error("Error adding condition field %s: %s", field_name, str(e))
 
+    # Always add HTMX to operator so changing to "between" refetches value widget (two date inputs)
+    if "operator" in form.fields and form.condition_model:
+        row_id = getattr(form, "row_id", "0")
+        model_name = getattr(form, "model_name", "")
+        hx_vals_dict = {"model_name": model_name or "", "row_id": row_id}
+        hx_vals_dict["condition_model"] = (
+            f"{form.condition_model._meta.app_label}.{form.condition_model._meta.model_name}"
+        )
+        hx_include = (
+            f'[name="field_{row_id}"],[name="operator_{row_id}"],'
+            f'[name="value_{row_id}"],[name="value_start_{row_id}"],[name="value_end_{row_id}"],[name="model"]'
+        )
+        form.fields["operator"].widget.attrs.update(
+            {
+                "hx-get": str(reverse_lazy("horilla_generics:get_field_value_widget")),
+                "hx-target": f"#id_value_{row_id}_container",
+                "hx-swap": "innerHTML",
+                "hx-vals": json.dumps(hx_vals_dict),
+                "hx-include": hx_include,
+                "hx-trigger": "change",
+            }
+        )
+
 
 def add_generic_htmx_to_field(form):
     """Add HTMX attributes to ForeignKey fields used as content_type_field for condition fields."""
@@ -506,6 +529,15 @@ def extract_condition_rows(form):
                 row_id = key.replace(f"{field_name}_", "")
                 if row_id.isdigit():
                     row_ids.add(row_id)
+        # "Between" operator uses value_start_ and value_end_
+        if key.startswith("value_start_"):
+            rid = key.replace("value_start_", "")
+            if rid.isdigit():
+                row_ids.add(rid)
+        if key.startswith("value_end_"):
+            rid = key.replace("value_end_", "")
+            if rid.isdigit():
+                row_ids.add(rid)
     if any(f in form.data for f in form.condition_fields) or any(
         f"{f}_0" in form.data for f in form.condition_fields
     ):
@@ -520,6 +552,16 @@ def extract_condition_rows(form):
                 else (field_name if row_id == "0" else f"{field_name}_{row_id}")
             )
             value = form.data.get(field_key, "").strip()
+            # For operator "between", value may come from value_start_ and value_end_
+            if field_name == "value" and row_data.get("operator") == "between":
+                start_key = (
+                    "value_start_0" if row_id == "0" else f"value_start_{row_id}"
+                )
+                end_key = "value_end_0" if row_id == "0" else f"value_end_{row_id}"
+                start_val = form.data.get(start_key, "").strip()
+                end_val = form.data.get(end_key, "").strip()
+                if start_val or end_val:
+                    value = f"{start_val},{end_val}"
             row_data[field_name] = value
             if field_name in ["field", "operator"] and not value:
                 has_required_data = False

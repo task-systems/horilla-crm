@@ -120,6 +120,12 @@ OPERATOR_CHOICES = [
     ("less_than_equal", _("Less Than or Equal")),
     ("is_empty", _("Is Empty")),
     ("is_not_empty", _("Is Not Empty")),
+    ("exact", _("Equals")),
+    ("gt", _("After")),
+    ("lt", _("Before")),
+    ("between", _("Between")),
+    ("isnull", _("Is empty")),
+    ("isnotnull", _("Is not empty")),
 ]
 
 # IMPORTANT: Order matters — do not change the order of these lists
