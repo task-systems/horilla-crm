@@ -41,6 +41,7 @@ class HorillaAutomation(HorillaCoreModel):
         ("on_update", "On Update"),
         ("on_create_or_update", "Both Create and Update"),
         ("on_delete", "On Delete"),
+        ("scheduled", "Scheduled (time-based)"),
     ]
     SEND_OPTIONS = [
         ("mail", "Send as Mail"),
@@ -114,6 +115,48 @@ class HorillaAutomation(HorillaCoreModel):
         verbose_name=_("Choose Delivery Channel"),
     )
 
+    schedule_date_field = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name=_("Target Date Field"),
+        help_text=_(
+            "The date field on the record to schedule around (e.g., 'close_date', 'due_date'). "
+            "Required for scheduled automations."
+        ),
+    )
+    schedule_offset_amount = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_("Adjust By"),
+        help_text=_(
+            "How many days/weeks/months away from the Target Date.\n"
+            "Use 0 to send on the same day."
+        ),
+    )
+    schedule_offset_direction = models.CharField(
+        max_length=10,
+        blank=True,
+        choices=[("before", _("Before")), ("after", _("After"))],
+        verbose_name=_("Timing"),
+        help_text=_(
+            "Before = send earlier than the Target Date.\n"
+            "After = send later than the Target Date."
+        ),
+    )
+    schedule_offset_unit = models.CharField(
+        max_length=16,
+        blank=True,
+        choices=[("days", _("Days")), ("weeks", _("Weeks")), ("months", _("Months"))],
+        verbose_name=_("Offset Unit"),
+        help_text=_("Choose Days, Weeks, or Months."),
+    )
+    schedule_run_time = models.TimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("Run Time"),
+        help_text=_("Optional. Leave empty to run whenever the scheduler runs."),
+    )
+
     class Meta:
         """
         Meta class for HorillaAutomation model
@@ -143,6 +186,28 @@ class HorillaAutomation(HorillaCoreModel):
     def clean(self):
         """Validate template fields based on delivery_channel."""
         super().clean()
+        # Validate scheduled configuration if trigger is scheduled
+        if getattr(self, "trigger", None) == "scheduled":
+            errors = {}
+            if not self.schedule_date_field:
+                errors["schedule_date_field"] = _(
+                    "This field is required when Trigger is 'Scheduled'."
+                )
+            if self.schedule_offset_amount is None:
+                errors["schedule_offset_amount"] = _(
+                    "This field is required when Trigger is 'Scheduled'."
+                )
+            if not self.schedule_offset_direction:
+                errors["schedule_offset_direction"] = _(
+                    "This field is required when Trigger is 'Scheduled'."
+                )
+            if not self.schedule_offset_unit:
+                errors["schedule_offset_unit"] = _(
+                    "This field is required when Trigger is 'Scheduled'."
+                )
+            if errors:
+                raise ValidationError(errors)
+
         if (
             self.delivery_channel == "notification"
             and not self.notification_template_id
@@ -269,3 +334,45 @@ class AutomationCondition(HorillaCoreModel):
 
     def __str__(self):
         return f"{self.automation.title} - {self.field} {self.operator} {self.value}"
+
+
+@permission_exempt_model
+class AutomationRunLog(HorillaCoreModel):
+    """
+    Keeps track of scheduled automation executions to prevent duplicates.
+
+    We log both:
+    - run_date: when the task ran (today)
+    - scheduled_for: the target date value the instance matched (e.g., close_date)
+    This allows re-running when the instance date changes (e.g., close_date updated).
+    """
+
+    automation = models.ForeignKey(
+        HorillaAutomation,
+        on_delete=models.CASCADE,
+        related_name="run_logs",
+        verbose_name=_("Automation"),
+    )
+    content_type = models.ForeignKey(
+        HorillaContentType,
+        on_delete=models.CASCADE,
+        verbose_name=_("Content Type"),
+    )
+    object_id = models.CharField(max_length=64, verbose_name=_("Object ID"))
+    run_date = models.DateField(verbose_name=_("Run Date"))
+    scheduled_for = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name=_("Scheduled For"),
+        help_text=_(
+            "The instance date value that matched when this automation executed."
+        ),
+    )
+
+    class Meta:
+        verbose_name = _("Automation Run Log")
+        verbose_name_plural = _("Automation Run Logs")
+        unique_together = ("automation", "content_type", "object_id", "scheduled_for")
+
+    def __str__(self) -> str:
+        return f"{self.automation_id}:{self.content_type_id}:{self.object_id}@{self.run_date}"

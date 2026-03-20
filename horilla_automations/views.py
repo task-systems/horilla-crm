@@ -227,6 +227,47 @@ class HorillaAutomationFormView(LoginRequiredMixin, HorillaSingleFormView):
             )
         return reverse_lazy("horilla_automations:automation_create_view")
 
+    def get_initial(self):
+        """Preserve filled values on HTMX reload; pass trigger/model for scheduled UI."""
+        initial = super().get_initial()
+        if self.request.method == "GET":
+            # Preserve common form fields (HTMX trigger reload includes closest form)
+            preserved_fields = [
+                "title",
+                "model",
+                "mail_to",
+                "also_sent_to",
+                "trigger",
+                "schedule_date_field",
+                "schedule_offset_amount",
+                "schedule_offset_direction",
+                "schedule_offset_unit",
+                "schedule_run_time",
+                "delivery_channel",
+                "mail_template",
+                "notification_template",
+                "mail_server",
+            ]
+
+            for name in preserved_fields:
+                if name in self.request.GET:
+                    values = self.request.GET.getlist(name)
+                    initial[name] = values if len(values) > 1 else values[0]
+        return initial
+
+    def get_form_kwargs(self):
+        """Pass form_url and HTMX target so trigger dropdown can reload form to show/hide schedule fields."""
+        kwargs = super().get_form_kwargs()
+        form_url = self.get_form_url()
+        if hasattr(form_url, "url"):
+            form_url = form_url.url
+        kwargs["form_url"] = self.request.build_absolute_uri(form_url)
+        view_id = (
+            getattr(self, "view_id", None) or f"{self.model._meta.model_name}-form-view"
+        )
+        kwargs["htmx_trigger_target"] = f"#{view_id}-container"
+        return kwargs
+
     def get_context_data(self, **kwargs):
         """Add form errors to delivery_channel hx-vals so get-template-fields returns them on load."""
         context = super().get_context_data(**kwargs)

@@ -18,6 +18,15 @@ from horilla_mail.models import HorillaMailConfiguration
 # Local app imports
 from .models import AutomationCondition, HorillaAutomation
 
+# Schedule fields shown only when trigger is "scheduled"
+SCHEDULE_FIELD_NAMES = [
+    "schedule_date_field",
+    "schedule_offset_amount",
+    "schedule_offset_direction",
+    "schedule_offset_unit",
+    "schedule_run_time",
+]
+
 
 class HorillaAutomationForm(HorillaModelForm):
     """
@@ -28,8 +37,33 @@ class HorillaAutomationForm(HorillaModelForm):
     htmx_field_choices_url = "horilla_automations:get_automation_field_choices"
 
     def __init__(self, *args, **kwargs):
+        # Pop custom kwargs not supported by Django's BaseModelForm
+        form_url = kwargs.pop("form_url", None)
+        htmx_trigger_target = kwargs.pop("htmx_trigger_target", None)
+
         kwargs["condition_model"] = AutomationCondition
         super().__init__(*args, **kwargs)
+
+        request = kwargs.get("request")
+        # Resolve trigger: only show schedule fields when trigger is "scheduled"
+        instance = getattr(self, "instance", None)
+        initial = kwargs.get("initial", {})
+        trigger = None
+        # Prefer currently submitted form data (POST / bound form)
+        if getattr(self, "is_bound", False) and self.data.get("trigger"):
+            trigger = self.data.get("trigger")
+        # IMPORTANT: prefer the current value coming from HTMX GET reload,
+        # otherwise update form would always stick to the instance's saved trigger.
+        if request and request.method == "GET" and request.GET.get("trigger"):
+            trigger = request.GET.get("trigger")
+        if trigger is None and initial.get("trigger"):
+            trigger = initial.get("trigger")
+        if trigger is None and instance and getattr(instance, "pk", None):
+            trigger = getattr(instance, "trigger", None)
+
+        if trigger != "scheduled":
+            for name in SCHEDULE_FIELD_NAMES:
+                self.fields.pop(name, None)
 
         # Update condition_field_choices if model_name changed
         if self.model_name and hasattr(self, "condition_field_choices"):
@@ -46,7 +80,6 @@ class HorillaAutomationForm(HorillaModelForm):
 
         # Filter mail servers to only show outgoing mail servers
         if "mail_server" in self.fields:
-            request = kwargs.get("request")
             if request and hasattr(request, "user") and not request.user.is_anonymous:
                 company = getattr(request.user, "company", None)
                 queryset = HorillaMailConfiguration.objects.filter(
@@ -81,6 +114,56 @@ class HorillaAutomationForm(HorillaModelForm):
                     "hx-trigger": f"change, change from:#{model_field_id}, load",
                 }
             )
+
+        # Trigger field: reload form when changed so schedule fields show/hide
+        if "trigger" in self.fields and form_url and htmx_trigger_target:
+            self.fields["trigger"].widget.attrs.update(
+                {
+                    "hx-get": form_url,
+                    "hx-vals": "js:{'trigger': document.getElementById('id_trigger').value}",
+                    # include the whole form so previously filled values are preserved on reload
+                    "hx-include": "closest form",
+                    "hx-trigger": "change",
+                    "hx-target": htmx_trigger_target,
+                    "hx-swap": "innerHTML",
+                }
+            )
+
+        # Scheduled automation: set date field choices (Date/DateTime only) — only when visible
+        if "schedule_date_field" in self.fields:
+            # Model field is a CharField; replace with ChoiceField so choices render
+            existing = self.fields["schedule_date_field"]
+            choices = self._get_model_date_field_choices(self.model_name)
+            initial_value = ""
+            if self.instance_obj and getattr(self.instance_obj, "pk", None):
+                initial_value = (
+                    getattr(self.instance_obj, "schedule_date_field", "") or ""
+                )
+            elif self.initial.get("schedule_date_field"):
+                initial_value = self.initial.get("schedule_date_field") or ""
+
+            self.fields["schedule_date_field"] = forms.ChoiceField(
+                choices=choices,
+                required=False,
+                label=existing.label,
+                help_text=existing.help_text,
+                initial=initial_value,
+                widget=forms.Select(
+                    attrs={
+                        "class": "js-example-basic-single headselect w-full",
+                    }
+                ),
+            )
+
+        # Make schedule fields not required by default; validation happens in clean()
+        for fname in [
+            "schedule_offset_amount",
+            "schedule_offset_direction",
+            "schedule_offset_unit",
+            "schedule_run_time",
+        ]:
+            if fname in self.fields:
+                self.fields[fname].required = False
 
     def _get_model_field_choices(self, model_name):
         """Override to get field choices for automation conditions - exclude reverse relations"""
@@ -138,6 +221,34 @@ class HorillaAutomationForm(HorillaModelForm):
                 "Error fetching model %s: %s", model_name, str(e), exc_info=True
             )
 
+        return field_choices
+
+    def _get_model_date_field_choices(self, model_name):
+        """Return only date/datetime field choices for scheduled trigger."""
+        field_choices = [("", "---------")]
+        if not model_name:
+            return field_choices
+        try:
+            model = None
+            for app_config in apps.get_app_configs():
+                try:
+                    model = apps.get_model(
+                        app_label=app_config.label, model_name=model_name.lower()
+                    )
+                    break
+                except (LookupError, ValueError):
+                    continue
+            if model:
+                for field in model._meta.fields:
+                    # Only include DateField or DateTimeField
+                    if isinstance(field, (models.DateField, models.DateTimeField)):
+                        verbose_name = (
+                            getattr(field, "verbose_name", None)
+                            or field.name.replace("_", " ").title()
+                        )
+                        field_choices.append((field.name, verbose_name))
+        except Exception:
+            pass
         return field_choices
 
     def _get_user_foreignkey_fields(self, model_name):
@@ -360,8 +471,47 @@ class HorillaAutomationForm(HorillaModelForm):
             "mail_to",
             "also_sent_to",
             "trigger",
+            "schedule_date_field",
+            "schedule_offset_amount",
+            "schedule_offset_direction",
+            "schedule_offset_unit",
+            "schedule_run_time",
             "delivery_channel",
             "mail_template",
             "notification_template",
             "mail_server",
         ]
+
+    def clean(self):
+        """Conditional validation for scheduled trigger."""
+        cleaned = super().clean()
+        trigger = cleaned.get("trigger")
+        if trigger == "scheduled":
+            errors = {}
+            if not cleaned.get("schedule_date_field"):
+                errors["schedule_date_field"] = "Required for scheduled automations."
+            if cleaned.get("schedule_offset_amount") is None:
+                errors["schedule_offset_amount"] = "Required for scheduled automations."
+            if not cleaned.get("schedule_offset_direction"):
+                errors["schedule_offset_direction"] = (
+                    "Required for scheduled automations."
+                )
+            if not cleaned.get("schedule_offset_unit"):
+                errors["schedule_offset_unit"] = "Required for scheduled automations."
+            if errors:
+                raise forms.ValidationError(errors)
+        return cleaned
+
+    def save(self, commit=True):
+        """Clear schedule fields when trigger is not scheduled."""
+        instance = super().save(commit=False)
+        if self.cleaned_data.get("trigger") != "scheduled":
+            instance.schedule_date_field = ""
+            instance.schedule_offset_amount = None
+            instance.schedule_offset_direction = ""
+            instance.schedule_offset_unit = ""
+            instance.schedule_run_time = None
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance

@@ -25,4 +25,6 @@ class HorillaAutomationsConfig(AppLauncher):
         "signals",
     ]
 
+    celery_schedule_module = "celery_schedules"
+
     automation_files = ["load_automation/automation.json"]

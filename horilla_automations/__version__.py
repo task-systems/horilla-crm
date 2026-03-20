@@ -2,13 +2,18 @@
 
 from horilla.utils.translation import gettext_lazy as _
 
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 __module_name__ = "Automations"
 __release_date__ = ""
 __description__ = _(
     "Module for automating mail and notifications based on model events and conditions."
 )
 __icon__ = "assets/icons/automation.svg"
+
+__1_1_2__ = _(
+    "Introduced scheduled automations with Celery Beat support, including dynamic schedule fields in the automation form, "
+    "server-side validation for scheduled triggers, and execution run logging to prevent duplicate runs."
+)
 
 __1_1_1__ = _(
     "Minor compatibility improvements and internal stability updates"
