@@ -995,7 +995,7 @@ class HorillaModalDetailView(DetailView):
         context["instance"] = obj
         context["title"] = self.title
         context["header"] = self.header
-        context["body"] = self.body
+        context["body"] = self.get_body_fields()
         context["actions"] = self.actions
         context["action_method"] = self.action_method
         context["cols"] = self.cols
@@ -1025,3 +1025,31 @@ class HorillaModalDetailView(DetailView):
             context["extra_query"] = ""
 
         return context
+
+    def get_body_fields(self):
+        """
+        Normalize modal body fields.
+        - If an entry is (label, field_name), keep provided label.
+        - If an entry is "field_name", resolve and use model verbose_name.
+        """
+        normalized = []
+        instance = self.model()
+
+        for field in self.body:
+            if isinstance(field, (list, tuple)) and len(field) >= 2:
+                label = field[0]
+                field_name = field[1]
+                extra = tuple(field[2:]) if len(field) > 2 else ()
+                normalized.append((label, field_name, *extra))
+                continue
+
+            field_name = field
+            try:
+                model_field = instance._meta.get_field(field_name)
+                label = model_field.verbose_name
+            except FieldDoesNotExist:
+                label = str(field_name).replace("_", " ").title()
+
+            normalized.append((label, field_name))
+
+        return normalized
