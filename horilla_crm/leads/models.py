@@ -244,6 +244,9 @@ class Lead(HorillaCoreModel):
         ("other", _("Other")),
     ]
 
+    title = models.CharField(max_length=100, blank=True, verbose_name=_("Title"))
+    first_name = models.CharField(max_length=100, verbose_name=_("First Name"))
+    last_name = models.CharField(max_length=100, verbose_name=_("Last Name"))
     lead_owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
@@ -251,9 +254,6 @@ class Lead(HorillaCoreModel):
         verbose_name=_("Lead Owner"),
         related_name="lead",
     )
-    title = models.CharField(max_length=100, blank=True, verbose_name=_("Title"))
-    first_name = models.CharField(max_length=100, verbose_name=_("First Name"))
-    last_name = models.CharField(max_length=100, verbose_name=_("Last Name"))
     email = models.EmailField(validators=[EmailValidator()], verbose_name=_("Email"))
     contact_number = models.CharField(
         max_length=100, blank=True, verbose_name=_("Contact Number")
