@@ -246,6 +246,7 @@ def refresh_outlook_token(api: HorillaMailConfiguration):
     return api
 
 
+@method_decorator(htmx_required, name="dispatch")
 @method_decorator(
     permission_required_or_denied(["horilla_mail.view_horillamailconfiguration"]),
     name="dispatch",
