@@ -1,8 +1,9 @@
-{% if load_url %}<div hx-get="{{ load_url }}" hx-target="#modalBox" hx-swap="innerHTML" hx-trigger="load"></div>{% endif %}
+{% if load_url %}<div hx-get="{{ load_url }}" hx-target="#modalBox" hx-swap="innerHTML" hx-trigger="load">
+    </div>{% endif %}
 <script>
-{% if close_modal %}
-$('#reloadButton').click();closeModal();
-{% else %}
-$('#reloadButton').click();
-{% endif %}
+    {% if close_modal %}
+    $('#reloadButton').click();closeModal();
+    {% else %}
+    $('#reloadButton').click();
+    {% endif %}
 </script>
