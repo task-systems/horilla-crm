@@ -1,27 +1,44 @@
 {% load i18n %}
 <div class="ps-3" id="styled-2" role="tabpanel" aria-labelledby="history-tab">
-    <button id="reloadButton"  hidden hx-get="{{ request.path }}?{{request.GET.urlencode}}" hx-target="#users-container" hx-swap="outerHTML" hx-select="#users-container">click</button>
-
+    <button
+        id="reloadButton"
+        hidden
+        hx-get="{{ request.path }}?{{request.GET.urlencode}}"
+        hx-target="#users-container"
+        hx-swap="outerHTML"
+        hx-select="#users-container"
+    >
+        click
+    </button>
 
     <div class="flex justify-between mb-4">
-        <h3 class="text-md font-semibold">
+        <h3 class="text-md font-semibold pt-2">
             {% trans "User Permissions" %}
         </h3>
         <div class="flex items-center gap-4">
-            <input type="text"
+            <input
+                type="text"
                 class="text-color-600 px-2 py-1.5 pr-[40px] w-full border border-dark-50 rounded-md focus-visible:outline-0 placeholder:text-[#d3d3d3] placeholder:text-xs text-sm [transition:.3s] focus:border-primary-600"
-                placeholder="{% trans 'Search users...' %}" hx-get="{% url 'horilla_core:load_more_users' %}"
-                hx-trigger="input changed delay:500ms" hx-target="#users-container" hx-swap="innerHTML"
-                hx-indicator="#loadingIndicator" name="search" />
+                placeholder="{% trans 'Search users...' %}"
+                hx-get="{% url 'horilla_core:load_more_users' %}"
+                hx-trigger="input changed delay:500ms"
+                hx-target="#users-container"
+                hx-swap="innerHTML"
+                hx-indicator="#loadingIndicator"
+                name="search"
+            >
             <button
                 class="text-sm px-4 py-2 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white]"
-                hx-get="{% url 'horilla_core:assign_users_perm' %}" hx-target="#contentModalBox" hx-swap="innerHTML"
-                onclick="openContentModal()">
+                hx-get="{% url 'horilla_core:assign_users_perm' %}"
+                hx-target="#contentModalBox"
+                hx-swap="innerHTML"
+                onclick="openContentModal()"
+            >
                 {% trans "Assign" %}
             </button>
         </div>
     </div>
-    <div class="overflow-y-auto  h-[calc(_100vh_-_370px_)] overflow-hidden" id="users-container">
+    <div class="overflow-y-auto h-[calc(_100vh_-_370px_)] overflow-hidden" id="users-container">
         {% include "permissions/user_list.html" %}
     </div>
     <div id="loadingIndicator" class="htmx-indicator">

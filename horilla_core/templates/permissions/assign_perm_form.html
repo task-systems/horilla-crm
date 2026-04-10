@@ -1,29 +1,37 @@
-{% load i18n %}
-{% load horilla_tags %}
+{% load i18n horilla_tags %}
+
 <div id="assign-users-modal">
-    <div class="flex justify-between items-center p-4 ">
+    <div class="flex justify-between items-center p-4">
         <h2 class="text-lg font-semibold text-gray-900">{% trans "Assign Users" %}</h2>
         <button type="button" class="text-gray-400 hover:text-gray-600" onclick="closeContentModal()">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
         </button>
     </div>
     {% get_user_model_meta as user_meta %}
 
-    <form method="post" action="{% url 'horilla_core:assign_users_perm' %}" hx-post="{% url 'horilla_core:assign_users_perm' %}" hx-target="#assign-users-modal" hx-swap="outerHTML">
+    <form
+        method="post"
+        action="{% url 'horilla_core:assign_users_perm' %}"
+        hx-post="{% url 'horilla_core:assign_users_perm' %}"
+        hx-target="#assign-users-modal"
+        hx-swap="outerHTML"
+    >
         {% csrf_token %}
         <input type="hidden" id="selected-user-ids" name="selected_user_ids" value="">
-        <div class="p-4 space-y-4">
+        <div class="p-4 pt-1 space-y-4">
             <div class="space-y-2">
-                <label class="block text-sm font-medium text-gray-700">{% trans "Users" %}</label>
-                <select name="users"
+                <label class="block text-sm font-medium text-gray-700 pb-2 ">{% trans "Users" %}</label>
+                <select
+                    name="users"
                     id="selected-users"
                     multiple
                     class="select2-pagination w-full text-sm"
                     data-url="{% url 'horilla_generics:model_select2' app_label=user_meta.app_label model_name=user_meta.model_class_name %}?is_superuser=false"
                     data-placeholder="{% trans 'Select users' %}"
-                    onchange="updateSelectedUserIds()">
+                    onchange="updateSelectedUserIds()"
+                >
                 </select>
             </div>
             <div class="space-y-3 max-h-64 overflow-y-auto">
@@ -39,7 +47,7 @@
                                 hx-target="#assign-model-container"
                                 hx-swap="innerHTML"
                                 name="search"
-                            />
+                            >
                         </div>
 
                         <label class="flex items-center text-sm font-semibold text-primary-600">
@@ -47,13 +55,15 @@
                                 type="checkbox"
                                 id="master-select-all-user"
                                 class="bulk-model-select-all w-4 h-4 border border-[#cfcfcf] rounded-sm accent-[#e54f38] mr-2"
-                                {% if master_select_all_checked %}checked{% endif %}
+                                {% if master_select_all_checked %}
+                                    checked
+                                {% endif %}
                                 hx-post="{% url 'horilla_core:bulk_update_user_all_permissions' %}"
                                 hx-trigger="change"
                                 hx-vals='js:{"checked": event.target.checked, "users": getBulkSelectedUsers()}'
                                 hx-on::after-request="$('#reloadMessagesButton').click();toggleAllBulkChecked(this)"
                                 hx-swap="none"
-                            />
+                            >
                             {% trans "Select All" %}
                         </label>
                     </div>
@@ -67,13 +77,15 @@
                                         <input
                                             type="checkbox"
                                             class="bulk-model-select-all w-4 h-4 bg-[#E9EDF7] rounded-sm accent-[#e54f38] mr-2"
-                                            {% if model.select_all_checked %}checked{% endif %}
+                                            {% if model.select_all_checked %}
+                                                checked
+                                            {% endif %}
                                             hx-post="{% url 'horilla_core:bulk_update_user_model_permissions'%}"
                                             hx-trigger="change"
                                             hx-vals='js:{"model_name": "{{ model.model_name }}", "app_label": "{{ model.app_label }}", "checked": event.target.checked}'
                                             hx-on::after-request="$('#reloadMessagesButton').click();toggleBulkChecked($(this));"
                                             hx-swap="none"
-                                        />
+                                        >
                                     </label>
 
                                     {% if model.is_managed %}
@@ -89,7 +101,11 @@
                                             {{ model.verbose_name }}
                                         </button>
                                     {% else %}
-                                        <div class="inline-block cursor-pointer text-sm whitespace-nowrap text-black" title="{% trans 'Field permissions not available for this model' %}" aria-label="{% trans 'Field permissions not available for this model' %}">
+                                        <div
+                                            class="inline-block cursor-pointer text-sm whitespace-nowrap text-black"
+                                            title="{% trans 'Field permissions not available for this model' %}"
+                                            aria-label="{% trans 'Field permissions not available for this model' %}"
+                                        >
                                             {{ model.verbose_name }}
                                         </div>
                                     {% endif %}
@@ -102,8 +118,10 @@
                                                 name="permissions"
                                                 value="{{ perm.id }}"
                                                 class="bulk-individual-perm w-4 h-4 border border-[#cfcfcf] rounded-sm accent-[#e54f38] mr-2"
-                                                {% if perm.has_perm %}checked{% endif %}
-                                                />
+                                                {% if perm.has_perm %}
+                                                    checked
+                                                {% endif %}
+                                            >
                                             {{ perm.label }}
                                         </label>
                                     {% endfor %}
@@ -127,7 +145,10 @@
 
         <div class="flex justify-end gap-2 p-4 bg-gray-50">
             <div class="flex justify-end p-5 pt-0">
-                <button type="submit" class="text-sm px-4 py-2 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white]">
+                <button
+                    type="submit"
+                    class="text-sm px-4 py-2 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white]"
+                >
                     {% trans "Save" %}
                 </button>
             </div>

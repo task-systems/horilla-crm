@@ -1,20 +1,12 @@
 {% extends "settings/settings.html" %}
-{% load static i18n %}
+{% load static i18n horilla_tags %}
 
 {% block settings %}
-
-{% partialdef module_card %}
+    {% partialdef module_card %}
     <div class="module-header">
-        <div
-            style="
-                display: flex;
-                gap: 10px;
-                flex-flow: wrap;
-                align-items: center;
-            "
-        >
+        <div style="display: flex; gap: 10px; flex-flow: wrap; align-items: center">
             <div class="module-icon bg-primary-200">
-                <img src="{% static module.icon %}" alt="{% trans 'Icon' %}" class="svg-themed">
+                {% themed_icon module.icon %}
             </div>
             <div class="module-name">{% trans module.name %}</div>
         </div>
@@ -25,48 +17,57 @@
     <div class="module-description">
         {% trans module.description %}
     </div>
-{% endpartialdef %}
+    {% endpartialdef %}
 
-<div id="version-info-view">
-    <div class="header">
-        <h1>{% trans "Modules & Versions" %}</h1>
-        <p>{% trans "Version Information & Installed Packages" %}</p>
-    </div>
-
-    <div class="">
-        <div class="core-module version-info-card cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5" role="button" tabindex="0" title="{% trans 'View version details' %}"
-            hx-get="{% url 'horilla_core:version_info_view' %}?details=core"
-            hx-target="#contentModalBox"
-            hx-swap="innerHTML"
-            hx-trigger="click"
-            onclick="openContentModal()">
-            <div class="flex gap-5 items-center">
-                <div class="core-module-icon">
-                    <img src="{% static core_module.icon %}" alt="{% trans 'Icon' %}">
-                </div>
-                <div class="core-module-info">
-                    <h2>{{ core_module.name }}</h2>
-                    <p>{{ core_module.description }}</p>
-                </div>
-            </div>
-            <div class="core-version">v{{ core_module.version }}</div>
+    <div id="version-info-view">
+        <div class="header">
+            <h1>{% trans "Modules & Versions" %}</h1>
+            <p>{% trans "Version Information & Installed Packages" %}</p>
         </div>
 
-        <div class="custom-scroll overflow overflow-hidden overflow-y-auto h-[calc(_100vh_-_500px_)]">
-            <div class="modules-grid">
-                {% for module in other_modules %}
-                <div class="module-card version-info-card cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5" role="button" tabindex="0" title="{% trans 'View version details' %}"
-                    hx-get="{% url 'horilla_core:version_info_view' %}?details={{ forloop.counter0 }}"
-                    hx-target="#contentModalBox"
-                    hx-swap="innerHTML"
-                    hx-trigger="click"
-                    hx-on::after-request="if(event.detail.successful){openContentModal()}">
-                    {% partial module_card %}
+        <div class="">
+            <div
+                class="core-module version-info-card cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
+                role="button"
+                tabindex="0"
+                title="{% trans 'View version details' %}"
+                hx-get="{% url 'horilla_core:version_info_view' %}?details=core"
+                hx-target="#contentModalBox"
+                hx-swap="innerHTML"
+                hx-trigger="click"
+                onclick="openContentModal()"
+            >
+                <div class="flex gap-5 items-center">
+                    <div class="core-module-icon">
+                        <img src="{% static core_module.icon %}" alt="{% trans 'Icon' %}">
+                    </div>
+                    <div class="core-module-info">
+                        <h2>{{ core_module.name }}</h2>
+                        <p>{{ core_module.description }}</p>
+                    </div>
                 </div>
-                {% endfor %}
+                <div class="core-version">v{{ core_module.version }}</div>
+            </div>
+
+            <div class="custom-scroll overflow overflow-hidden overflow-y-auto h-[calc(_100vh_-_500px_)]">
+                <div class="modules-grid">
+                    {% for module in other_modules %}
+                        <div
+                            class="module-card version-info-card cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
+                            role="button"
+                            tabindex="0"
+                            title="{% trans 'View version details' %}"
+                            hx-get="{% url 'horilla_core:version_info_view' %}?details={{ forloop.counter0 }}"
+                            hx-target="#contentModalBox"
+                            hx-swap="innerHTML"
+                            hx-trigger="click"
+                            hx-on::after-request="if(event.detail.successful){openContentModal()}"
+                        >
+                            {% partial module_card %}
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>
-</div>
-
 {% endblock %}

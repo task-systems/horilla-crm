@@ -1,27 +1,35 @@
 {% load static i18n %}
 <div class="flex justify-between items-center p-5 pb-0">
     <h2 class="text-md font-semibold m-0">{% trans module.name %}</h2>
-    <button type="button" onclick="closeContentModal()" class="text-gray-500 hover:text-red-500 text-xl cursor-pointer p-1 bg-transparent border-0" aria-label="{% trans 'Close' %}">
+    <button
+        type="button"
+        onclick="closeContentModal()"
+        class="text-gray-500 hover:text-red-500 text-xl cursor-pointer p-1 bg-transparent border-0"
+        aria-label="{% trans 'Close' %}"
+    >
         <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}">
     </button>
 </div>
 <div class="p-5 pt-2 overflow-y-auto">
     <p class="text-gray-600 mb-3">{% trans module.description %}</p>
     <div class="flex flex-wrap gap-2 mb-3">
-        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-700">v{{ module.version }}</span>
-        {% if module.release_date %}<span class="text-sm text-gray-500">{% trans "Release date" %}: {{ module.release_date }}</span>{% endif %}
+        <span
+            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-700"
+        >v{{ module.version }}</span>
+        {% if module.release_date %}<span class="text-sm text-gray-500">{% trans "Release date" %}:
+                {{ module.release_date }}</span>{% endif %}
     </div>
     {% if module.changelog %}
-    <h4 class="text-sm font-semibold text-gray-700 mt-4 mb-2">{% trans "What's new" %}</h4>
-    <ul class="space-y-2 text-sm text-gray-600">
-        {% for entry in module.changelog %}
-        <li class="flex gap-2">
-            <span class="font-medium text-primary-600 shrink-0">v{{ entry.version }}</span>
-            <span>{% trans entry.description %}</span>
-        </li>
-        {% endfor %}
-    </ul>
+        <h4 class="text-sm font-semibold text-gray-700 mt-4 mb-2">{% trans "What's new" %}</h4>
+        <ul class="space-y-2 text-sm text-gray-600">
+            {% for entry in module.changelog %}
+                <li class="flex gap-2">
+                    <span class="font-medium text-primary-600 shrink-0">v{{ entry.version }}</span>
+                    <span>{% trans entry.description %}</span>
+                </li>
+            {% endfor %}
+        </ul>
     {% else %}
-    <p class="text-sm text-gray-500">{% trans "No changelog available." %}</p>
+        <p class="text-sm text-gray-500">{% trans "No changelog available." %}</p>
     {% endif %}
 </div>

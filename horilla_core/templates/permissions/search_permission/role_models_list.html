@@ -7,13 +7,15 @@
                     <input
                         type="checkbox"
                         class="model-select-all w-4 h-4 bg-[#E9EDF7] rounded-sm accent-[#e54f38] mr-2"
-                        {% if model.select_all_checked %}checked{% endif %}
+                        {% if model.select_all_checked %}
+                            checked
+                        {% endif %}
                         hx-post="{% url 'horilla_core:update_role_model_permissions' role.id %}"
                         hx-trigger="change"
                         hx-vals='js:{"model_name": "{{ model.model_name }}", "app_label": "{{ model.app_label }}", "checked": event.target.checked}'
                         hx-on::after-request="$('#reloadMessagesButton').click();toggleChecked($(this));"
                         hx-swap="none"
-                    />
+                    >
                 </label>
                 {% if model.is_managed %}
                     <button
@@ -26,13 +28,17 @@
                         {{ model.verbose_name }}
                     </button>
                 {% else %}
-                    <div class="inline-block cursor-pointer whitespace-nowrap text-black" title="{% trans 'Field permissions not available for this model' %}" aria-label="{% trans 'Field permissions not available for this model' %}">
+                    <div
+                        class="inline-block cursor-pointer whitespace-nowrap text-black"
+                        title="{% trans 'Field permissions not available for this model' %}"
+                        aria-label="{% trans 'Field permissions not available for this model' %}"
+                    >
                         {{ model.verbose_name }}
                     </div>
                 {% endif %}
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-3 sm:gap-x-6 lg:gap-x-8 text-xs text-dark-300 w-[calc(100%-15rem)]  px-4 sm:px-0">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-3 sm:gap-x-6 lg:gap-x-8 text-xs text-dark-300 w-[calc(100%-15rem)] px-4 sm:px-0">
                 {% for perm in model.permissions %}
                     <label class="flex items-center whitespace-nowrap">
                         <input
@@ -40,13 +46,15 @@
                             name="permissions"
                             value="{{ perm.id }}"
                             class="individual-perm w-4 h-4 border border-[#cfcfcf] rounded-sm accent-[#e54f38] mr-2"
-                            {% if perm.has_perm %}checked{% endif %}
+                            {% if perm.has_perm %}
+                                checked
+                            {% endif %}
                             hx-post="{% url 'horilla_core:update_role_permissions' role.id %}"
                             hx-trigger="change"
                             hx-vals='js:{"permission_id": "{{ perm.id }}", "checked": event.target.checked}'
                             hx-on::after-request="$('#reloadMessagesButton').click();"
                             hx-swap="innerHTML"
-                        />
+                        >
                         {{ perm.label }}
                     </label>
                 {% endfor %}
