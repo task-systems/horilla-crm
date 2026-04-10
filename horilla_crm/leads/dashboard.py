@@ -1,7 +1,7 @@
 """Dashboard utilities for leads module."""
 
 # Third-party imports (Django)
-from django.db.models import Count
+from django.db.models import Avg, Count
 from django.utils.http import urlencode
 
 # First-party / Horilla imports
@@ -13,7 +13,7 @@ from horilla_utils.methods import get_section_info_for_model
 from .models import Lead
 
 
-def create_lead_charts(self, queryset, model_info):
+def create_lead_source_charts(self, queryset, model_info):
     """
     Lead-specific charts moved out of horilla_dashboard.
     """
@@ -111,6 +111,114 @@ def create_lead_charts(self, queryset, model_info):
     return None
 
 
+def create_lead_charts_by_stage(self, queryset, model_info):
+    """Chart: lead counts grouped by pipeline stage (second dashboard chart slot)."""
+    try:
+        if not hasattr(queryset.model, "lead_status"):
+            return None
+
+        data = (
+            queryset.values("lead_status_id", "lead_status__name")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
+
+        if not data.exists():
+            return None
+
+        labels = [row["lead_status__name"] or "No stage" for row in data]
+        values = [row["count"] for row in data]
+
+        section = get_section_info_for_model(queryset.model)
+        urls = []
+        for row in data:
+            pk = row["lead_status_id"]
+            query = urlencode(
+                {
+                    "section": section["section"],
+                    "apply_filter": "true",
+                    "field": "lead_status",
+                    "operator": "exact",
+                    "value": str(pk) if pk is not None else "",
+                }
+            )
+            urls.append(f"{section['url']}?{query}")
+
+        return {
+            "title": "Leads by Stage",
+            "type": "column",
+            "data": {
+                "labels": labels,
+                "data": values,
+                "urls": urls,
+                "labelField": "Lead Stage",
+            },
+        }
+    except Exception as e:
+        print("Lead stage chart error:", e)
+
+    return None
+
+
+def lead_kpi_cards(generator, model_info):
+    """
+    KPI values come from any queryset logic: filters, aggregates, annotations, etc.
+    Display style (integer vs decimals vs text) is inferred from each ``value``;
+    set ``type`` only if you need to override formatting.
+    """
+    model_class = model_info["model"]
+    qs = generator.get_queryset(model_class)
+    section_info = get_section_info_for_model(model_class)
+    total = qs.count()
+    open_qs = qs.filter(is_convert=False) if hasattr(model_class, "is_convert") else qs
+    open_count = open_qs.count()
+
+    avg_emp_raw = open_qs.aggregate(avg=Avg("no_of_employees"))["avg"]
+    if avg_emp_raw is None:
+        avg_emp = 0.0
+    else:
+        avg_emp = round(float(avg_emp_raw), 1)
+
+    in_final_stage = 0
+    if hasattr(model_class, "lead_status"):
+        in_final_stage = qs.filter(lead_status__is_final=True).count()
+
+    return [
+        {
+            "title": "Open pipeline",
+            "value": open_count,
+            "icon": "fa-layer-group",
+            "color": "blue",
+            "url": section_info["url"],
+            "section": section_info["section"],
+        },
+        # {
+        #     "title": "Total Leads",
+        #     "value": total,
+        #     "icon": "fa-user-plus",
+        #     "color": "yellow",
+        #     "url": section_info["url"],
+        #     "section": section_info["section"],
+        # },
+        # {
+        #     "title": "Avg Employee",
+        #     "value": avg_emp,
+        #     "icon": "fa-chart-line",
+        #     "color": "teal",
+        #     "url": section_info["url"],
+        #     "section": section_info["section"],
+        # },
+        # {
+        #     "title": "In final stage",
+        #     "value": in_final_stage,
+        #     "icon": "fa-flag-checkered",
+        #     "color": "purple",
+        #     "url": section_info["url"],
+        #     "section": section_info["section"],
+        # },
+    ]
+
+
 def lead_table_fields(model_class):
     """Return list of {name, verbose_name} for lead table columns."""
 
@@ -145,7 +253,7 @@ def lead_table_fields(model_class):
     return fields
 
 
-def lead_table_func(generator, model_info):
+def lead_convert_table_func(generator, model_info):
     """Generate table context for won leads."""
     filter_kwargs = (
         {"is_convert": True} if hasattr(model_info["model"], "is_convert") else {}
@@ -161,15 +269,29 @@ def lead_table_func(generator, model_info):
     )
 
 
+def lead_open_pipeline_table_func(generator, model_info):
+    """Generate table context for leads not yet converted (pipeline)."""
+    filter_kwargs = (
+        {"is_convert": False} if hasattr(model_info["model"], "is_convert") else {}
+    )
+
+    return generator.build_table_context(
+        model_info=model_info,
+        title="Open Leads (pipeline)",
+        filter_kwargs=filter_kwargs,
+        no_found_img="assets/img/not-found-list.svg",
+        no_record_msg="No open leads found.",
+        view_id="leads_dashboard_open_list",
+    )
+
+
 DefaultDashboardGenerator.extra_models.append(
     {
         "model": Lead,
         "name": "Leads",
-        "icon": "fa-user-plus",
-        "color": "yellow",
-        "include_kpi": True,  # Set to True to show KPI (optional, you can remove this if you don't want KPI)
-        "chart_func": create_lead_charts,  # Shows chart
-        "table_func": lead_table_func,  # Shows table
+        "kpi_func": lead_kpi_cards,
+        "chart_func": [create_lead_source_charts, create_lead_charts_by_stage],
+        "table_func": [lead_convert_table_func, lead_open_pipeline_table_func],
         "table_fields_func": lead_table_fields,
     }
 )
