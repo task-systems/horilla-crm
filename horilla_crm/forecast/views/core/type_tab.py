@@ -84,12 +84,14 @@ class ForecastTypeTabView(
             FiscalYearService.check_and_update_fiscal_years(company=company)
 
         fiscal_year_id = self.request.GET.get("fiscal_year_id")
-        fiscal_year = (
-            FiscalYearInstance.objects.get(id=fiscal_year_id)
-            if fiscal_year_id
-            and FiscalYearInstance.objects.filter(id=fiscal_year_id).exists()
-            else self.get_current_fiscal_year
-        )
+        fiscal_year = None
+        if fiscal_year_id:
+            try:
+                fiscal_year = FiscalYearInstance.objects.get(id=fiscal_year_id)
+            except FiscalYearInstance.DoesNotExist:
+                fiscal_year = None
+        if not fiscal_year:
+            fiscal_year = self.get_current_fiscal_year
 
         self.ensure_forecasts_exist(forecast_type, fiscal_year)
 
@@ -279,10 +281,9 @@ class ForecastChartsModalView(
             context["currency_symbol"] = "USD"
             return context
 
-        fiscal_year = None
-        if FiscalYearInstance.objects.filter(id=fiscal_year_id).exists():
+        try:
             fiscal_year = FiscalYearInstance.objects.get(id=fiscal_year_id)
-        else:
+        except FiscalYearInstance.DoesNotExist:
             fiscal_year = self.get_current_fiscal_year
 
         if not fiscal_year:

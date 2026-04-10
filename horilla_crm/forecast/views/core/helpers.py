@@ -430,6 +430,7 @@ class ForecastTypeTabHelpersMixin:
                 ),
                 "user_data": user_period_data,
                 "previous_period_id": previous_period.id,
+                "previous_period_name": previous_period.name,
             }
 
         return trend_results
@@ -513,37 +514,37 @@ class ForecastTypeTabHelpersMixin:
                     current_user_data["closed"], previous_user_data["closed"]
                 )
 
-                try:
-                    previous_period = Period.objects.get(id=previous_period_id)
+                previous_period_name = period_trend_data.get("previous_period_name", "")
+                if previous_period_name:
                     forecast.commit_change_text = self.format_change_text(
                         current_user_data["commit"],
                         previous_user_data["commit"],
-                        previous_period.name,
+                        previous_period_name,
                         forecast_type.is_quantity_based,
                         self.get_company_for_user.currency,
                     )
                     forecast.best_case_change_text = self.format_change_text(
                         current_user_data["best_case"],
                         previous_user_data["best_case"],
-                        previous_period.name,
+                        previous_period_name,
                         forecast_type.is_quantity_based,
                         self.get_company_for_user.currency,
                     )
                     forecast.pipeline_change_text = self.format_change_text(
                         current_user_data["pipeline"],
                         previous_user_data["pipeline"],
-                        previous_period.name,
+                        previous_period_name,
                         forecast_type.is_quantity_based,
                         self.get_company_for_user.currency,
                     )
                     forecast.closed_change_text = self.format_change_text(
                         current_user_data["closed"],
                         previous_user_data["closed"],
-                        previous_period.name,
+                        previous_period_name,
                         forecast_type.is_quantity_based,
                         self.get_company_for_user.currency,
                     )
-                except Period.DoesNotExist:
+                else:
                     forecast.commit_change_text = ""
                     forecast.best_case_change_text = ""
                     forecast.pipeline_change_text = ""
