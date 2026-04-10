@@ -1,7 +1,5 @@
 {% extends "settings/settings.html" %}
-{% load static %}
-{% load i18n %}
-{% load horilla_tags %}
+{% load static i18n horilla_tags %}
 
 {% block settings %}
     {% has_perm "horilla_duplicates.view_matchingrule" as can_view_matching_rules %}

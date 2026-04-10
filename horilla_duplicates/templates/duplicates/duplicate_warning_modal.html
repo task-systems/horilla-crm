@@ -1,11 +1,14 @@
-{% load i18n %}
-{% load static %}
+{% load static i18n %}
 
 <div class="p-6">
     <div class="flex justify-between items-center mb-4">
         <h3 class="text-lg font-semibold text-gray-900">{{ alert_title }}</h3>
-        <button type="button" onclick="closeDynamicModal()" class="text-gray-500 hover:text-red-500 text-xl cursor-pointer">
-            <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}" />
+        <button
+            type="button"
+            onclick="closeDynamicModal()"
+            class="text-gray-500 hover:text-red-500 text-xl cursor-pointer"
+        >
+            <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}">
         </button>
     </div>
 
@@ -26,11 +29,13 @@
                             hx-get="{{ record.detail_url }}"
                             hx-target="#detailModalBox"
                             hx-swap="innerHTML"
-                            onclick="openDetailModal();"
+                            onclick="openDetailModal()"
                         >
                             <div class="flex items-center justify-between">
                                 <div class="flex-1">
-                                    <p class="text-sm font-medium text-gray-900 hover:text-primary-600">{{ record.display }}</p>
+                                    <p class="text-sm font-medium text-gray-900 hover:text-primary-600">
+                                        {{ record.display }}
+                                    </p>
                                 </div>
                             </div>
                         </li>
@@ -52,7 +57,7 @@
         {% if action == "block" %}
             <button
                 type="button"
-                onclick="closeDynamicModal();"
+                onclick="closeDynamicModal()"
                 class="px-4 py-2 border border-primary-600 text-primary-600 text-sm font-medium rounded-md hover:bg-primary-600 hover:text-white transition duration-300"
             >
                 {% trans "Cancel" %}
@@ -60,14 +65,14 @@
         {% else %}
             <button
                 type="button"
-                onclick="(function() { var form = document.querySelector('#modalBox form') || document.querySelector('#dbmodal form') || document.querySelector('form[hx-post]'); if(form) { var skipInput = form.querySelector('input[name=\'skip_duplicate_check\']'); if(!skipInput) { skipInput = document.createElement('input'); skipInput.type = 'hidden'; skipInput.name = 'skip_duplicate_check'; skipInput.value = 'true'; form.appendChild(skipInput); } var saveAndNewInput = form.querySelector('input[name=\'save_and_new\']'); {% if save_and_new_value %}if(!saveAndNewInput) { saveAndNewInput = document.createElement('input'); saveAndNewInput.type = 'hidden'; saveAndNewInput.name = 'save_and_new'; form.appendChild(saveAndNewInput); } saveAndNewInput.value = '{{ save_and_new_value|escapejs }}'; setTimeout(function() { var submitBtn = form.querySelector('button[name=\'save_and_new\']'); if(submitBtn) { submitBtn.click(); } else { htmx.trigger(form, 'submit'); } }, 100);{% else %}if(saveAndNewInput) { saveAndNewInput.remove(); } setTimeout(function() { var submitBtn = form.querySelector('button[type=\'submit\']:not([name=\'save_and_new\'])'); if(submitBtn) { submitBtn.click(); } else { htmx.trigger(form, 'submit'); } }, 100);{% endif %} closeDynamicModal(); } })();"
+                onclick="(function() { var form = document.querySelector('#modalBox form') || document.querySelector('#dbmodal form') || document.querySelector('form[hx-post]'); if(form) { var skipInput = form.querySelector('input[name=\'skip_duplicate_check\']'); if(!skipInput) { skipInput = document.createElement('input'); skipInput.type = 'hidden'; skipInput.name = 'skip_duplicate_check'; skipInput.value = 'true'; form.appendChild(skipInput); } var saveAndNewInput = form.querySelector('input[name=\'save_and_new\']'); {% if save_and_new_value %}if(!saveAndNewInput) { saveAndNewInput = document.createElement('input'); saveAndNewInput.type = 'hidden'; saveAndNewInput.name = 'save_and_new'; form.appendChild(saveAndNewInput); } saveAndNewInput.value = '{{ save_and_new_value|escapejs }}'; setTimeout(function() { var submitBtn = form.querySelector('button[name=\'save_and_new\']'); if(submitBtn) { submitBtn.click(); } else { htmx.trigger(form, 'submit'); } }, 100);{% else %}if(saveAndNewInput) { saveAndNewInput.remove(); } setTimeout(function() { var submitBtn = form.querySelector('button[type=\'submit\']:not([name=\'save_and_new\'])'); if(submitBtn) { submitBtn.click(); } else { htmx.trigger(form, 'submit'); } }, 100);{% endif %} closeDynamicModal(); } })()"
                 class="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md hover:bg-primary-700 transition duration-300"
             >
                 {% trans "Continue" %}
             </button>
             <button
                 type="button"
-                onclick="closeDynamicModal();"
+                onclick="closeDynamicModal()"
                 class="px-4 py-2 border border-primary-600 text-primary-600 text-sm font-medium rounded-md hover:bg-primary-600 hover:text-white transition duration-300"
             >
                 {% trans "Cancel" %}
