@@ -1,13 +1,17 @@
 {% load static i18n horilla_tags %}
 
 <div class="relative dropdown-wrapper" id="notificationWrapper">
-    <button type="button"
+    <button
+        type="button"
         title="{% trans 'Notifications' %}"
         aria-label="{% trans 'Notifications' %}"
-        class="flex justify-center items-center group text-primary-600 w-8 h-8 lg:w-12 lg:h-12 bg-primary-100 hover:bg-primary-600 rounded-md transition duration-300 relative">
+        class="flex justify-center items-center group text-primary-600 w-8 h-8 lg:w-12 lg:h-12 bg-primary-100 hover:bg-primary-600 rounded-md transition duration-300 relative"
+    >
         <i class="fas fa-bell transition duration-300 group-hover:text-white"></i>
-        <span id="notification-count"
-            class="notification-count absolute -top-2 -right-2 lg:-top-1 lg:-right-1 bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
+        <span
+            id="notification-count"
+            class="notification-count absolute -top-2 -right-2 lg:-top-1 lg:-right-1 bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center"
+        >
             {% if unread_notifications.count > 30 %}
                 30+
             {% else %}
@@ -17,46 +21,54 @@
     </button>
     <div class="dropdown-content w-56 md:w-80 absolute z-10 bg-white border-primary-300 rounded-lg shadow-card right-0">
         <div class="flex justify-between items-center p-3 border-b border-b-dark-50">
-            <h5 class="font-semibold text-sm">{% trans 'Notifications'%}</h5>
+            <h5 class="font-semibold text-sm">{% trans 'Notifications' %}</h5>
             <div class="flex gap-1">
-            <span
-                class="cursor-pointer text-xs group text-primary-600 w-7 h-7 bg-primary-100 hover:bg-primary-600 hover:text-white rounded-full transition duration-300 flex items-center justify-center">
-                <i class="fa-solid fa-volume-high"></i>
-            </span>
-            <button type="button"
-                title="{% trans 'Mark all as read' %}"
-                aria-label="{% trans 'Mark all as read' %}"
-                hx-post="{% url 'horilla_notifications:mark_all_read' %}"
-                hx-target="#notificationWrapper"
-                hx-swap="outerHTML"
-                hx-on:click="setTimeout(() => $('#reloadMessagesButton').click(), 500)"
-                hx-on:afterRequest="updateNotificationCount();markAllDotsAsRead();"
-                class="cursor-pointer text-xs group text-primary-600 w-7 h-7 bg-primary-100 hover:bg-primary-600 hover:text-white rounded-full transition duration-300 flex items-center justify-center">
-                <i class="fa-solid fa-check-double"></i>
-            </button>
+                <span
+                    class="cursor-pointer text-xs group text-primary-600 w-7 h-7 bg-primary-100 hover:bg-primary-600 hover:text-white rounded-full transition duration-300 flex items-center justify-center"
+                >
+                    <i class="fa-solid fa-volume-high"></i>
+                </span>
+                <button
+                    type="button"
+                    title="{% trans 'Mark all as read' %}"
+                    aria-label="{% trans 'Mark all as read' %}"
+                    hx-post="{% url 'horilla_notifications:mark_all_read' %}"
+                    hx-target="#notificationWrapper"
+                    hx-swap="outerHTML"
+                    hx-on:click="setTimeout(() => $('#reloadMessagesButton').click(), 500)"
+                    hx-on:afterRequest="updateNotificationCount();markAllDotsAsRead();"
+                    class="cursor-pointer text-xs group text-primary-600 w-7 h-7 bg-primary-100 hover:bg-primary-600 hover:text-white rounded-full transition duration-300 flex items-center justify-center"
+                >
+                    <i class="fa-solid fa-check-double"></i>
+                </button>
             </div>
         </div>
 
         <div class="p-3">
             <ul class="notification-list text-sm h-60 overflow-hidden overflow-y-auto">
                 {% for notification in unread_notifications %}
-                    <li id="notif-{{ notification.id }}"
+                    <li
+                        id="notif-{{ notification.id }}"
                         class="mb-3 cursor-pointer"
                         hx-get="{% url 'horilla_notifications:open_notification' notification.id %}"
                         hx-trigger="click"
                         hx-target="#modalBox"
                         hx-swap="innerHTML"
-                        hx-on:click="openModal(); (function(e){ var el = e.currentTarget; setTimeout(function(){ removeOpenedNotification(el); }, 100); })(event)">
+                        hx-on:click="openModal(); (function(e){ var el = e.currentTarget; setTimeout(function(){ removeOpenedNotification(el); }, 100); })(event)"
+                    >
                         <div class="flex items-center justify-between">
-                        <span>{{ notification.message|safe }}</span>
-                        <button
-                            hx-post="{% url 'horilla_notifications:mark_read' notification.id %}"
-                            hx-target="#notif-{{ notification.id }}"
-                            onclick="event.stopPropagation()"
-                            hx-swap="outerHTML"
-                            class="cursor-pointer text-xs group text-primary-600 w-6 h-6 bg-primary-100
-                                    hover:bg-primary-600 hover:text-white rounded-full transition duration-300 flex items-center justify-center">
-                            <i class="fa-solid fa-check text-[10px]"></i>
+                            <span>{{ notification.message|safe }}</span>
+                            <button
+                                hx-post="{% url 'horilla_notifications:mark_read' notification.id %}"
+                                hx-target="#notif-{{ notification.id }}"
+                                onclick="event.stopPropagation()"
+                                hx-swap="outerHTML"
+                                class="
+                                    cursor-pointer text-xs group text-primary-600 w-6 h-6 bg-primary-100
+                                    hover:bg-primary-600 hover:text-white rounded-full transition duration-300 flex items-center justify-center
+                                "
+                            >
+                                <i class="fa-solid fa-check text-[10px]"></i>
                             </button>
                         </div>
                         <p class="text-xs text-[#777777] mt-1">
@@ -74,7 +86,8 @@
             <button
                 type="button"
                 class="text-primary-600 text-xs flex justify-center font-semibold hover:text-[#ac3b2a] transition duration-300"
-                onclick="openSidebar('sidebarModal3')">
+                onclick="openSidebar('sidebarModal3')"
+            >
                 {% trans "View all Notification" %}
             </button>
         </div>
@@ -99,7 +112,8 @@
                     deleteAllDropdownNotifications();
                 }, 500)"
                 hx-swap="innerHTML"
-                hx-on:htmx:afterRequest="deleteAllDropdownNotifications();">
+                hx-on:htmx:afterRequest="deleteAllDropdownNotifications();"
+            >
                 {% trans "Clear All" %}
             </button>
         </div>
@@ -112,7 +126,8 @@
                         $('#reloadMessagesButton').click()
                         deleteDropdwonNotification('notif-{{ notification.id }}');
                     }, 500)"
-                    data-target="#all-notif-{{ notification.id }}">
+                    data-target="#all-notif-{{ notification.id }}"
+                >
                     <i class="fa-solid fa-xmark"></i>
                 </button>
                 <div class="flex items-start gap-2">
@@ -121,7 +136,7 @@
                     {% else %}
                         <div class="notif-indicator w-2 h-2 mt-2 flex-shrink-0"></div>
                     {% endif %}
-                    <div class="flex-1 ">
+                    <div class="flex-1">
                         <h5 class="text-sm font-semibold mb-2">{{ notification.message|safe }}</h5>
                         <p class="text-xs text-[#777777] mt-1">
                             {{ notification.created_at|timesince }} ago by {{ notification.sender|default:"System" }}
@@ -130,7 +145,9 @@
                 </div>
             </div>
         {% empty %}
-            <div class="notification-message text-center text-xs text-gray-500 py-4">{% trans "No notifications" %}</div>
+            <div class="notification-message text-center text-xs text-gray-500 py-4">
+                {% trans "No notifications" %}
+            </div>
         {% endfor %}
     </div>
 </div>

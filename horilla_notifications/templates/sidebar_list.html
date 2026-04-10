@@ -17,7 +17,8 @@
                 deleteAllDropdownNotifications();
             }, 500)"
             hx-swap="innerHTML"
-            hx-on:htmx:afterRequest="deleteAllDropdownNotifications();">
+            hx-on:htmx:afterRequest="deleteAllDropdownNotifications();"
+        >
             {% trans "Clear All" %}
         </button>
     </div>
@@ -30,7 +31,8 @@
                     $('#reloadMessagesButton').click()
                     deleteDropdwonNotification('notif-{{ notification.id }}');
                 }, 500)"
-                data-target="#all-notif-{{ notification.id }}">
+                data-target="#all-notif-{{ notification.id }}"
+            >
                 <i class="fa-solid fa-xmark"></i>
             </button>
             <div class="flex items-start gap-2">
