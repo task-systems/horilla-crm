@@ -175,7 +175,7 @@ class ReviewProcessListView(LoginRequiredMixin, HorillaListView):
     bulk_select_option = False
     table_width = False
     enable_sorting = False
-    table_height_as_class = "h-[500px]"
+    table_height_as_class = "h-[calc(_100vh_-_260px_)]"
 
     columns = ["title", "model", "is_active"]
 
@@ -251,6 +251,7 @@ class ReviewProcessFormView(LoginRequiredMixin, HorillaSingleFormView):
 
     model = ReviewProcess
     form_class = ReviewProcessForm
+    template_name = "reviews/review_process_form.html"
     modal_height = False
     full_width_fields = ["title", "model", "review_fields"]
 
@@ -262,6 +263,22 @@ class ReviewProcessFormView(LoginRequiredMixin, HorillaSingleFormView):
     content_type_field = "model"
 
     save_and_new = False
+
+    _toggle_field_names = (
+        "notify_on_submission",
+        "notify_on_approval",
+        "notify_on_rejection",
+        "is_active",
+    )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        form = context["form"]
+        context["review_process_toggle_field_names"] = list(self._toggle_field_names)
+        context["review_process_toggle_fields"] = [
+            form[name] for name in self._toggle_field_names
+        ]
+        return context
 
     @cached_property
     def form_url(self):
