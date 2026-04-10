@@ -25,7 +25,6 @@ from horilla.utils.translation import gettext_lazy as _
 
 # First-party / Horilla apps
 from horilla_utils.methods import closest_numbers, get_section_info_for_model
-from horilla_utils.middlewares import _thread_local
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +74,21 @@ class HorillaDetailView(DetailView):
         if hasattr(cls, "model") and cls.model:
             HorillaDetailView._view_registry[cls.model] = cls
 
+    def _is_owner(self, obj, user) -> bool:
+        """Return True if user owns obj via any OWNER_FIELDS on the model."""
+        for field in getattr(self.model, "OWNER_FIELDS", []):
+            try:
+                v = getattr(obj, field, None)
+                if v:
+                    if hasattr(v, "all"):
+                        if user in v.all():
+                            return True
+                    elif v == user:
+                        return True
+            except Exception:
+                pass
+        return False
+
     def dispatch(self, request, *args, **kwargs):
         """Resolve model and object, check view/own permissions, then dispatch."""
         if not request.user.is_authenticated:
@@ -101,22 +115,7 @@ class HorillaDetailView(DetailView):
 
         view_perm = f"{app}.view_{model}"
 
-        OWNER_FIELDS = getattr(self.model, "OWNER_FIELDS", ["owner"])
-
-        is_owner = False
-        for field in OWNER_FIELDS:
-            try:
-                v = getattr(obj, field, None)
-                if v:
-                    if hasattr(v, "all"):
-                        if user in v.all():
-                            is_owner = True
-                            break
-                    elif v == user:
-                        is_owner = True
-                        break
-            except Exception:
-                pass
+        is_owner = self._is_owner(obj, user)
 
         own_view_perm = f"{app}.view_own_{model}"
 
@@ -252,24 +251,7 @@ class HorillaDetailView(DetailView):
         model_name = self.model._meta.model_name
         app_label = self.model._meta.app_label
 
-        is_owner = False
-        owner_fields = getattr(self.model, "OWNER_FIELDS", [])
-
-        for owner_field in owner_fields:
-            try:
-                field_value = getattr(current_obj, owner_field, None)
-                if field_value:
-                    # Handle ManyToMany fields
-                    if hasattr(field_value, "all"):
-                        if user in field_value.all():
-                            is_owner = True
-                            break
-                    # Handle ForeignKey fields
-                    elif field_value == user:
-                        is_owner = True
-                        break
-            except Exception:
-                continue
+        is_owner = HorillaDetailView._is_owner(self, current_obj, user)
 
         # Check change_own permission if user is owner
         if is_owner:
@@ -442,73 +424,18 @@ class HorillaDetailView(DetailView):
             tab_view_class = getattr(resolved.func, "view_class", None)
             if not tab_view_class:
                 return None
-            # Tab view subclasses set self.urls in __init__ using request from _thread_local.
-            # Minimal request must have .GET and .user so HorillaDetailTabView.__init__ does not raise.
             q = QueryDict(mutable=True)
             q.setlist("object_id", [str(object_id)])
             req = SimpleNamespace(GET=q, user=getattr(self.request, "user", None))
-            saved_request = getattr(_thread_local, "request", None)
-            try:
-                _thread_local.request = req
-                view_inst = tab_view_class()
-                return (getattr(view_inst, "urls", None) or {}).get("details")
-            finally:
-                _thread_local.request = saved_request
+            view_inst = tab_view_class()
+            view_inst.setup(req)
+            return (getattr(view_inst, "urls", None) or {}).get("details")
         except Exception:
             return None
 
-    def get_context_data(self, **kwargs):
-        """Add header_fields, body, pipeline_choices, badges, and permissions to context."""
-        context = super().get_context_data(**kwargs)
-        context["header_fields"] = self.get_header_fields()
-        current_obj = self.get_object()
-        # Support split layout flag coming from both GET (initial load)
-        # and POST (e.g. pipeline updates via HTMX hx-vals)
-        is_split_layout = (
-            self.request.GET.get("layout") == "split"
-            or self.request.POST.get("layout") == "split"
-        )
-        if is_split_layout:
-            context["body"] = self.get_detail_section_body()
-            context["split_detail_url"] = (
-                current_obj.get_detail_url()
-                if hasattr(current_obj, "get_detail_url")
-                else None
-            )
-        else:
-            context["body"] = self.get_body()
-        context["pipeline_choices"] = self.get_pipeline_choices()
-        current_id = current_obj.id
-        context["tab_url"] = self.tab_url
-        context["badges"] = self.get_badges()
-        from horilla_core.utils import get_field_permissions_for_model
-
-        field_permissions = get_field_permissions_for_model(
-            self.request.user, self.model
-        )
-        context["can_update"] = self.check_update_permission()
-        context["field_permissions"] = field_permissions
-        if hasattr(self, "final_stage_action"):
-            final_stage = self.final_stage_action
-            if callable(final_stage):
-                context["final_stage_action"] = final_stage()
-            else:
-                context["final_stage_action"] = final_stage
-        else:
-            context["final_stage_action"] = self.final_stage_action
-
-        # Get custom pipeline colors if method exists
-        if hasattr(self, "get_pipeline_custom_colors"):
-            custom_colors = self.get_pipeline_custom_colors()
-            if custom_colors:
-                context["pipeline_custom_bg_color"] = custom_colors.get("bg_color")
-                context["pipeline_custom_text_color"] = custom_colors.get("text_color")
-                context["pipeline_custom_hover_color"] = custom_colors.get(
-                    "hover_color"
-                )
-
+    def _build_navigation_context(self, context, current_id):
+        """Populate context with previous/next record IDs from session queryset."""
         session_key = f"list_view_queryset_ids_{self.model._meta.model_name}"
-
         queryset_ids = self.request.session.get(session_key, [])
         if not queryset_ids:
             from horilla_generics.views.list import HorillaListView
@@ -531,38 +458,24 @@ class HorillaDetailView(DetailView):
         context["next_id"] = (
             queryset_ids[current_index + 1] if context["has_next"] else None
         )
-        url = resolve(self.request.path)
-        context["url_name"] = url.url_name
-        context["app_label"] = self.model._meta.app_label
 
-        detail_actions = list(self.actions) if self.actions else []
-        if is_split_layout and context.get("split_detail_url"):
-            detail_actions = detail_actions + [
-                {
-                    "action": _("View full detail"),
-                    "src": "assets/icons/eye1.svg",
-                    "img_class": "w-4 h-4",
-                    "attrs": (
-                        f'hx-get="{context["split_detail_url"]}" '
-                        'hx-target="#mainContent" hx-select="#mainContent" '
-                        'hx-swap="outerHTML" hx-push-url="true" '
-                        'hx-indicator="#loading-indicator"'
-                    ),
-                }
-            ]
-        if self.tab_url:
-            change_fields_url = (
-                f"{reverse('horilla_generics:detail_field_selector')}"
-                f"?app_label={self.model._meta.app_label}&model_name={self.model._meta.model_name}&url_name={url.url_name}&pk={current_id}"
-            )
-            details_section_url = self._get_details_section_url_for_fields(current_id)
-            if details_section_url:
-                change_fields_url += (
-                    f"&details_section_url={quote(details_section_url)}"
-                )
-            context["change_fields_url"] = change_fields_url
+    def _build_pipeline_context(self, context):
+        """Populate context with pipeline_field and its verbose name if visible."""
+        effective_pf = self._get_effective_pipeline_field()
+        if effective_pf:
+            context["pipeline_field"] = effective_pf
+            context["pipeline_field_verbose_name"] = self.model._meta.get_field(
+                effective_pf
+            ).verbose_name
 
-        # Session keys for storing breadcrumb state
+    def _build_breadcrumb_context(
+        self, context, current_obj, current_id, detail_actions, resolved_url
+    ):
+        """
+        Populate context with breadcrumbs and actions.
+        Returns True if an early return should be performed by the caller
+        (i.e. the request is a reload of the same page and stored breadcrumbs exist).
+        """
         breadcrumbs_session_key = (
             f"detail_view_breadcrumbs_{self.model._meta.model_name}_{current_id}"
         )
@@ -581,21 +494,13 @@ class HorillaDetailView(DetailView):
         if is_reload:
             stored_breadcrumbs = self.request.session.get(breadcrumbs_session_key)
             if stored_breadcrumbs:
-
-                breadcrumbs_for_context = (
-                    stored_breadcrumbs[:-1] if stored_breadcrumbs else []
-                )
+                breadcrumbs_for_context = stored_breadcrumbs[:-1]
                 breadcrumbs_for_context.append((current_obj, None))
                 context["breadcrumbs"] = breadcrumbs_for_context
                 context["actions"] = detail_actions
                 context["model_name"] = self.model._meta.model_name
-                effective_pf = self._get_effective_pipeline_field()
-                if effective_pf:
-                    context["pipeline_field"] = effective_pf
-                    context["pipeline_field_verbose_name"] = self.model._meta.get_field(
-                        effective_pf
-                    ).verbose_name
-                return context
+                self._build_pipeline_context(context)
+                return True
 
         breadcrumbs = []
         stored_referer = self.request.session.get(referer_session_key)
@@ -620,7 +525,6 @@ class HorillaDetailView(DetailView):
             if referer_path != self.request.path:
                 try:
                     resolved = resolve(referer_path)
-
                     referer_view = (
                         resolved.func.view_class
                         if hasattr(resolved.func, "view_class")
@@ -629,7 +533,6 @@ class HorillaDetailView(DetailView):
                     is_detail_view = referer_view and issubclass(
                         referer_view, HorillaDetailView
                     )
-
                     if is_detail_view:
                         session_breadcrumbs = self.request.session.get(
                             "detail_view_breadcrumbs", []
@@ -681,46 +584,38 @@ class HorillaDetailView(DetailView):
                             if hasattr(obj, "__str__")
                             else referrer_label or f"{referrer_model} {referrer_id}"
                         )
+                        breadcrumb_url = None
                         if referrer_url:
                             try:
-                                url = reverse(
+                                breadcrumb_url = reverse(
                                     f"{referrer_app}:{referrer_url}",
                                     kwargs={"pk": referrer_id},
                                 )
-
-                                parsed_url = urlparse(url)
+                                parsed_url = urlparse(breadcrumb_url)
                                 query_dict = parse_qs(parsed_url.query)
 
                                 section_for_breadcrumb = None
-                                if referrer_app and referrer_model:
-                                    try:
-                                        model_class = apps.get_model(
-                                            app_label=referrer_app,
-                                            model_name=referrer_model,
-                                        )
-                                        section_info = get_section_info_for_model(
-                                            model_class
-                                        )
-                                        section_for_breadcrumb = section_info.get(
-                                            "section"
-                                        )
-                                    except Exception:
-                                        section_for_breadcrumb = None
-
+                                try:
+                                    section_info = get_section_info_for_model(
+                                        model_class
+                                    )
+                                    section_for_breadcrumb = section_info.get("section")
+                                except Exception:
+                                    pass
                                 if not section_for_breadcrumb:
                                     section_for_breadcrumb = self.request.GET.get(
                                         "section"
                                     )
-
                                 if section_for_breadcrumb:
                                     query_dict["section"] = [section_for_breadcrumb]
 
                                 new_query = urlencode(query_dict, doseq=True)
-                                url = urlunparse(parsed_url._replace(query=new_query))
-
+                                breadcrumb_url = urlunparse(
+                                    parsed_url._replace(query=new_query)
+                                )
                             except Exception:
-                                url = None
-                        dynamic_breadcrumbs.append((obj_title, url))
+                                breadcrumb_url = None
+                        dynamic_breadcrumbs.append((obj_title, breadcrumb_url))
                     except (LookupError, model_class.DoesNotExist, ValueError):
                         if referrer_label and referrer_url:
                             dynamic_breadcrumbs.append((referrer_label, referrer_url))
@@ -730,38 +625,122 @@ class HorillaDetailView(DetailView):
         session_url_value = self.request.GET.get("session_url")
         if session_url_value:
             updated_breadcrumbs = []
-            for label, url in dynamic_breadcrumbs:
-                if url:
+            for label, bc_url in dynamic_breadcrumbs:
+                if bc_url:
                     try:
-                        parsed_url = urlparse(url)
+                        parsed_url = urlparse(bc_url)
                         query_dict = parse_qs(parsed_url.query)
                         query_dict["session_url"] = [session_url_value]
                         new_query = urlencode(query_dict, doseq=True)
-                        url = urlunparse(parsed_url._replace(query=new_query))
+                        bc_url = urlunparse(parsed_url._replace(query=new_query))
                     except Exception:
-                        pass  # Keep original URL if parsing fails
-                updated_breadcrumbs.append((label, url))
+                        pass
+                updated_breadcrumbs.append((label, bc_url))
             dynamic_breadcrumbs = updated_breadcrumbs
 
         self.request.session["detail_view_breadcrumbs"] = breadcrumbs
 
         serializable_breadcrumbs = []
-        for label, url in dynamic_breadcrumbs:
-            if hasattr(label, "_meta"):  # It's a model instance
+        for label, bc_url in dynamic_breadcrumbs:
+            if hasattr(label, "_meta"):
                 label = str(label)
-            serializable_breadcrumbs.append((label, url))
-
+            serializable_breadcrumbs.append((label, bc_url))
         self.request.session[breadcrumbs_session_key] = serializable_breadcrumbs
 
         context["breadcrumbs"] = dynamic_breadcrumbs
         context["actions"] = detail_actions
         context["model_name"] = self.model._meta.model_name
-        effective_pf = self._get_effective_pipeline_field()
-        if effective_pf:
-            context["pipeline_field"] = effective_pf
-            context["pipeline_field_verbose_name"] = self.model._meta.get_field(
-                effective_pf
-            ).verbose_name
+        return False
+
+    def get_context_data(self, **kwargs):
+        """Add header_fields, body, pipeline_choices, badges, and permissions to context."""
+        context = super().get_context_data(**kwargs)
+        context["header_fields"] = self.get_header_fields()
+        current_obj = self.get_object()
+        # Support split layout flag coming from both GET (initial load)
+        # and POST (e.g. pipeline updates via HTMX hx-vals)
+        is_split_layout = (
+            self.request.GET.get("layout") == "split"
+            or self.request.POST.get("layout") == "split"
+        )
+        if is_split_layout:
+            context["body"] = self.get_detail_section_body()
+            context["split_detail_url"] = (
+                current_obj.get_detail_url()
+                if hasattr(current_obj, "get_detail_url")
+                else None
+            )
+        else:
+            context["body"] = self.get_body()
+        context["pipeline_choices"] = self.get_pipeline_choices()
+        current_id = current_obj.id
+        context["tab_url"] = self.tab_url
+        context["badges"] = self.get_badges()
+        from horilla_core.utils import get_field_permissions_for_model
+
+        field_permissions = get_field_permissions_for_model(
+            self.request.user, self.model
+        )
+        context["can_update"] = self.check_update_permission()
+        context["field_permissions"] = field_permissions
+        if hasattr(self, "final_stage_action"):
+            final_stage = self.final_stage_action
+            if callable(final_stage):
+                context["final_stage_action"] = final_stage()
+            else:
+                context["final_stage_action"] = final_stage
+        else:
+            context["final_stage_action"] = self.final_stage_action
+
+        # Get custom pipeline colors if method exists
+        if hasattr(self, "get_pipeline_custom_colors"):
+            custom_colors = self.get_pipeline_custom_colors()
+            if custom_colors:
+                context["pipeline_custom_bg_color"] = custom_colors.get("bg_color")
+                context["pipeline_custom_text_color"] = custom_colors.get("text_color")
+                context["pipeline_custom_hover_color"] = custom_colors.get(
+                    "hover_color"
+                )
+
+        self._build_navigation_context(context, current_id)
+
+        resolved_url = resolve(self.request.path)
+        context["url_name"] = resolved_url.url_name
+        context["app_label"] = self.model._meta.app_label
+
+        detail_actions = list(self.actions) if self.actions else []
+        if is_split_layout and context.get("split_detail_url"):
+            detail_actions = detail_actions + [
+                {
+                    "action": _("View full detail"),
+                    "src": "assets/icons/eye1.svg",
+                    "img_class": "w-4 h-4",
+                    "attrs": (
+                        f'hx-get="{context["split_detail_url"]}" '
+                        'hx-target="#mainContent" hx-select="#mainContent" '
+                        'hx-swap="outerHTML" hx-push-url="true" '
+                        'hx-indicator="#loading-indicator"'
+                    ),
+                }
+            ]
+        if self.tab_url:
+            change_fields_url = (
+                f"{reverse('horilla_generics:detail_field_selector')}"
+                f"?app_label={self.model._meta.app_label}&model_name={self.model._meta.model_name}&url_name={resolved_url.url_name}&pk={current_id}"
+            )
+            details_section_url = self._get_details_section_url_for_fields(current_id)
+            if details_section_url:
+                change_fields_url += (
+                    f"&details_section_url={quote(details_section_url)}"
+                )
+            context["change_fields_url"] = change_fields_url
+
+        if self._build_breadcrumb_context(
+            context, current_obj, current_id, detail_actions, resolved_url
+        ):
+            return context
+
+        self._build_pipeline_context(context)
         return context
 
     def post(self, request, *args, **kwargs):
@@ -814,24 +793,7 @@ class HorillaDetailView(DetailView):
             app_label = self.model._meta.app_label
 
             # Check if user is the owner
-            is_owner = False
-            owner_fields = getattr(self.model, "OWNER_FIELDS", [])
-
-            for owner_field in owner_fields:
-                try:
-                    field_value = getattr(self.object, owner_field, None)
-                    if field_value:
-                        # Handle ManyToMany fields
-                        if hasattr(field_value, "all"):
-                            if user in field_value.all():
-                                is_owner = True
-                                break
-                        # Handle ForeignKey fields
-                        elif field_value == user:
-                            is_owner = True
-                            break
-                except Exception:
-                    continue
+            is_owner = self._is_owner(self.object, user)
 
             # Check permissions
             has_permission = False
@@ -970,13 +932,11 @@ class HorillaModalDetailView(DetailView):
             return HttpResponse("<script>$('#reloadButton').click();</script>")
         return response
 
-    def __init__(self, **kwargs: Any) -> None:
-        """Set ordered_ids_key from model name and attach request from thread local."""
-        super().__init__(**kwargs)
-        self.ordered_ids_key = f"ordered_ids_{self.model.__name__.lower()}"
-        request = getattr(_thread_local, "request", None)
-        self.request = request
-        # update_initial_cache(request, CACHE, HorillaDetailedView)
+    def setup(self, request, *args, **kwargs):
+        """Bind request (Django) and session key for ordered instance navigation."""
+        super().setup(request, *args, **kwargs)
+        if self.model is not None:
+            self.ordered_ids_key = f"ordered_ids_{self.model.__name__.lower()}"
 
     def get_context_data(self, **kwargs: Any):
         """Add ordered instance_ids and navigation data for prev/next to context."""
