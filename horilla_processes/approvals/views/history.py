@@ -20,12 +20,21 @@ from horilla.db.models import Case, CharField, Q, Value, When
 from horilla.http import HttpResponse
 from horilla.shortcuts import get_object_or_404, render
 from horilla.urls import reverse_lazy
-from horilla.utils.decorators import htmx_required, method_decorator
+from horilla.utils.decorators import (
+    htmx_required,
+    method_decorator,
+    permission_required_or_denied,
+)
 from horilla.utils.translation import gettext_lazy as _
 from horilla_activity.models import Activity
 
 # First-party / Horilla apps
-from horilla_generics.views import HorillaListView, HorillaNavView, HorillaTabView
+from horilla_generics.views import (
+    HorillaListView,
+    HorillaNavView,
+    HorillaSingleDeleteView,
+    HorillaTabView,
+)
 
 # Local imports
 from horilla_processes.approvals.filters import ApprovalInstanceFilter
@@ -73,6 +82,22 @@ class ApprovalHistoryListView(LoginRequiredMixin, HorillaListView):
     enable_sorting = False
     table_height_as_class = "h-[calc(_100vh_-_350px_)]"
     columns = ["rule", "content_object", "status", "requested_by", "updated_at"]
+    actions = [
+        {
+            "action": _("Delete"),
+            "src": "assets/icons/a4.svg",
+            "img_class": "w-4 h-4",
+            "permission": "approvals.delete_approvalinstance",
+            "attrs": """
+                        hx-post="{get_delete_url}"
+                        hx-target="#deleteModeBox"
+                        hx-swap="innerHTML"
+                        hx-trigger="click"
+                        hx-vals='{{"check_dependencies": "true"}}'
+                        onclick="openDeleteModeModal()"
+                     """,
+        },
+    ]
 
     def get_queryset(self):
         qs = (
@@ -124,6 +149,23 @@ class ApprovalHistoryListView(LoginRequiredMixin, HorillaListView):
                 }
             }
         ]
+
+
+@method_decorator(htmx_required, name="dispatch")
+@method_decorator(
+    permission_required_or_denied(
+        "approvals.delete_approvalinstance",
+        modal=True,
+    ),
+    name="dispatch",
+)
+class ApprovalHistoryDeleteView(LoginRequiredMixin, HorillaSingleDeleteView):
+    """Delete an approval history instance."""
+
+    model = ApprovalInstance
+
+    def get_post_delete_response(self):
+        return HttpResponse("<script>$('#reloadButton').click();</script>")
 
 
 class ApprovalHistoryDetailView(LoginRequiredMixin, TemplateView):
@@ -379,8 +421,8 @@ class ApprovalHistoryDetailTabView(LoginRequiredMixin, HorillaTabView):
             return redirect_to_login(request.get_full_path())
         return TemplateView.dispatch(self, request, *args, **kwargs)
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
         self.tabs = [
             {
                 "title": _("Details"),

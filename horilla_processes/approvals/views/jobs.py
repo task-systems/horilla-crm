@@ -59,8 +59,8 @@ class ApprovalJobsTabView(LoginRequiredMixin, HorillaTabView):
     view_id = "approval-jobs-tab-view"
     tab_class = "h-[calc(_100vh_-_300px_)] overflow-hidden"
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
         self.tabs = [
             {
                 "title": _("Approval Jobs"),

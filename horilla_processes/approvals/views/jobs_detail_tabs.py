@@ -143,8 +143,8 @@ class ApprovalJobDetailTabView(LoginRequiredMixin, HorillaTabView):
             return redirect_to_login(request.get_full_path())
         return TemplateView.dispatch(self, request, *args, **kwargs)
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
         self.tabs = [
             {
                 "title": _("Details"),

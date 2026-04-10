@@ -234,8 +234,8 @@ class OpportunitySplitTabView(LoginRequiredMixin, HorillaTabView):
     view_id = "opportunity-splits-tab-view"
     background_class = "bg-primary-100 rounded-md"
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
         self.tabs = self.get_split_tabs()
 
     def get_split_tabs(self):
