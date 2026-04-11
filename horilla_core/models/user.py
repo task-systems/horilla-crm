@@ -285,14 +285,76 @@ class HorillaUser(AbstractUser):
         return any(self.has_perm(perm, obj) for perm in perm_list)
 
     def save(self, *args, **kwargs):
-        """Set username from email and password from contact_number if missing; then save."""
+        """Set username from email if missing; then save."""
         if not self.username and self.email:
             self.username = self.email
 
-        if not self.password and self.contact_number:
-            self.password = self.set_password(self.contact_number)
-
         super().save(*args, **kwargs)
+    
+    def send_credentials_email(self, request, password):
+        """
+        Send login credentials email to newly created user.
+        This sends the username and password to the user's email.
+        
+        Returns:
+            tuple: (success: bool, message: str)
+        """
+        from django.template.loader import render_to_string
+        from django.utils.html import strip_tags
+        from django.core.mail import EmailMessage
+        from django.conf import settings
+        from horilla_core.models import Company
+        from horilla_mail.models import HorillaMailConfiguration
+        
+        if not self.email:
+            return False, "User has no email address"
+        
+        # Check if mail server is configured
+        primary_config = HorillaMailConfiguration.objects.filter(
+            is_primary=True, company=self.company
+        ).first()
+        
+        if not primary_config:
+            hq_company = Company.objects.filter(hq=True).first()
+            if hq_company:
+                primary_config = HorillaMailConfiguration.objects.filter(
+                    is_primary=True, company=hq_company
+                ).first()
+        
+        if not primary_config:
+            return False, "No mail server configured. Please configure an outgoing mail server in Settings > Mail."
+        
+        # Email context
+        context = {
+            "user": self,
+            "username": self.username,
+            "password": password,
+            "site_name": getattr(settings, "SITE_NAME", "Horilla"),
+            "login_url": request.build_absolute_uri('/login/') if request else '/login/',
+        }
+        
+        # Render email
+        html_message = render_to_string(
+            "users/user_credentials_email.html", context
+        )
+        plain_message = strip_tags(html_message)
+        
+        try:
+            # Send email
+            email = EmailMessage(
+                subject=f"Your {context['site_name']} Account Credentials",
+                body=plain_message,
+                from_email=primary_config.from_email,
+                to=[self.email],
+            )
+            
+            email.content_subtype = "html"
+            email.body = html_message
+            email.send(fail_silently=False)
+            
+            return True, f"Credentials email sent successfully to {self.email}"
+        except Exception as e:
+            return False, f"Failed to send credentials email: {str(e)}"
 
     def super_user_action_col(self):
         """Returns the HTML for the super_user_action column in the list view with remove icon."""

@@ -386,6 +386,45 @@ class UserFormView(LoginRequiredMixin, HorillaMultiStepFormView):
 
         return user.has_perm(f"{User._meta.app_label}.add_{User._meta.model_name}")
 
+    def form_valid(self, form):
+        """
+        Handle valid form submission and send credentials email for new users.
+        """
+        response = super().form_valid(form)
+        
+        # Check if this is a new user creation (multi-step form saves on last step)
+        step = self.get_initial_step()
+        if step >= self.total_steps and not self.kwargs.get(self.pk_url_kwarg) and self.object:
+            try:
+                # Get the plain password from the form
+                password = getattr(self.object, '_plain_password', None)
+                
+                if password:
+                    # Send credentials email to the new user
+                    success, message = self.object.send_credentials_email(self.request, password)
+                    
+                    from django.contrib import messages
+                    if success:
+                        messages.success(self.request, message)
+                    else:
+                        # Check if it's a mail server configuration issue
+                        if "No mail server configured" in message:
+                            messages.warning(self.request, f"User created successfully. {message}")
+                        else:
+                            messages.warning(self.request, f"User created successfully. {message}")
+            except Exception as e:
+                # Log the error but don't fail the user creation
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send credentials email: {e}")
+                from django.contrib import messages
+                messages.warning(
+                    self.request,
+                    "User created successfully, but failed to send credentials email.",
+                )
+        
+        return response
+
 
 class GetCompanyRelatedFieldsView(LoginRequiredMixin, View):
     """HTMX endpoint to get role, department, and currency fields based on selected company"""
@@ -519,6 +558,44 @@ class UserFormViewSingle(LoginRequiredMixin, HorillaSingleFormView):
             )
 
         return user.has_perm(f"{User._meta.app_label}.add_{User._meta.model_name}")
+
+    def form_valid(self, form):
+        """
+        Handle valid form submission and send credentials email for new users.
+        """
+        response = super().form_valid(form)
+        
+        # Check if this is a new user creation
+        if not self.kwargs.get("pk") and self.object:
+            try:
+                # Get the plain password from the form
+                password = getattr(self.object, '_plain_password', None)
+                
+                if password:
+                    # Send credentials email to the new user
+                    success, message = self.object.send_credentials_email(self.request, password)
+                    
+                    from django.contrib import messages
+                    if success:
+                        messages.success(self.request, message)
+                    else:
+                        # Check if it's a mail server configuration issue
+                        if "No mail server configured" in message:
+                            messages.warning(self.request, f"User created successfully. {message}")
+                        else:
+                            messages.warning(self.request, f"User created successfully. {message}")
+            except Exception as e:
+                # Log the error but don't fail the user creation
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send credentials email: {e}")
+                from django.contrib import messages
+                messages.warning(
+                    self.request,
+                    "User created successfully, but failed to send credentials email.",
+                )
+        
+        return response
 
 
 @method_decorator(htmx_required, name="dispatch")

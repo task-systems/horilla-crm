@@ -788,6 +788,27 @@ class UserFormClass(HorillaMultiStepForm):
         except Exception:
             return []
 
+    def save(self, commit=True):
+        """Override save method to generate default password for new users."""
+        import uuid
+        from django.contrib.auth.hashers import make_password
+        
+        user = super().save(commit=False)
+        
+        # Generate a default password for new users
+        if not user.pk and not user.password:
+            # Generate a secure random password
+            default_password = str(uuid.uuid4())[:12]
+            user.password = make_password(default_password)
+            # Store the plain password temporarily for email sending
+            user._plain_password = default_password
+        
+        if commit:
+            user.save()
+            self.save_m2m()
+        
+        return user
+
 
 class UserFormSingle(HorillaModelForm):
     """Form class for User model."""
@@ -859,6 +880,27 @@ class UserFormSingle(HorillaModelForm):
             return [(sub.code, sub.name) for sub in subdivisions]
         except Exception:
             return []
+
+    def save(self, commit=True):
+        """Override save method to generate default password for new users."""
+        import uuid
+        from django.contrib.auth.hashers import make_password
+        
+        user = super().save(commit=False)
+        
+        # Generate a default password for new users
+        if not user.pk and not user.password:
+            # Generate a secure random password
+            default_password = str(uuid.uuid4())[:12]
+            user.password = make_password(default_password)
+            # Store the plain password temporarily for email sending
+            user._plain_password = default_password
+        
+        if commit:
+            user.save()
+            self.save_m2m()
+        
+        return user
 
 
 class UserFormClassSingle(HorillaModelForm):
