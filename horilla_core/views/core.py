@@ -207,14 +207,30 @@ class LoginUserView(View):
             messages.error(
                 request, _("Invalid credentials. Please check and try again.")
             )
-            return redirect(reverse_lazy("horilla_core:login") + f"?next={next_url}")
+            # Re-render the login page with fresh CSRF token instead of redirect
+            context = {
+                "next": next_url,
+                "initialize_database": False,
+                "show_forgot_password": HorillaMailConfiguration.objects.filter(
+                    company=Company.objects.filter(hq=True).first()
+                ).exists() if Company.objects.filter(hq=True).first() else False,
+            }
+            return render(request, "login.html", context=context)
 
         if not user.is_active:
             messages.warning(
                 request,
                 _("This user is archived or blocked. Please contact support."),
             )
-            return redirect(reverse_lazy("horilla_core:login") + f"?next={next_url}")
+            # Re-render the login page with fresh CSRF token instead of redirect
+            context = {
+                "next": next_url,
+                "initialize_database": False,
+                "show_forgot_password": HorillaMailConfiguration.objects.filter(
+                    company=Company.objects.filter(hq=True).first()
+                ).exists() if Company.objects.filter(hq=True).first() else False,
+            }
+            return render(request, "login.html", context=context)
 
         login(request, user)
         messages.success(request, _("Login successful."))
