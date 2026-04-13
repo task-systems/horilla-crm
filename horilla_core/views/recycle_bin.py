@@ -75,7 +75,8 @@ class RecycleBinListView(LoginRequiredMixin, HorillaListView):
     table_width = False
     bulk_delete_enabled = False
     bulk_export_option = False
-    table_height_as_class = "h-[500px]"
+    list_column_visibility = False
+    table_height_as_class = "h-[calc(_100vh_-_330px_)]"
 
     custom_bulk_actions = [
         {
@@ -313,7 +314,7 @@ class BulkRestoreRecycleView(LoginRequiredMixin, View):
         if failed_records:
             messages.warning(
                 request,
-                f"Failed to restore {len(failed_records)} item(s): {', '.join(failed_records)}",
+                f"Failed to restore {len(failed_records)} item(s).",
             )
         response = HttpResponse(
             "<script>htmx.trigger('#reloadButton','click');$('#unselect-all-btn-RecycleBinlist').click();closeModal();</script>",

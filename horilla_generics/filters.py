@@ -160,8 +160,44 @@ class HorillaFilterSet(django_filters.FilterSet):
             "end_value", []
         )
 
+        # Build complete set of valid operator keys from OPERATOR_CHOICES.
+        valid_operators = {
+            op_key
+            for op_list in OPERATOR_CHOICES.values()
+            for op_key, _label in op_list
+        }
+
+        # Retrieve Meta.exclude for this FilterSet, defaulting to empty list.
+        excluded_fields = list(
+            getattr(getattr(self, "Meta", None), "exclude", []) or []
+        )
+
         for i, (field, operator) in enumerate(zip(fields, operators)):
             if not field or not operator:
+                continue
+
+            # Reject disallowed operators
+            if operator not in valid_operators:
+                logger.warning(
+                    "filter_queryset: rejected invalid operator %r for field %r",
+                    operator,
+                    field,
+                )
+                continue
+
+            # Reject excluded fields (including ORM traversals like password__icontains)
+            top_level_field = field.split("__")[0]
+            if top_level_field in excluded_fields:
+                logger.warning(
+                    "filter_queryset: rejected excluded field %r (top-level: %r) on %s",
+                    field,
+                    top_level_field,
+                    (
+                        queryset.model.__name__
+                        if hasattr(queryset, "model")
+                        else "unknown"
+                    ),
+                )
                 continue
 
             try:

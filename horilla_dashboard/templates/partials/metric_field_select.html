@@ -5,7 +5,7 @@
     </div>
     <select name="metric_type" id="id_metric_type" class="js-example-basic-single headselect">
         {% for value, label in field_choices %}
-            <option value="{{ value }}"{% if value == current_metric %} selected{% endif %}>{{ label }}</option>
+            <option value="{{ value }}" {% if value == current_metric %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
     </select>
 </div>

@@ -4,13 +4,15 @@
     <div class="flex justify-between items-center mb-4">
         <h2 class="text-md font-semibold">{% trans "Select Closed Stage" %}</h2>
         <button type="button" onclick="closeModal()" class="text-gray-500 hover:text-red-500 text-xl cursor-pointer">
-            <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}" />
+            <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}">
         </button>
     </div>
 
-    <form hx-post="{% url 'opportunities:select_closed_stage' opportunity.pk %}"
-          hx-target="#modalBox"
-          hx-swap="innerHTML">
+    <form
+        hx-post="{% url 'opportunities:select_closed_stage' opportunity.pk %}"
+        hx-target="#modalBox"
+        hx-swap="innerHTML"
+    >
         {% csrf_token %}
 
         <div class="mb-4">
@@ -18,71 +20,95 @@
                 {% trans "Please select whether this opportunity is Closed Won or Closed Lost:" %}
             </p>
             {% if current_stage %}
-            <div class="mb-4 p-3  border border-dark-50 rounded-lg">
-                <p class="text-xs  mb-1">{% trans "Current stage:" %}</p>
-                <p class="text-sm font-semibold">{{ current_stage.name }}</p>
-            </div>
+                <div class="mb-4 p-3 border border-dark-50 rounded-lg">
+                    <p class="text-xs mb-1">{% trans "Current stage:" %}</p>
+                    <p class="text-sm font-semibold">{{ current_stage.name }}</p>
+                </div>
             {% endif %}
 
             <div class="space-y-3">
                 {% if closed_won_stage %}
-                <div class="p-4 border border-dark-50 rounded-lg hover:border-primary-600  transition duration-300">
-                    <div class="radio-group">
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input hidden type="radio" name="stage_id" value="{{ closed_won_stage.id }}" {% if current_stage_id == closed_won_stage.id %}checked{% endif %} required>
-                            <span class="custom-radio"></span>
-                            <div class="flex-1">
-                                <div class="font-semibold text-gray-900 flex items-center gap-2">
-                                    {{ closed_won_stage.name }}
+                    <div class="p-4 border border-dark-50 rounded-lg hover:border-primary-600 transition duration-300">
+                        <div class="radio-group">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input
+                                    hidden
+                                    type="radio"
+                                    name="stage_id"
+                                    value="{{ closed_won_stage.id }}"
+                                    {% if current_stage_id == closed_won_stage.id %}
+                                        checked
+                                    {% endif %}
+                                    required
+                                >
+                                <span class="custom-radio"></span>
+                                <div class="flex-1">
+                                    <div class="font-semibold text-gray-900 flex items-center gap-2">
+                                        {{ closed_won_stage.name }}
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="ml-4 flex items-center gap-2">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    {% trans "Won" %}
-                                </span>
-                            </div>
-                        </label>
+                                <div class="ml-4 flex items-center gap-2">
+                                    <span
+                                        class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                                    >
+                                        {% trans "Won" %}
+                                    </span>
+                                </div>
+                            </label>
+                        </div>
                     </div>
-                </div>
                 {% endif %}
 
                 {% if closed_lost_stage %}
-                <div class="p-4 border border-dark-50 rounded-lg hover:border-primary-600  transition duration-300">
-                    <div class="radio-group">
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input hidden type="radio" name="stage_id" value="{{ closed_lost_stage.id }}" {% if current_stage_id == closed_lost_stage.id %}checked{% endif %} required>
-                            <span class="custom-radio"></span>
-                            <div class="flex-1">
-                                <div class="font-semibold text-gray-900 flex items-center gap-2">
-                                    {{ closed_lost_stage.name }}
+                    <div class="p-4 border border-dark-50 rounded-lg hover:border-primary-600 transition duration-300">
+                        <div class="radio-group">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input
+                                    hidden
+                                    type="radio"
+                                    name="stage_id"
+                                    value="{{ closed_lost_stage.id }}"
+                                    {% if current_stage_id == closed_lost_stage.id %}
+                                        checked
+                                    {% endif %}
+                                    required
+                                >
+                                <span class="custom-radio"></span>
+                                <div class="flex-1">
+                                    <div class="font-semibold text-gray-900 flex items-center gap-2">
+                                        {{ closed_lost_stage.name }}
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="ml-4 flex items-center gap-2">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                    {% trans "Lost" %}
-                                </span>
-                            </div>
-                        </label>
+                                <div class="ml-4 flex items-center gap-2">
+                                    <span
+                                        class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                                    >
+                                        {% trans "Lost" %}
+                                    </span>
+                                </div>
+                            </label>
+                        </div>
                     </div>
-                </div>
                 {% endif %}
             </div>
         </div>
 
         {% if not closed_won_stage and not closed_lost_stage %}
-        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-            <p class="text-sm text-yellow-800">
-                {% trans "No closed stages are configured for this company. Please configure Closed Won and Closed Lost stages first." %}
-            </p>
-        </div>
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <p class="text-sm text-yellow-800">
+                    {% trans "No closed stages are configured for this company. Please configure Closed Won and Closed Lost stages first." %}
+                </p>
+            </div>
         {% endif %}
 
         <div class="flex justify-end gap-2 pt-4">
             {% if closed_won_stage or closed_lost_stage %}
-            <button type="submit"
-                    class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 transition duration-300">
-                {% trans "Update Stage" %}
-            </button>
+                <button
+                    type="submit"
+                    class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700 transition duration-300"
+                >
+                    {% trans "Update Stage" %}
+                </button>
             {% endif %}
         </div>
     </form>

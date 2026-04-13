@@ -575,6 +575,81 @@ def clean_condition_fields(form, cleaned_data):
     """Validate condition fields (FK and Choice) when condition_model is set. Adds errors to form."""
     if not (form.condition_fields and form.condition_model):
         return
+
+    # Validate that operator is provided whenever a field is selected
+    if "field" in form.condition_fields and "operator" in form.condition_fields:
+        missing_operator = False
+        seen_row_ids = set()
+        for key in form.data.keys():
+            if key.startswith("field_"):
+                row_id = key[len("field_") :]
+                if not row_id.isdigit():
+                    continue
+                seen_row_ids.add(row_id)
+                field_val = form.data.get(f"field_{row_id}", "").strip()
+                operator_val = form.data.get(f"operator_{row_id}", "").strip()
+                if field_val and not operator_val:
+                    missing_operator = True
+        # Also check row_id "0" keys (field_0/operator_0 or bare field/operator)
+        if "0" not in seen_row_ids:
+            for field_key, op_key in (("field_0", "operator_0"), ("field", "operator")):
+                field_val = form.data.get(field_key, "").strip()
+                if field_val:
+                    operator_val = form.data.get(op_key, "").strip()
+                    if not operator_val:
+                        missing_operator = True
+                    break
+        if missing_operator:
+            form.add_error(
+                None,
+                _("Operator is required when a field is selected."),
+            )
+
+    # Validate that value is provided when field and operator are both set,
+    # unless the operator doesn't require a value (e.g. isnull/isnotnull)
+    _NO_VALUE_OPERATORS = {"isnull", "isnotnull", "is_empty", "is_not_empty"}
+    if "field" in form.condition_fields and "value" in form.condition_fields:
+        missing_value = False
+        seen_row_ids = set()
+        for key in form.data.keys():
+            if key.startswith("field_"):
+                row_id = key[len("field_") :]
+                if not row_id.isdigit():
+                    continue
+                seen_row_ids.add(row_id)
+                field_val = form.data.get(f"field_{row_id}", "").strip()
+                operator_val = form.data.get(f"operator_{row_id}", "").strip()
+                value_val = form.data.get(f"value_{row_id}", "").strip()
+                if (
+                    field_val
+                    and operator_val
+                    and operator_val not in _NO_VALUE_OPERATORS
+                    and not value_val
+                ):
+                    missing_value = True
+        # Also check row_id "0"
+        if "0" not in seen_row_ids:
+            for field_key, op_key, val_key in (
+                ("field_0", "operator_0", "value_0"),
+                ("field", "operator", "value"),
+            ):
+                field_val = form.data.get(field_key, "").strip()
+                if field_val:
+                    operator_val = form.data.get(op_key, "").strip()
+                    value_val = form.data.get(val_key, "").strip()
+                    if (
+                        operator_val
+                        and operator_val not in _NO_VALUE_OPERATORS
+                        and not value_val
+                    ):
+                        missing_value = True
+                    break
+        if missing_value:
+            form.add_error(
+                None,
+                _("Value is required when a field and operator are selected."),
+            )
+
     for field_name in form.condition_fields:
         if field_name not in cleaned_data or not cleaned_data[field_name]:
             continue

@@ -1,69 +1,117 @@
-{% load static %}
-{% load i18n %}
-{% load horilla_tags %}
+{% load static i18n horilla_tags %}
+
 <div id="modalBox" class="relative bg-white rounded-lg shadow-sm">
-  <div class="p-5">
-    <div class="flex justify-between items-center mb-2">
-      <h2 class="text-md font-semibold">{% if is_edit %}{% trans 'Edit List View' %}{% else %}{% trans 'New List View' %}{% endif %}</h2>
-      <button
-        data-modal-hide="default-modal6"
-        onclick="closeModal()"
-        class="text-gray-500 hover:text-red-500 text-xl cursor-pointer"
-      >
-        <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}" />
-      </button>
-    </div>
-    <form
-      hx-post="{% url 'horilla_generics:save_filter_list' %}?{% for key, value in request.GET.items %}{% if key == 'section' or key == 'search' %}{{ key }}={{ value }}&{% endif %}{% endfor %}"
-      hx-target="#mainContent"
-      hx-select="#mainContent"
-      hx-swap="outerHTML"
-      hx-push-url="true"
-      hx-on::after-request="closeModal()"
-    >
-      {% csrf_token %}
-      {% if form.non_field_errors %}
-        <div class="text-sm text-red-500 mb-2">
-          {% for error in form.non_field_errors %}
-            {{ error }}
-          {% endfor %}
+    <div class="p-5">
+        <div class="flex justify-between items-center mb-2">
+            <h2 class="text-md font-semibold">
+                {% if is_edit %}{% trans 'Edit List View' %}{% else %}{% trans 'New List View' %}{% endif %}
+            </h2>
+            <button
+                data-modal-hide="default-modal6"
+                onclick="closeModal()"
+                class="text-gray-500 hover:text-red-500 text-xl cursor-pointer"
+            >
+                <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}">
+            </button>
         </div>
-      {% endif %}
-      {% if form.list_name.errors %}
-        <div class="text-sm text-red-500 mb-2">
-          {% for error in form.list_name.errors %}
-            {{ error }}
-          {% endfor %}
-        </div>
-      {% endif %}
-      <input type="hidden" name="model_name" value="{{ form.initial.model_name }}">
-      <input type="hidden" name="main_url" value="{{ main_url }}">
-      {% if form.initial.saved_list_id %}
-      <input type="hidden" name="saved_list_id" value="{{ form.initial.saved_list_id }}">
-      {% endif %}
-      {% for key, values in query_params.items %}
-        {% for value in values %}
-          <input type="hidden" name="{{ key }}" value="{{ value }}">
-        {% endfor %}
-      {% empty %}
-        <p class="text-sm text-red-500 mb-2">{% trans 'No filter parameters available.' %}</p>
-      {% endfor %}
-      <div>
-        <label for="{{ form.list_name.id_for_label }}" class="text-xs text-color-600">{% trans 'List View Name' %}</label>
-        {{ form.list_name }}
-      </div>
-      <div class="flex items-center gap-2 mt-3">
-        {{ form.make_public }}
-        <label for="{{ form.make_public.id_for_label }}" class="text-xs text-color-600">{% trans 'Make as public' %}</label>
-      </div>
-      <div class="flex justify-end p-5">
-        <button
-          type="submit"
-          class="text-sm px-4 py-2 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white]"
+
+        {% if create_new or is_edit %}
+            {# Filter rows sit OUTSIDE the form so their HTMX events don't bubble into the form #}
+            <div class="mb-3">
+                <label class="text-xs font-semibold text-color-600 block mb-1">{% trans 'Filters' %}</label>
+                <div
+                    id="create-list-filter-rows"
+                    hx-get="{{ filter_rows_url }}"
+                    hx-trigger="load"
+                    hx-target="#create-list-filter-rows"
+                    hx-select=".filter-row"
+                    hx-swap="innerHTML"
+                    hx-push-url="false"
+                >
+                </div>
+                <button
+                    type="button"
+                    class="flex gap-1.5 text-xs text-[#34c759] hover:text-[#287a3d] transition duration-300 mt-1"
+                    hx-get="{{ search_url }}?add_filter_row=true"
+                    hx-vals='js:{"row_id": 10000 + document.querySelectorAll("#create-list-filter-rows .filter-row").length - 1}'
+                    hx-target="#create-list-filter-rows"
+                    hx-select=".filter-row"
+                    hx-push-url="false"
+                    hx-swap="beforeend"
+                >
+                    <img src="{% static 'assets/icons/filter.svg' %}" alt="{% trans 'Filter' %}" width="12">
+                    {% trans 'Add filter' %}
+                </button>
+            </div>
+        {% endif %}
+
+        <form
+            id="save-filter-list-form"
+            hx-post="{% url 'horilla_generics:save_filter_list' %}?{% for key, value in request.GET.items %}{% if key == 'section' or key == 'search' %}{{ key }}={{ value }}&{% endif %}{% endfor %}"
+            hx-target="#mainContent"
+            hx-select="#mainContent"
+            hx-swap="outerHTML"
+            hx-push-url="true"
+            hx-on::after-request="closeModal()"
+            {% if create_new or is_edit %}
+                hx-include="#save-filter-list-form, #create-list-filter-rows input, #create-list-filter-rows select"
+            {% endif %}
         >
-          {% if is_edit %}{% trans 'Update' %}{% else %}{% trans 'Save' %}{% endif %}
-        </button>
-      </div>
-    </form>
-  </div>
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="text-sm text-red-500 mb-2">
+                    {% for error in form.non_field_errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if form.list_name.errors %}
+                <div class="text-sm text-red-500 mb-2">
+                    {% for error in form.list_name.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <input type="hidden" name="model_name" value="{{ form.initial.model_name }}">
+            <input type="hidden" name="main_url" value="{{ main_url }}">
+            {% if create_new %}
+                <input type="hidden" name="create_new" value="true">
+            {% endif %}
+            {% if form.initial.saved_list_id %}
+                <input type="hidden" name="saved_list_id" value="{{ form.initial.saved_list_id }}">
+            {% endif %}
+            {% if not create_new and not is_edit %}
+                {# Fallback: save-to-list from filterpanel passes filters as hidden inputs #}
+                {% for key, values in query_params.items %}
+                    {% for value in values %}
+                        <input type="hidden" name="{{ key }}" value="{{ value }}">
+                    {% endfor %}
+                {% empty %}
+                    <p class="text-sm text-red-500 mb-2">{% trans 'No filter parameters available.' %}</p>
+                {% endfor %}
+            {% endif %}
+            <div>
+                <label
+                    for="{{ form.list_name.id_for_label }}"
+                    class="text-xs text-color-600"
+                >{% trans 'List View Name' %}</label>
+                {{ form.list_name }}
+            </div>
+            <div class="flex items-center gap-2 mt-3">
+                {{ form.make_public }}
+                <label
+                    for="{{ form.make_public.id_for_label }}"
+                    class="text-xs text-color-600"
+                >{% trans 'Make as public' %}</label>
+            </div>
+            <div class="flex justify-end">
+                <button
+                    type="submit"
+                    class="text-sm px-4 py-2 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white]"
+                >
+                    {% if is_edit %}{% trans 'Update' %}{% else %}{% trans 'Save' %}{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
 </div>

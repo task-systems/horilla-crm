@@ -1,46 +1,44 @@
-{% load static horilla_tags %}
-{% load i18n %}
+{% load static i18n horilla_tags %}
 
-{# Minimal CSS only where Tailwind cannot target (htmx, select2). Timeline layout uses Tailwind classes for theme/dark. #}
 <style>
     /*
      * Timeline axis labels are injected via JS. Windows often shows them faint/missing
      * (ClearType, DPI, missing Tailwind on dynamic nodes). Force Ubuntu-like contrast
      * with explicit colors + font stack so Windows matches Linux.
      */
-    .js-timeline-container [id^="timeline-axis-labels-"].flex > span {
+    .js-timeline-container [id^='timeline-axis-labels-'].flex > span {
         background-color: #ffffff !important;
         color: #111827 !important;
-        font-family: system-ui, "Segoe UI", Ubuntu, "Ubuntu Sans", Cantarell, "Noto Sans", sans-serif !important;
-        font-size: 12px !important;
         font-weight: 600 !important;
+        font-size: 12px !important;
         line-height: 1.25 !important;
+        font-family: system-ui, 'Segoe UI', Ubuntu, 'Ubuntu Sans', Cantarell, 'Noto Sans', sans-serif !important;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
     }
 
-    .js-timeline-container [id^="timeline-axis-labels-"].flex > span > div:first-child {
+    .js-timeline-container [id^='timeline-axis-labels-'].flex > span > div:first-child {
         color: #374151 !important;
-        font-size: 11px !important;
         font-weight: 500 !important;
+        font-size: 11px !important;
     }
 
-    .js-timeline-container [id^="timeline-axis-labels-"].flex > span > div:last-child {
+    .js-timeline-container [id^='timeline-axis-labels-'].flex > span > div:last-child {
         color: #111827 !important;
-        font-size: 12px !important;
         font-weight: 700 !important;
+        font-size: 12px !important;
     }
 
-    .dark .js-timeline-container [id^="timeline-axis-labels-"].flex > span {
+    .dark .js-timeline-container [id^='timeline-axis-labels-'].flex > span {
         background-color: #030712 !important;
         color: #f3f4f6 !important;
     }
 
-    .dark .js-timeline-container [id^="timeline-axis-labels-"].flex > span > div:first-child {
+    .dark .js-timeline-container [id^='timeline-axis-labels-'].flex > span > div:first-child {
         color: #d1d5db !important;
     }
 
-    .dark .js-timeline-container [id^="timeline-axis-labels-"].flex > span > div:last-child {
+    .dark .js-timeline-container [id^='timeline-axis-labels-'].flex > span > div:last-child {
         color: #f9fafb !important;
     }
 
@@ -80,8 +78,8 @@
     }
 
     .timeline-toolbar .select2-container {
-        min-width: 210px;
         width: 210px !important;
+        min-width: 210px;
     }
 </style>
 
@@ -207,14 +205,10 @@
             {% endif %}
         </div>
 
-        <div
-            class="flex flex-col mt-2 h-[calc(100vh-250px)] min-h-[400px] bg-white dark:bg-gray-950 rounded-lg overflow-hidden border border-primary-300"
-        >
+        <div class="flex flex-col mt-2 h-[calc(100vh-250px)] min-h-[400px] bg-white dark:bg-gray-950 rounded-lg overflow-hidden border border-primary-300">
             <div class="flex flex-1 min-h-0">
                 <div class="w-60 min-w-60 flex flex-col border-r border-primary-300 bg-white dark:bg-gray-950 shrink-0">
-                    <div
-                        class="timeline-header-left min-h-[52px] box-border flex flex-col justify-center px-3 pl-5 py-1.5 font-bold text-xs text-primary border-b border-primary-300 bg-white dark:bg-gray-950 gap-0.5"
-                    >
+                    <div class="timeline-header-left min-h-[52px] box-border flex flex-col justify-center px-3 pl-5 py-1.5 font-bold text-xs text-primary border-b border-primary-300 bg-white dark:bg-gray-950 gap-0.5">
                         <span class="block leading-tight">
                             {% if timeline_range_start and timeline_range_end %}
                                 {{ timeline_range_start|date:"d M Y" }} – {{ timeline_range_end|date:"d M Y" }}
@@ -247,7 +241,10 @@
                     </div>
                 </div>
 
-                <div class="flex-1 min-w-0 overflow-auto bg-white dark:bg-gray-950" id="timeline-scroll-{{ view_id|safe }}">
+                <div
+                    class="flex-1 min-w-0 overflow-auto bg-white dark:bg-gray-950"
+                    id="timeline-scroll-{{ view_id|safe }}"
+                >
                     <div
                         class="timeline-inner js-timeline-inner flex flex-col min-h-full"
                         id="timeline-inner-{{ view_id|safe }}"
@@ -259,15 +256,17 @@
                             <div
                                 class="timeline-axis-labels-root flex items-center box-border bg-white dark:bg-gray-950 flex-1 min-h-[52px] w-full text-gray-900 dark:text-gray-100"
                                 id="timeline-axis-labels-{{ view_id|safe }}"
-                                style="font-size:12px;"
-                            ></div>
+                                style="font-size: 12px"
+                            >
+                            </div>
 
                             {# Header bottom border only — primary-300; width set in JS to match scroll width #}
                             <div
                                 id="timeline-axis-underline-{{ view_id|safe }}"
                                 class="border border-primary-300"
                                 aria-hidden="true"
-                            ></div>
+                            >
+                            </div>
                         </div>
 
                         <div
@@ -281,7 +280,9 @@
                                 <div
                                     class="js-timeline-group-block"
                                     data-group-index="{{ forloop.counter0 }}"
-                                    {% if not forloop.first %}style="display: none;"{% endif %}
+                                    {% if not forloop.first %}
+                                        style="display: none"
+                                    {% endif %}
                                 >
                                     {% for item in row.items %}
                                         <div class="relative h-11 bg-white dark:bg-gray-950">
@@ -321,7 +322,8 @@
                             <div
                                 class="pointer-events-none absolute inset-0 z-[1] w-full min-w-full"
                                 id="timeline-grid-{{ view_id|safe }}"
-                            ></div>
+                            >
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -338,7 +340,7 @@
             src="{% static 'assets/img/not-found.svg' %}"
             alt="404"
             class="w-60 m-auto mb-4 mt-5"
-        />
+        >
 
         <p class="text-sm text-center mb-3">
             {% if no_record_add_button.message %}
@@ -355,7 +357,9 @@
                 hx-swap="{{ no_record_add_button.swap|default:'innerHTML' }}"
                 onclick="{{ no_record_add_button.onclick|default:'openModal()' }}"
                 class="{{ no_record_add_button.class|default:'text-sm px-4 py-2 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white] m-auto flex' }}"
-                {% if no_record_add_button.attrs %}{{ no_record_add_button.attrs|safe }}{% endif %}
+                {% if no_record_add_button.attrs %}
+                    {{ no_record_add_button.attrs|safe }}
+                {% endif %}
             >
                 {{ no_record_add_button.title|default:_("Add New") }}
             </button>

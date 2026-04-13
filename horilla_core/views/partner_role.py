@@ -110,6 +110,7 @@ class PartnerRoleListView(LoginRequiredMixin, HorillaListView):
     search_url = reverse_lazy("horilla_core:partner_role_list_view")
     main_url = reverse_lazy("horilla_core:partner_role_view")
     table_width = False
+    table_height_as_class = "h-[calc(_100vh_-_260px_)]"
     bulk_select_option = False
     save_to_list_option = False
     header_attrs = [
@@ -161,7 +162,7 @@ class PartnerRoleFormView(LoginRequiredMixin, HorillaSingleFormView):
     fields = ["partner_role_name", "description"]
     full_width_fields = ["partner_role_name", "description"]
     modal_height = False
-    form_title = _("partner role")
+    form_title = _("Partner Role")
 
     @cached_property
     def form_url(self):

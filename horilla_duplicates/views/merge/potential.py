@@ -7,15 +7,12 @@ from urllib.parse import urlencode
 # Third-party imports (Django)
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.template.loader import render_to_string
-from django.views import View
 
 # First-party / Horilla imports
 from horilla.db import models
 from horilla.db.models import Case, QuerySet, When
-from horilla.http import HttpResponse
 from horilla.http.response import RedirectResponse
-from horilla.urls import reverse, reverse_lazy
+from horilla.urls import reverse_lazy
 from horilla.utils.decorators import htmx_required, method_decorator
 from horilla.utils.translation import gettext_lazy as _
 
@@ -25,7 +22,7 @@ from horilla_duplicates.duplicate_checker import check_duplicates
 from horilla_generics.views import HorillaListView
 
 
-# @method_decorator(htmx_required, name="dispatch")
+@method_decorator(htmx_required, name="dispatch")
 class PotentialDuplicatesTabView(LoginRequiredMixin, HorillaListView):
     """
     Tab view endpoint for potential duplicates using HorillaListView.
@@ -95,7 +92,7 @@ class PotentialDuplicatesTabView(LoginRequiredMixin, HorillaListView):
                 "target": "#contentModalBox",
                 "swap": "innerHTML",
                 "onclick": "openContentModal();",
-                "hx_vals": f'js:{{"object_id": "{object_id}", "content_type_id": "{content_type_id}", "selected_ids": JSON.stringify(selectedRecordIds("{view_id}"))}}',
+                "hx_vals": f"js:{{'object_id': '{object_id}', 'content_type_id': '{content_type_id}', 'selected_ids': JSON.stringify(selectedRecordIds('{view_id}'))}}",
             },
         ]
 
@@ -256,37 +253,3 @@ class PotentialDuplicatesTabView(LoginRequiredMixin, HorillaListView):
     def get_template_names(self):
         """Override to use custom template"""
         return ["duplicates/potential_duplicates_list_view.html"]
-
-
-class UpdateMergeButtonView(LoginRequiredMixin, View):
-    """
-    View to update the merge button state based on selected checkboxes.
-    Returns the merge actions div with updated state.
-    """
-
-    def get(self, request, *args, **kwargs):
-        """Return updated merge button HTML"""
-
-        selected_ids = request.GET.getlist("duplicate_ids")
-        count = len(selected_ids)
-
-        merge_url = reverse("horilla_duplicates:merge_duplicates")
-
-        if count > 0:
-            if count == 1:
-                button_text = _("Merge Selected")
-            else:
-                button_text = _("Merge") + f" {count} " + _("Selected")
-
-            context = {
-                "merge_url": merge_url,
-                "button_text": button_text,
-                "count": count,
-            }
-            html = render_to_string(
-                "duplicates/merge_button.html", context, request=request
-            )
-        else:
-            html = '<div id="merge-actions" class="hidden"></div>'
-
-        return HttpResponse(html)

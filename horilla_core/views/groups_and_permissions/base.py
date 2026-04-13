@@ -4,6 +4,7 @@ Views and utilities for managing groups and permissions in Horilla.
 
 # Standard library imports
 from functools import cached_property
+from urllib.parse import urlencode
 
 # Third-party imports (Django)
 from django.contrib import messages
@@ -215,9 +216,9 @@ class ModelFieldsModalView(LoginRequiredMixin, TemplateView):
     ),
     name="dispatch",
 )
-class GroupPermissionView(LoginRequiredMixin, TemplateView):
+class RolePermissionView(LoginRequiredMixin, TemplateView):
     """
-    View to display group and permission management interface
+    View to display role and permission management interface
     """
 
     template_name = "permissions/group_perm_view.html"
@@ -234,7 +235,7 @@ class GroupPermissionView(LoginRequiredMixin, TemplateView):
     ),
     name="dispatch",
 )
-class GroupPermissionTabView(LoginRequiredMixin, HorillaTabView):
+class RolePermissionTabView(LoginRequiredMixin, HorillaTabView):
     """
     Tab view for permission
     """
@@ -248,8 +249,8 @@ class GroupPermissionTabView(LoginRequiredMixin, HorillaTabView):
         if self.request.user.has_perm("horilla_core.view_company"):
             return [
                 {
-                    "title": _("Groups"),
-                    "url": reverse_lazy("horilla_core:group_tab"),
+                    "title": _("Roles"),
+                    "url": reverse_lazy("horilla_core:role_tab"),
                     "target": "group-view-content",
                     "id": "group-detail-view",
                 },
@@ -425,6 +426,24 @@ class RoleMembersView(LoginRequiredMixin, TemplateView):
             "role"
         )
         list_view.object_list = list_view.get_queryset()
+
+        query_params = {}
+        if "section" in self.request.GET:
+            query_params["section"] = self.request.GET.get("section")
+        query_string = urlencode(query_params)
+        list_view.col_attrs = [
+            {
+                "get_avatar_with_name": {
+                    "hx-get": f"{{get_detail_view_url}}?{query_string}",
+                    "hx-target": "#permission-view",
+                    "hx-swap": "innerHTML",
+                    "hx-push-url": "true",
+                    "hx-select": "#users-view",
+                    "permission": f"{User._meta.app_label}.view_{User._meta.model_name}",
+                }
+            }
+        ]
+
         context.update(list_view.get_context_data())
         context["role"] = role
         context["model_verbose_name"] = f"{role.role_name} Role Members"

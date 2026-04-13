@@ -73,6 +73,7 @@ class HorillaListView(HorillaListViewMixin, ListView):
     bulk_update_option = True
     store_ordered_ids = False
     save_to_list_option = True
+    apply_pinned_view_default = True
     enable_sorting = True
     custom_bulk_actions = []
     bulk_export_option = True
@@ -115,8 +116,29 @@ class HorillaListView(HorillaListViewMixin, ListView):
 
             self.columns = resolved_columns
 
+    def _is_embedded_list_context(self):
+        """
+        True for inline lists that are not the app's primary list.
+        """
+        req = getattr(self, "request", None)
+        if not req:
+            return False
+        try:
+            su = str(getattr(self, "search_url", "") or "").rstrip("/")
+            mu = str(getattr(self, "main_url", "") or "").rstrip("/")
+            path = req.path.rstrip("/")
+            if not su or not mu:
+                return False
+            return su == mu == path
+        except Exception:
+            return False
+
     def get_default_view_type(self):
         """Return the pinned view_type if available, else 'all'."""
+        if not getattr(self, "apply_pinned_view_default", True):
+            return "all"
+        if self._is_embedded_list_context():
+            return "all"
         pinned_view = PinnedView.all_objects.filter(
             user=self.request.user, model_name=self.model.__name__
         ).first()
@@ -467,6 +489,14 @@ class HorillaListView(HorillaListViewMixin, ListView):
             context["filter_rows"] = filter_rows
             return render(request, "partials/filter_row.html", context)
 
+        # Return pre-filled filter rows partial (used by save_filter_form modal)
+        if request.GET.get("render_filter_rows") == "true":
+            row_id_offset = int(request.GET.get("row_id_offset", 0))
+            if row_id_offset:
+                for row in context.get("filter_rows", []):
+                    row["row_id"] = row["row_id"] + row_id_offset
+            return render(request, "partials/filter_row.html", context)
+
         if "remove_filter" in request.GET:
             return self.handle_remove_filter(request)
 
@@ -505,6 +535,200 @@ class HorillaListView(HorillaListViewMixin, ListView):
             return render(request, self.template_name, context)
 
         return self.render_to_response(context)
+
+    def _build_filter_context(self, context, filter_fields, query_params):
+        """Populate context with filter rows, operators, field types, and filterset info."""
+        field_operators = {}
+        field_types = {}
+        choices = {}
+
+        operator_display = {
+            "exact": "Equals",
+            "iexact": "Equals (case insensitive)",
+            "icontains": "Contains",
+            "ne": "Not Equals",
+            "gt": "Greater than",
+            "lt": "Less than",
+            "gte": "Greater than or equal to",
+            "lte": "Less than or equal to",
+            "startswith": "Starts with",
+            "istartswith": "Starts with",
+            "endswith": "Ends with",
+            "iendswith": "Ends with",
+            "date_range": "Between",
+            "between": "Between",
+            "isnull": "Is empty",
+            "isnotnull": "Is not empty",
+        }
+        context["operator_display"] = operator_display
+
+        field_verbose_names = {}
+        for field in filter_fields:
+            field_operators[field["name"]] = field.get("operators", [])
+            field_types[field["name"]] = field.get("type", [])
+            choices[field["name"]] = field.get("choices", [])
+            field_verbose_names[field["name"]] = field.get("verbose_name", "")
+        context["field_verbose_names"] = field_verbose_names
+
+        context["filter_push_url"] = "true" if self.filter_url_push else "false"
+
+        filter_rows = []
+        if (
+            query_params.get("field")
+            and self.request.GET.get("add_filter_row") != "true"
+        ):
+
+            def _parse_filter_value(val, ftype):
+                if not val or ftype not in ("date", "datetime", "time"):
+                    return None
+                if ftype == "datetime":
+                    return parse_datetime(val)
+                if ftype == "date":
+                    return parse_date(val)
+                if ftype == "time":
+                    return parse_time(val)
+                return None
+
+            for i, field in enumerate(query_params["field"]):
+                field_info = next((f for f in filter_fields if f["name"] == field), {})
+                raw_value = (
+                    query_params.get("value", [None])[i]
+                    if i < len(query_params.get("value", []))
+                    else None
+                )
+
+                # Convert ForeignKey ID to display value
+                display_value = raw_value
+                if field_info.get("type") == "foreignkey" and raw_value:
+                    try:
+                        model_field = self.model._meta.get_field(field)
+                        related_model = model_field.related_model
+                        related_obj = related_model.objects.get(pk=raw_value)
+                        display_value = str(related_obj)
+                    except Exception:
+                        display_value = raw_value
+                elif field_info.get("type") == "choice" and raw_value:
+                    try:
+                        field_obj = self.model._meta.get_field(field)
+                        if field_obj.choices:
+                            choices_dict = dict(field_obj.choices)
+                            display_value = choices_dict.get(raw_value, raw_value)
+                        else:
+                            display_value = raw_value
+                    except Exception:
+                        display_value = raw_value
+
+                start_value = (
+                    query_params.get("start_value", [None])[i]
+                    if i < len(query_params.get("start_value", []))
+                    else None
+                )
+                end_value = (
+                    query_params.get("end_value", [None])[i]
+                    if i < len(query_params.get("end_value", []))
+                    else None
+                )
+                field_type = field_info.get("type")
+                operator = (
+                    query_params.get("operator", [None])[i]
+                    if i < len(query_params.get("operator", []))
+                    else None
+                )
+
+                row = {
+                    "row_id": i,
+                    "field": field,
+                    "operator": operator,
+                    "value": raw_value,
+                    "raw_value": display_value,
+                    "start_value": start_value,
+                    "end_value": end_value,
+                    "value_obj": _parse_filter_value(raw_value, field_type),
+                    "start_value_obj": _parse_filter_value(start_value, field_type),
+                    "end_value_obj": _parse_filter_value(end_value, field_type),
+                    "operators": field_operators.get(field, []),
+                    "type": field_types.get(field, []),
+                    "choices": choices.get(field, []),
+                    "model": field_info.get("model", None),
+                    "app_label": field_info.get("app_label", None),
+                    "verbose_name": field_verbose_names.get(field, field),
+                    "operator_display": operator_display.get(operator, operator),
+                }
+                filter_rows.append(row)
+        else:
+            filter_rows = [
+                {
+                    "row_id": 0,
+                    "field": None,
+                    "operator": None,
+                    "value": None,
+                    "operators": [],
+                }
+            ]
+
+        context["filter_rows"] = filter_rows
+        context["last_row_id"] = len(filter_rows) - 1
+
+        if self.filterset_class:
+            context["filter_class_path"] = (
+                f"{self.filterset_class.__module__}.{self.filterset_class.__name__}"
+            )
+            context["parent_model_path"] = (
+                f"{self.model._meta.app_label}.{self.model._meta.model_name}"
+            )
+        else:
+            context["filter_class_path"] = None
+            context["parent_model_path"] = None
+
+        if hasattr(self, "filterset"):
+            context["filterset"] = self.filterset
+
+    def _build_action_context(self, context):
+        """Populate context with visible/dropdown actions and bulk action lists."""
+        if self.actions and len(self.actions) > self.max_visible_actions:
+            context["visible_actions"] = self.actions[: self.max_visible_actions]
+            context["dropdown_actions"] = self.actions[self.max_visible_actions :]
+            context["use_dropdown"] = True
+        else:
+            context["visible_actions"] = self.actions
+            context["dropdown_actions"] = []
+            context["use_dropdown"] = False
+
+        context["custom_bulk_actions"] = self.custom_bulk_actions
+        context["additional_action_button"] = self.additional_action_button
+
+    def _build_bulk_context(self, context, filter_fields):
+        """Populate context with bulk operation fields, counts, and session state."""
+        qs = self.object_list
+        context["total_records_count"] = qs.count()
+        context["selected_ids"] = list(qs.values_list("id", flat=True))
+        context["selected_ids_json"] = json.dumps(context["selected_ids"])
+
+        editable_bulk_field_names = get_editable_fields(
+            self.request.user, self.model, self.bulk_update_fields
+        )
+        context["bulk_update_fields"] = [
+            field
+            for field in filter_fields
+            if field["name"] in editable_bulk_field_names
+        ]
+        context["bulk_select_option"] = self.bulk_select_option
+        context["bulk_update_option"] = self.bulk_update_option
+        context["bulk_delete_enabled"] = self.bulk_delete_enabled
+        context["bulk_export_option"] = self.bulk_export_option
+
+        session_key = f"list_view_queryset_ids_{self.model._meta.model_name}"
+        self.request.session[session_key] = context["selected_ids"]
+
+    def _build_sort_context(self, context):
+        """Populate context with sort field, direction, and sorting configuration."""
+        context["current_sort"] = self.request.GET.get("sort", self.default_sort_field)
+        context["current_direction"] = self.request.GET.get(
+            "direction", self.default_sort_direction
+        )
+        context["enable_sorting"] = self.enable_sorting
+        context["sorting_target"] = self.sorting_target
+        context["exclude_columns_from_sorting"] = self.exclude_columns_from_sorting
 
     def get_context_data(self, **kwargs):
         """Enhance context with column and filtering information."""
@@ -553,7 +777,6 @@ class HorillaListView(HorillaListViewMixin, ListView):
         context["view_type"] = view_type
         context["filter_fields"] = filter_fields
         context["export_additional_fields"] = export_additional_fields
-        context["filter_push_url"] = "true" if self.filter_url_push else "false"
         context["model_verbose_name"] = self.model._meta.verbose_name_plural
         context["model_name"] = self.model.__name__
         context["no_record_add_button"] = self.no_record_add_button or {}
@@ -595,51 +818,10 @@ class HorillaListView(HorillaListViewMixin, ListView):
 
         context["header_attrs"] = header_attrs_dict
         context["col_attrs"] = col_attrs_dict
-
-        field_operators = {}
-        field_types = {}
-        choices = {}
-
-        operator_display = {
-            "exact": "Equals",
-            "iexact": "Equals (case insensitive)",
-            "icontains": "Contains",
-            "ne": "Not Equals",
-            "gt": "Greater than",
-            "lt": "Less than",
-            "gte": "Greater than or equal to",
-            "lte": "Less than or equal to",
-            "startswith": "Starts with",
-            "istartswith": "Starts with",
-            "endswith": "Ends with",
-            "iendswith": "Ends with",
-            "date_range": "Between",
-            "between": "Between",
-            "isnull": "Is empty",
-            "isnotnull": "Is not empty",
-        }
-        context["operator_display"] = operator_display
-        context["pinned_view"] = PinnedView.all_objects.filter(
-            user=self.request.user, model_name=self.model.__name__
-        ).first()
-        field_verbose_names = {}
-        for field in filter_fields:
-            field_operators[field["name"]] = field.get("operators", [])
-            field_types[field["name"]] = field.get("type", [])
-            choices[field["name"]] = field.get("choices", [])
-            field_verbose_names[field["name"]] = field.get("verbose_name", "")
-
-        context["field_verbose_names"] = field_verbose_names
         context["columns"] = self._get_columns()
         context["raw_attrs"] = self.raw_attrs
         context["view_id"] = self.view_id
         context["action_method"] = self.action_method
-        context["bulk_export_option"] = self.bulk_export_option
-        context["current_sort"] = self.request.GET.get("sort", self.default_sort_field)
-        context["exclude_columns_from_sorting"] = self.exclude_columns_from_sorting
-        context["current_direction"] = self.request.GET.get(
-            "direction", self.default_sort_direction
-        )
         context["current_query"] = self.request.GET.urlencode()
         context["is_htmx_request"] = self.request.headers.get("HX-Request") == "true"
         context["has_next"] = False
@@ -654,181 +836,25 @@ class HorillaListView(HorillaListViewMixin, ListView):
             item: self.request.GET.getlist(item) for item in self.request.GET
         }
         context["query_params"] = query_params
-
-        filter_rows = []
-        if (
-            query_params.get("field")
-            and self.request.GET.get("add_filter_row") != "true"
-        ):
-            for i, field in enumerate(query_params["field"]):
-                field_info = next((f for f in filter_fields if f["name"] == field), {})
-                raw_value = (
-                    query_params.get("value", [None])[i]
-                    if i < len(query_params.get("value", []))
-                    else None
-                )
-
-                # Convert ForeignKey ID to display value
-                display_value = raw_value
-                if field_info.get("type") == "foreignkey" and raw_value:
-                    try:
-                        # Get the related model field
-                        model_field = self.model._meta.get_field(field)
-                        related_model = model_field.related_model
-
-                        # Fetch the related object and get its string representation
-                        related_obj = related_model.objects.get(pk=raw_value)
-                        display_value = str(related_obj)
-                    except Exception:
-                        # If anything fails, keep the raw value
-                        display_value = raw_value
-                elif field_info.get("type") == "choice" and raw_value:
-                    try:
-                        # Get the field and its choices
-                        field_obj = self.model._meta.get_field(field)
-                        if field_obj.choices:
-                            choices_dict = dict(field_obj.choices)
-                            display_value = choices_dict.get(raw_value, raw_value)
-                        else:
-                            display_value = raw_value
-                    except Exception:
-                        display_value = raw_value
-
-                start_value = (
-                    query_params.get("start_value", [None])[i]
-                    if i < len(query_params.get("start_value", []))
-                    else None
-                )
-                end_value = (
-                    query_params.get("end_value", [None])[i]
-                    if i < len(query_params.get("end_value", []))
-                    else None
-                )
-                field_type = field_info.get("type")
-
-                def _parse_filter_value(val, ftype):
-                    if not val or ftype not in ("date", "datetime", "time"):
-                        return None
-                    if ftype == "datetime":
-                        return parse_datetime(val)
-                    if ftype == "date":
-                        return parse_date(val)
-                    if ftype == "time":
-                        return parse_time(val)
-                    return None
-
-                value_obj = _parse_filter_value(raw_value, field_type)
-                start_value_obj = _parse_filter_value(start_value, field_type)
-                end_value_obj = _parse_filter_value(end_value, field_type)
-
-                row = {
-                    "row_id": i,
-                    "field": field,
-                    "operator": (
-                        query_params.get("operator", [None])[i]
-                        if i < len(query_params.get("operator", []))
-                        else None
-                    ),
-                    "value": raw_value,
-                    "raw_value": display_value,
-                    "start_value": start_value,
-                    "end_value": end_value,
-                    "value_obj": value_obj,
-                    "start_value_obj": start_value_obj,
-                    "end_value_obj": end_value_obj,
-                    "operators": field_operators.get(field, []),
-                    "type": field_types.get(field, []),
-                    "choices": choices.get(field, []),
-                    "model": field_info.get("model", None),  # Use field_info
-                    "app_label": field_info.get("app_label", None),
-                    "verbose_name": field_verbose_names.get(field, field),
-                    "operator_display": operator_display.get(
-                        (
-                            query_params.get("operator", [None])[i]
-                            if i < len(query_params.get("operator", []))
-                            else None
-                        ),
-                        (
-                            query_params.get("operator", [None])[i]
-                            if i < len(query_params.get("operator", []))
-                            else None
-                        ),
-                    ),
-                }
-                filter_rows.append(row)
-        else:
-            filter_rows = [
-                {
-                    "row_id": 0,
-                    "field": None,
-                    "operator": None,
-                    "value": None,
-                    "operators": [],
-                }
-            ]
-
-        context["filter_rows"] = filter_rows
-        context["last_row_id"] = len(filter_rows) - 1
-
-        # Add filter_class_path and parent_model_path for Select2 pagination
-        if self.filterset_class:
-            context["filter_class_path"] = (
-                f"{self.filterset_class.__module__}.{self.filterset_class.__name__}"
-            )
-            context["parent_model_path"] = (
-                f"{self.model._meta.app_label}.{self.model._meta.model_name}"
-            )
-        else:
-            context["filter_class_path"] = None
-            context["parent_model_path"] = None
-
-        if hasattr(self, "filterset"):
-            context["filterset"] = self.filterset
-
-        if self.actions and len(self.actions) > self.max_visible_actions:
-            context["visible_actions"] = self.actions[: self.max_visible_actions]
-            context["dropdown_actions"] = self.actions[self.max_visible_actions :]
-            context["use_dropdown"] = True
-        else:
-            context["visible_actions"] = self.actions
-            context["dropdown_actions"] = []
-            context["use_dropdown"] = False
-
+        context["pinned_view"] = PinnedView.all_objects.filter(
+            user=self.request.user, model_name=self.model.__name__
+        ).first()
         context["model_name"] = self.model.__name__
         context["app_label"] = self.model._meta.app_label
-        context["total_records_count"] = self.get_queryset().count()
-        context["selected_ids"] = list(self.get_queryset().values_list("id", flat=True))
-        context["selected_ids_json"] = json.dumps(context["selected_ids"])
-        context["custom_bulk_actions"] = self.custom_bulk_actions
-        context["additional_action_button"] = self.additional_action_button
-        # Only show fields in bulk update form when user has read+write permission
-        editable_bulk_field_names = get_editable_fields(
-            self.request.user, self.model, self.bulk_update_fields
-        )
-        bulk_update_fields_metadata = [
-            field
-            for field in filter_fields
-            if field["name"] in editable_bulk_field_names
-        ]
-        context["bulk_update_fields"] = bulk_update_fields_metadata
-        context["bulk_select_option"] = self.bulk_select_option
-        context["bulk_update_option"] = self.bulk_update_option
-        context["enable_sorting"] = self.enable_sorting
-        context["sorting_target"] = self.sorting_target
-        context["bulk_delete_enabled"] = self.bulk_delete_enabled
-        queryset_ids = list(self.get_queryset().values_list("id", flat=True))
-        session_key = f"list_view_queryset_ids_{self.model._meta.model_name}"
-        self.request.session[session_key] = queryset_ids
-        query_params = self.request.GET.copy()
-        if "page" in query_params:
-            del query_params["page"]
-        context["search_params"] = query_params.urlencode()
-        # context["bulk_delete_url"] = reverse("horilla_generics:generic_bulk_delete")
+        search_params = self.request.GET.copy()
+        if "page" in search_params:
+            del search_params["page"]
+        context["search_params"] = search_params.urlencode()
         context["filter_set_class"] = self.filterset_class
         context["table_width"] = self.table_width
         context["table_class"] = self.table_class
         context["table_height_as_class"] = self.table_height_as_class
         context["save_to_list_option"] = self.save_to_list_option
+
+        self._build_sort_context(context)
+        self._build_filter_context(context, filter_fields, query_params)
+        self._build_action_context(context)
+        self._build_bulk_context(context, filter_fields)
 
         # Let helper inject quick filter-related context
         quick_filter.update_quick_filter_context(context, self)

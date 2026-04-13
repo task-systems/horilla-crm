@@ -5,7 +5,6 @@ supporting dynamic field visibility and permissions.
 
 # Standard library
 import logging
-from typing import Any
 
 from django.contrib import messages
 
@@ -41,8 +40,12 @@ class HorillaDetailTabView(HorillaTabView):
     urls = {}
     tab_class = "h-[calc(_100vh_-_475px_)] overflow-hidden"
 
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+        self._prepare_detail_tabs()
+
+    def _prepare_detail_tabs(self) -> None:
+        """Fill ``self.tabs`` from ``self.urls`` and ``self.object_id`` (subclasses set those, then ``super()``)."""
         pipeline_field = self.request.GET.get("pipeline_field")
         if not pipeline_field:
             self.tab_class = "h-[calc(_100vh_-_390px_)] overflow-hidden"

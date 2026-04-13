@@ -54,10 +54,12 @@ class HolidayListView(LoginRequiredMixin, HorillaListView):
 
     model = Holiday
     view_id = "holiday-list-view"
+    table_height_as_class = "h-[calc(_100vh_-_410px_)]"
     table_width = False
-    bulk_select_option = False
     search_url = reverse_lazy("horilla_core:holiday_list_view")
     store_ordered_ids = True
+    list_column_visibility = False
+    bulk_update_option = False
 
     columns = ["name", "start_date", "end_date", "is_recurring"]
 

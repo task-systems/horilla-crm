@@ -1,0 +1,52 @@
+{% load i18n static horilla_tags %}
+
+<div id="review_fields_container" class="col-span-2 flex flex-col" hx-swap-oob="true">
+    <div class="flex justify-between items-center mb-2">
+        <div class="flex justify-between mb-1 w-full">
+            <label for="{{ form.review_fields.id_for_label }}" class="text-xs text-color-600">
+                {{ form.review_fields.label }}
+            </label>
+        </div>
+    </div>
+    <div class="relative">
+        {{ form.review_fields }}
+    </div>
+    {% if form.review_fields.errors %}
+        <div class="bg-red-50 text-red-500 px-3 py-2 rounded text-xs mt-1">
+            {% for error in form.review_fields.errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
+<div id="condition-fields-container" hx-swap-oob="true">
+    <div class="flex items-center gap-2 mb-2 condition-row" data-row-id="0" id="condition-row-0">
+        <div class="grid grid-cols-{{ condition_fields|length }} gap-2 flex-1">
+            {% for field_name in condition_fields %}
+                <div>
+                    <div id="id_{{ field_name }}_0_container">
+                        {% render_field_with_name form field_name "0" %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div id="condition-add-more-container" hx-swap-oob="true">
+    {% if add_condition_url %}
+        <button
+            type="button"
+            class="text-primary-600 hover:text-primary-800 text-xs font-semibold px-2 py-1 bg-primary-300 rounded border border-primary-200 transition-colors"
+            hx-get="{{ add_condition_url }}&row_id=next"
+            hx-target="#condition-fields-container"
+            hx-swap="beforeend"
+            {% if condition_hx_include %}
+                hx-include="{{ condition_hx_include }}"
+            {% endif %}
+        >
+            + {% trans "Add More" %}
+        </button>
+    {% endif %}
+</div>

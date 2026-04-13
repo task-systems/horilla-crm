@@ -14,7 +14,7 @@ from horilla.utils.translation import gettext_lazy as _
 class DuplicateManagementSettings:
     """Settings menu entries for the duplicate management module."""
 
-    title = _("Clone Management")
+    title = _("Duplicate Control")
     icon = "/assets/icons/clone.svg"
     order = 5
     items = [

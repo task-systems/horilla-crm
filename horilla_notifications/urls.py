@@ -48,32 +48,32 @@ urlpatterns = [
         name="notification_template_view",
     ),
     path(
-        "notification_template_nav_view/",
+        "notification-template-nav-view/",
         views.NotificationTemplateNavbar.as_view(),
         name="notification_template_nav_view",
     ),
     path(
-        "notification_template_list_view/",
+        "notification-template-list-view/",
         views.NotificationTemplateListView.as_view(),
         name="notification_template_list_view",
     ),
     path(
-        "notification_template_detail_view/<int:pk>/",
+        "notification-template-detail-view/<int:pk>/",
         views.NotificationTemplateDetailView.as_view(),
         name="notification_template_detail_view",
     ),
     path(
-        "notification_template_create_view/",
+        "notification-template-create-view/",
         views.NotificationTemplateCreateUpdateView.as_view(),
         name="notification_template_create_view",
     ),
     path(
-        "notification_template_update_view/<int:pk>/",
+        "notification-template-update-view/<int:pk>/",
         views.NotificationTemplateCreateUpdateView.as_view(),
         name="notification_template_update_view",
     ),
     path(
-        "notification_template_delete_view/<int:pk>/",
+        "notification-template-delete-view/<int:pk>/",
         views.NotificationTemplateDeleteView.as_view(),
         name="notification_template_delete_view",
     ),

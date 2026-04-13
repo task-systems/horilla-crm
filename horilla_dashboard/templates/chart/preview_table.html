@@ -1,33 +1,69 @@
-<div class="overflow-x-auto">
-    <table class="min-w-full bg-white border border-dark-50">
-        <thead>
-            <tr class="border border-dark-50">
-                <th class="py-2 px-4 border border-dark-50">Company Name</th>
-                <th class="py-2 px-4 border border-dark-50">Email</th>
-                <th class="py-2 px-4 border border-dark-50">Contact Number</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td class="py-2 px-4 border border-dark-50">Company A</td>
-                <td class="py-2 px-4 border border-dark-50">companya@example.com</td>
-                <td class="py-2 px-4 border border-dark-50">9876543210</td>
-            </tr>
-            <tr>
-                <td class="py-2 px-4 border border-dark-50">Company B</td>
-                <td class="py-2 px-4 border border-dark-50">companyb@example.com</td>
-                <td class="py-2 px-4 border border-dark-50">9876543211</td>
-            </tr>
-            <tr>
-                <td class="py-2 px-4 border border-dark-50">Company C</td>
-                <td class="py-2 px-4 border border-dark-50">companyc@example.com</td>
-                <td class="py-2 px-4 border border-dark-50">9876543212</td>
-            </tr>
-            <tr>
-                <td class="py-2 px-4 border border-dark-50">Company D</td>
-                <td class="py-2 px-4 border border-dark-50">companyd@example.com</td>
-                <td class="py-2 px-4 border border-dark-50">9876543213</td>
-            </tr>
-        </tbody>
-    </table>
+{% load i18n %}
+<div class="relative overflow-hidden overflow-y-auto overflow-x-auto rounded-lg bg-white [box-shadow:0px_0px_20px_0px_rgb(0_0_0_/_5%)]">
+  <table class="w-full border-separate border-spacing-0">
+    <thead class="bg-white">
+      <tr class=" bg-primary-400">
+        <th class="text-[.8rem] font-bold text-left p-2 border-[.3px] border-[#efefef] rounded-tl-md" style="width: 40px;">
+          <div class="flex items-center justify-center">
+            <input type="checkbox" class="border-[1px] border-[solid] border-[#efefef]" disabled />
+          </div>
+        </th>
+        <th class="text-[.8rem] text-primary-600 font-bold text-left p-2 border-[.3px] border-[#efefef]">{% trans 'Company Name' %}</th>
+        <th class="text-[.8rem] text-primary-600 font-bold text-left p-2 border-[.3px] border-[#efefef]">{% trans 'Email' %}</th>
+        <th class="text-[.8rem] text-primary-600 font-bold text-left p-2 border-[.3px] border-[#efefef] rounded-tr-md">{% trans 'Contact Number' %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr >
+        <td class="p-2 border-[.3px] border-[#efefef]">
+          <div class="flex items-center justify-center">
+            <input type="checkbox" class="w-4 h-4 bg-[#E9EDF7] rounded-sm accent-[#e54f38]" disabled />
+          </div>
+        </td>
+        <td class="text-[.8rem] p-2 border-[.3px] border-[#efefef]">{% trans 'Summit Logistics' %}</td>
+        <td class="text-[.8rem] p-2 border-[.3px] border-[#efefef]">{% trans 'sales@summitlogistics.com' %}</td>
+        <td class="text-[.8rem] p-2 border-[.3px] border-[#efefef]">{% trans '+1 (415) 555-0182' %}</td>
+      </tr>
+      <tr >
+        <td class="p-2 border-[.3px] border-[#efefef]">
+          <div class="flex items-center justify-center">
+            <input type="checkbox" class="w-4 h-4 bg-[#E9EDF7] rounded-sm accent-[#e54f38]" disabled />
+          </div>
+        </td>
+        <td class="text-[.8rem] p-2 border-[.3px] border-[#efefef]">{% trans 'Brightline Media' %}</td>
+        <td class="text-[.8rem] p-2 border-[.3px] border-[#efefef]">{% trans 'hello@brightlinemedia.io' %}</td>
+        <td class="text-[.8rem] p-2 border-[.3px] border-[#efefef]">{% trans '+1 (312) 555-0247' %}</td>
+      </tr>
+      <tr >
+        <td class="p-2 border-[.3px] border-[#efefef]">
+          <div class="flex items-center justify-center">
+            <input type="checkbox" class="w-4 h-4 bg-[#E9EDF7] rounded-sm accent-[#e54f38]" disabled />
+          </div>
+        </td>
+        <td class="text-[.8rem] p-2 border-[.3px] border-[#efefef]">{% trans 'Northstar Consulting' %}</td>
+        <td class="text-[.8rem] p-2 border-[.3px] border-[#efefef]">{% trans 'contact@northstarconsulting.co' %}</td>
+        <td class="text-[.8rem] p-2 border-[.3px] border-[#efefef]">{% trans '+1 (646) 555-0119' %}</td>
+      </tr>
+      <tr >
+        <td class="p-2 border-[.3px] border-[#efefef]">
+          <div class="flex items-center justify-center">
+            <input type="checkbox" class="w-4 h-4 bg-[#E9EDF7] rounded-sm accent-[#e54f38]" disabled />
+          </div>
+        </td>
+        <td class="text-[.8rem] p-2 border-[.3px] border-[#efefef]">{% trans 'BluePeak Technologies' %}</td>
+        <td class="text-[.8rem] p-2 border-[.3px] border-[#efefef]">{% trans 'info@bluepeaktech.ai' %}</td>
+        <td class="text-[.8rem] p-2 border-[.3px] border-[#efefef]">{% trans '+1 (206) 555-0134' %}</td>
+      </tr>
+      <tr >
+        <td class="p-2 border-[.3px] border-[#efefef]">
+          <div class="flex items-center justify-center">
+            <input type="checkbox" class="w-4 h-4 bg-[#E9EDF7] rounded-sm accent-[#e54f38]" disabled />
+          </div>
+        </td>
+        <td class="text-[.8rem] p-2 border-[.3px] border-[#efefef]">{% trans 'Evergreen Retail Group' %}</td>
+        <td class="text-[.8rem] p-2 border-[.3px] border-[#efefef]">{% trans 'partnerships@evergreenretail.com' %}</td>
+        <td class="text-[.8rem] p-2 border-[.3px] border-[#efefef]">{% trans '+1 (718) 555-0176' %}</td>
+      </tr>
+    </tbody>
+  </table>
 </div>

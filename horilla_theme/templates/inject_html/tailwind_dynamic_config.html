@@ -1,180 +1,130 @@
 {% with theme=request.active_company.companytheme_set.first.theme %}
-<script>
-    window.tailwind.config = {
-        theme: {
-            colors: {
-                white: '#FFFFFF',
-                /* Surface color per theme (kanban/group-by; matching, not derived) */
-                surface: '{{ theme.surface | default:"#e9edf0ba" }}',
-                primary: {
-                    50: '{{ theme.primary_50  | default:"#f6f6f6" }}',
-                    100: '{{ theme.primary_100 | default:"#FFF5F1" }}',
-                    200: '{{ theme.primary_200 | default:"#FEF6F5" }}',
-                    300: '{{ theme.primary_300 | default:"#FCEDEB" }}',
-                    400: '{{ theme.primary_400 | default:"#FBE5E1" }}',
-                    500: '{{ theme.primary_500 | default:"#F7C8C1" }}',
-                    600: '{{ theme.primary_600 | default:"#E54F38" }}',
-                    700: '{{ theme.primary_700 | default:"#ce4732" }}',
-                    800: '{{ theme.primary_800 | default:"#AC3B2A" }}',
-                    900: '{{ theme.primary_900 | default:"#672419" }}',
+    <script>
+        window.tailwind.config = {
+            theme: {
+                colors: {
+                    white: '#FFFFFF',
+                    /* Surface color per theme (kanban/group-by; matching, not derived) */
+                    surface: '{{ theme.surface | default:"#e9edf0ba" }}',
+                    primary: {
+                        50: '{{ theme.primary_50  | default:"#f6f6f6" }}',
+                        100: '{{ theme.primary_100 | default:"#FFF5F1" }}',
+                        200: '{{ theme.primary_200 | default:"#FEF6F5" }}',
+                        300: '{{ theme.primary_300 | default:"#FCEDEB" }}',
+                        400: '{{ theme.primary_400 | default:"#FBE5E1" }}',
+                        500: '{{ theme.primary_500 | default:"#F7C8C1" }}',
+                        600: '{{ theme.primary_600 | default:"#E54F38" }}',
+                        700: '{{ theme.primary_700 | default:"#ce4732" }}',
+                        800: '{{ theme.primary_800 | default:"#AC3B2A" }}',
+                        900: '{{ theme.primary_900 | default:"#672419" }}',
+                    },
+                    dark: {
+                        25: '{{ theme.dark_25  | default:"#F0F0F0" }}',
+                        50: '{{ theme.dark_50  | default:"#E6E6E6" }}',
+                        100: '{{ theme.dark_100 | default:"#A8A8A8" }}',
+                        200: '{{ theme.dark_200 | default:"#515151" }}',
+                        300: '{{ theme.dark_300 | default:"#501C14" }}',
+                        400: '{{ theme.dark_400 | default:"#64748B" }}',
+                        500: '{{ theme.dark_500 | default:"#190906" }}',
+                        600: '{{ theme.dark_600 | default:"#000000" }}',
+                    },
+                    secondary: {
+                        50: '{{ theme.secondary_50  | default:"#f8fafc" }}',
+                        100: '{{ theme.secondary_100 | default:"#f1f5f9" }}',
+                        200: '{{ theme.secondary_200 | default:"#e2e8f0" }}',
+                        300: '{{ theme.secondary_300 | default:"#cbd5e1" }}',
+                        400: '{{ theme.secondary_400 | default:"#FBE5E1" }}',
+                        500: '{{ theme.secondary_500 | default:"#F7C8C1" }}',
+                        600: '{{ theme.secondary_600 | default:"#E54F38" }}',
+                        700: '{{ theme.secondary_700 | default:"#334155" }}',
+                        800: '{{ theme.secondary_800 | default:"#1e293b" }}',
+                        900: '{{ theme.secondary_900 | default:"#0f172a" }}',
+                    },
+                    success: { light: "#86efac", DEFAULT: "#22c55e", dark: "#15803d" },
+                    warning: { light: "#fde68a", DEFAULT: "#f59e0b", dark: "#b45309" },
+                    danger: { light: "#fca5a5", DEFAULT: "#ef4444", dark: "#b91c1c" },
                 },
-                dark: {
-                    25: '{{ theme.dark_25  | default:"#F0F0F0" }}',
-                    50: '{{ theme.dark_50  | default:"#E6E6E6" }}',
-                    100: '{{ theme.dark_100 | default:"#A8A8A8" }}',
-                    200: '{{ theme.dark_200 | default:"#515151" }}',
-                    300: '{{ theme.dark_300 | default:"#501C14" }}',
-                    400: '{{ theme.dark_400 | default:"#64748B" }}',
-                    500: '{{ theme.dark_500 | default:"#190906" }}',
-                    600: '{{ theme.dark_600 | default:"#000000" }}',
+                extend: {
+                    boxShadow: { card: "0px 0px 10px rgba(0, 0, 0, 0.05)" },
+                    spacing: { 18: "4.5rem", 72: "18rem", 84: "21rem", 96: "24rem" },
+                    borderRadius: { "4xl": "2rem", "5xl": "2.5rem" },
+                    fontSize: { xxs: "0.625rem" },
+                    height: { "screen-50": "50vh", "screen-75": "75vh" },
                 },
-                secondary: {
-                    50: '{{ theme.secondary_50  | default:"#f8fafc" }}',
-                    100: '{{ theme.secondary_100 | default:"#f1f5f9" }}',
-                    200: '{{ theme.secondary_200 | default:"#e2e8f0" }}',
-                    300: '{{ theme.secondary_300 | default:"#cbd5e1" }}',
-                    400: '{{ theme.secondary_400 | default:"#FBE5E1" }}',
-                    500: '{{ theme.secondary_500 | default:"#F7C8C1" }}',
-                    600: '{{ theme.secondary_600 | default:"#E54F38" }}',
-                    700: '{{ theme.secondary_700 | default:"#334155" }}',
-                    800: '{{ theme.secondary_800 | default:"#1e293b" }}',
-                    900: '{{ theme.secondary_900 | default:"#0f172a" }}',
-                },
-                success: { light: "#86efac", DEFAULT: "#22c55e", dark: "#15803d" },
-                warning: { light: "#fde68a", DEFAULT: "#f59e0b", dark: "#b45309" },
-                danger: { light: "#fca5a5", DEFAULT: "#ef4444", dark: "#b91c1c" },
             },
-            extend: {
-                boxShadow: { card: "0px 0px 10px rgba(0, 0, 0, 0.05)" },
-                spacing: { 18: "4.5rem", 72: "18rem", 84: "21rem", 96: "24rem" },
-                borderRadius: { "4xl": "2rem", "5xl": "2.5rem" },
-                fontSize: { xxs: "0.625rem" },
-                height: { "screen-50": "50vh", "screen-75": "75vh" },
-            },
-        },
-    };
-</script>
-<script>
-    (function () {
-        const defaultColor = '#e54f38';
-        const currentColor = '{{ theme.primary_600|default:"#e54f38" }}';
-
-        function hexToRgb(hex) {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? {
-                r: parseInt(result[1], 16) / 255,
-                g: parseInt(result[2], 16) / 255,
-                b: parseInt(result[3], 16) / 255
-            } : null;
+        };
+    </script>
+    <!-- Dynamic Styles -->
+    <style>
+        /* Split view active tile colors: keep in sync with the active primary theme */
+        :root {
+            --split-view-active-bg: {{ theme.primary_300 | default:"#FCEDEB" }};
+            --split-view-active-border: {{ theme.primary_600 | default:"#E54F38" }};
+            --progress-track-bg: {{ theme.primary_200 | default:"#FBE5E1" }};
+            /* Sidebar menu arrow icon (replaces menuarrow.svg) */
+            --menu-arrow-bg: {{ theme.primary_300 | default:"#FCEDEB" }};
+            --menu-arrow-fg: {{ theme.primary_600 | default:"#E54F38" }};
+            /* Timeline pills (timeline view bars) */
+            --timeline-pill-bg: {{ theme.primary_300 | default:"#FCEDEB" }};
+            --timeline-pill-fg: {{ theme.primary_600 | default:"#E54F38" }};
+            /* Calendar "today" cell colors */
+            --calendar-today-bg: {{ theme.primary_100 | default:"#FFF5F1" }};
+            --calendar-today-fg: {{ theme.primary_600 | default:"#E54F38" }};
+        }
+        body.dark {
+            /* In dark mode, keep the background neutral-ish but still theme the accent/border */
+            --split-view-active-bg: {{ theme.dark_200 | default:"#515151" }};
+            --split-view-active-border: {{ theme.primary_600 | default:"#E54F38" }};
+            --progress-track-bg: color-mix(in srgb, {{ theme.primary_600 | default:"#E54F38" }} 28%, #2f2f2f);
+            /* Keep sidebar arrow colors aligned with the theme even in dark mode */
+            --menu-arrow-bg: {{ theme.primary_300 | default:"#FCEDEB" }};
+            --menu-arrow-fg: {{ theme.primary_600 | default:"#E54F38" }};
+            /* Timeline pills in dark mode: keep theme accent visible */
+            --timeline-pill-bg: color-mix(in srgb, {{ theme.primary_600 | default:"#E54F38" }} 22%, #2f2f2f);
+            --timeline-pill-fg: {{ theme.primary_600 | default:"#E54F38" }};
+            /* Calendar "today" cell in dark mode */
+            --calendar-today-bg: color-mix(in srgb, {{ theme.primary_600 | default:"#E54F38" }} 20%, #2f2f2f);
+            --calendar-today-fg: {{ theme.primary_600 | default:"#E54F38" }};
         }
 
-        function rgbToHsl(r, g, b) {
-            const max = Math.max(r, g, b);
-            const min = Math.min(r, g, b);
-            let h, s, l = (max + min) / 2;
-
-            if (max === min) {
-                h = s = 0;
-            } else {
-                const d = max - min;
-                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-
-                switch (max) {
-                    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-                    case g: h = ((b - r) / d + 2) / 6; break;
-                    case b: h = ((r - g) / d + 4) / 6; break;
-                }
-            }
-
-            return { h: h * 360, s: s * 100, l: l * 100 };
+        .svg-themed {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            background-color: {{ theme.primary_600|default:"#E54F38" }};
+            -webkit-mask-image: var(--icon);
+            mask-image: var(--icon);
+            -webkit-mask-position: center;
+            mask-position: center;
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-size: contain;
+            mask-size: contain;
         }
-
-        if (currentColor.toLowerCase() === defaultColor.toLowerCase()) {
-            document.documentElement.style.setProperty('--svg-filter', 'none');
-            document.documentElement.style.setProperty('--svg-hue', '0deg');
-            return;
+        input[type='checkbox'] {
+            color: {{ theme.primary_600|default:"#E54F38" }};
         }
-
-        const defaultRgb = hexToRgb(defaultColor);
-        const currentRgb = hexToRgb(currentColor);
-
-        if (!defaultRgb || !currentRgb) return;
-
-        const defaultHsl = rgbToHsl(defaultRgb.r, defaultRgb.g, defaultRgb.b);
-        const currentHsl = rgbToHsl(currentRgb.r, currentRgb.g, currentRgb.b);
-
-        let hueDiff = currentHsl.h - defaultHsl.h;
-        if (hueDiff > 180) hueDiff -= 360;
-        if (hueDiff < -180) hueDiff += 360;
-
-        const saturationRatio = currentHsl.s / defaultHsl.s || 1;
-        const lightnessRatio = currentHsl.l / defaultHsl.l || 1;
-
-        if (currentHsl.s < 10) {
-            const brightness = lightnessRatio > 1 ? lightnessRatio : 1;
-            document.documentElement.style.setProperty(
-                '--svg-filter',
-                `grayscale(1) brightness(${brightness.toFixed(2)})`
-            );
-            document.documentElement.style.setProperty('--svg-hue', '0deg');
-        } else {
-            const saturate = Math.max(0.5, Math.min(2, saturationRatio));
-            const brightness = Math.max(0.5, Math.min(1.5, lightnessRatio));
-
-            document.documentElement.style.setProperty(
-                '--svg-filter',
-                `hue-rotate(${hueDiff.toFixed(1)}deg) saturate(${saturate.toFixed(2)}) brightness(${brightness.toFixed(2)})`
-            );
-            document.documentElement.style.setProperty('--svg-hue', `${hueDiff.toFixed(1)}deg`);
+        .progress li.active .sec::before {
+            background-color: {{ theme.primary_600|default:"#E54F38" }};
         }
-    })();
-</script>
-
-<!-- Dynamic Styles -->
-<style>
-    /* Split view active tile colors: keep in sync with the active primary theme */
-    :root {
-        --split-view-active-bg: {{ theme.primary_300 | default:"#FCEDEB" }};
-        --split-view-active-border: {{ theme.primary_600 | default:"#E54F38" }};
-
-        /* Sidebar menu arrow icon (replaces menuarrow.svg) */
-        --menu-arrow-bg: {{ theme.primary_500 | default:"#F7C8C1" }};
-        --menu-arrow-fg: {{ theme.primary_600 | default:"#E54F38" }};
-
-        /* Timeline pills (timeline view bars) */
-        --timeline-pill-bg: {{ theme.primary_300 | default:"#FCEDEB" }};
-        --timeline-pill-fg: {{ theme.primary_600 | default:"#E54F38" }};
-
-        /* Calendar "today" cell colors */
-        --calendar-today-bg: {{ theme.primary_100 | default:"#FFF5F1" }};
-        --calendar-today-fg: {{ theme.primary_600 | default:"#E54F38" }};
-    }
-    body.dark {
-        /* In dark mode, keep the background neutral-ish but still theme the accent/border */
-        --split-view-active-bg: {{ theme.dark_200 | default:"#515151" }};
-        --split-view-active-border: {{ theme.primary_600 | default:"#E54F38" }};
-
-        /* Keep sidebar arrow colors aligned with the theme even in dark mode */
-        --menu-arrow-bg: {{ theme.primary_500 | default:"#F7C8C1" }};
-        --menu-arrow-fg: {{ theme.primary_600 | default:"#E54F38" }};
-
-        /* Timeline pills in dark mode: keep theme accent visible */
-        --timeline-pill-bg: color-mix(in srgb, {{ theme.primary_600 | default:"#E54F38" }} 22%, #2f2f2f);
-        --timeline-pill-fg: {{ theme.primary_600 | default:"#E54F38" }};
-
-        /* Calendar "today" cell in dark mode */
-        --calendar-today-bg: color-mix(in srgb, {{ theme.primary_600 | default:"#E54F38" }} 20%, #2f2f2f);
-        --calendar-today-fg: {{ theme.primary_600 | default:"#E54F38" }};
-    }
-
-    img.svg-themed {filter: var(--svg-filter, contrast(1.1) saturate(1.3) hue-rotate(var(--svg-hue, 345deg)));}
-    input[type="checkbox"]{color:{{ theme.primary_600|default:"#E54F38" }}}
-    .progress li.active .sec::before{background-color:{{ theme.primary_600|default:"#E54F38" }}}
-    .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable{background-color:{{ theme.primary_100|default:"#e54f3817" }}!important;color:{{ theme.primary_600|default:"#E54F38" }}!important}
-    .select2-container--default .select2-selection--multiple .select2-selection__choice{background-color:{{ theme.primary_600|default:"#E54F38" }}}
-    .radio-group input[type="radio"]:checked+.custom-radio::after{background-color:{{ theme.primary_600|default:"#E54F38" }}}
-    .dropdown-content a:hover{color:{{ theme.primary_600|default:"#E54F38" }}}
-    .dropdown-content{border-color:{{ theme.primary_400|default:"#FBE5E1" }}}
-    .core-module{background:linear-gradient(135deg,{{ theme.primary_600|default:"#E54F38" }} 0%,{{ theme.primary_800|default:"#C5311B" }} 100%)}
-</style>
+        .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+            background-color: {{ theme.primary_100|default:"#e54f3817" }} !important;
+            color: {{ theme.primary_600|default:"#E54F38" }} !important;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: {{ theme.primary_600|default:"#E54F38" }};
+        }
+        .radio-group input[type='radio']:checked + .custom-radio::after {
+            background-color: {{ theme.primary_600|default:"#E54F38" }};
+        }
+        .dropdown-content a:hover {
+            color: {{ theme.primary_600|default:"#E54F38" }};
+        }
+        .dropdown-content {
+            border-color: {{ theme.primary_400|default:"#FBE5E1" }};
+        }
+        .core-module {
+            background: linear-gradient(135deg, {{ theme.primary_600|default:"#E54F38" }} 0%, {{ theme.primary_800|default:"#C5311B" }} 100%);
+        }
+    </style>
 {% endwith %}

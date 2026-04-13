@@ -108,24 +108,19 @@ DAY_CHOICES = [
 ]
 
 OPERATOR_CHOICES = [
-    ("equals", _("Equals")),
-    ("not_equals", _("Not Equals")),
-    ("contains", _("Contains")),
-    ("not_contains", _("Does Not Contain")),
-    ("starts_with", "Starts With"),
-    ("ends_with", _("Ends With")),
-    ("greater_than", _("Greater Than")),
-    ("greater_than_equal", _("Greater Than or Equal")),
-    ("less_than", _("Less Than")),
-    ("less_than_equal", _("Less Than or Equal")),
-    ("is_empty", _("Is Empty")),
-    ("is_not_empty", _("Is Not Empty")),
     ("exact", _("Equals")),
-    ("gt", _("After")),
-    ("lt", _("Before")),
+    ("ne", _("Not Equals")),
+    ("icontains", _("Contains")),
+    ("not_contains", _("Does Not Contain")),
+    ("istartswith", _("Starts With")),
+    ("iendswith", _("Ends With")),
+    ("gt", _("Greater Than")),
+    ("gte", _("Greater Than or Equal")),
+    ("lt", _("Less Than")),
+    ("lte", _("Less Than or Equal")),
+    ("isnull", _("Is Empty")),
+    ("isnotnull", _("Is Not Empty")),
     ("between", _("Between")),
-    ("isnull", _("Is empty")),
-    ("isnotnull", _("Is not empty")),
 ]
 
 # IMPORTANT: Order matters — do not change the order of these lists

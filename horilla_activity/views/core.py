@@ -38,7 +38,6 @@ from horilla_generics.views import (
     HorillaSingleDeleteView,
     HorillaView,
 )
-from horilla_utils.middlewares import _thread_local
 
 # One source of truth — mark each field with where it should appear
 ACTIVITY_TYPE_SPECIFIC_FIELDS = {
@@ -381,17 +380,14 @@ class ActivityDetailViewTabView(LoginRequiredMixin, HorillaDetailTabView):
     Activity Detail Tab View
     """
 
-    def __init__(self, **kwargs):
-        request = getattr(_thread_local, "request", None)
-        self.request = request
+    def _prepare_detail_tabs(self):
         self.object_id = self.request.GET.get("object_id")
         self.urls = {
             "details": "horilla_activity:activity_details_tab",
             "notes_attachments": "horilla_activity:activity_notes_attachments",
             "history": "horilla_activity:activity_history_tab_view",
         }
-
-        super().__init__(**kwargs)
+        super()._prepare_detail_tabs()
 
 
 @method_decorator(

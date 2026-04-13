@@ -35,6 +35,14 @@ from horilla_utils.middlewares import _thread_local
 
 from .models import UserAvailability, UserCalendarPreference
 
+# Default sidebar/checkbox colors per calendar type (keep in sync with calendar UI).
+DEFAULT_CALENDAR_TYPE_COLORS = {
+    "task": "#3B82F6",
+    "event": "#10B981",
+    "meeting": "#F50CCE",
+    "unavailability": "#F5E614",
+}
+
 
 class CalendarView(LoginRequiredMixin, TemplateView):
     """View to display the calendar with user preferences."""
@@ -45,13 +53,25 @@ class CalendarView(LoginRequiredMixin, TemplateView):
         """Build context with calendar types and user color preferences for display."""
         context = super().get_context_data(**kwargs)
         context["calendars"] = [
-            {"id": "task", "name": _("Tasks"), "default_color": "#3B82F6"},
-            {"id": "event", "name": _("Events"), "default_color": "#10B981"},
-            {"id": "meeting", "name": _("Meetings"), "default_color": "#EF4444"},
+            {
+                "id": "task",
+                "name": _("Tasks"),
+                "default_color": DEFAULT_CALENDAR_TYPE_COLORS["task"],
+            },
+            {
+                "id": "event",
+                "name": _("Events"),
+                "default_color": DEFAULT_CALENDAR_TYPE_COLORS["event"],
+            },
+            {
+                "id": "meeting",
+                "name": _("Meetings"),
+                "default_color": DEFAULT_CALENDAR_TYPE_COLORS["meeting"],
+            },
             {
                 "id": "unavailability",
                 "name": _("Unavailability"),
-                "default_color": "#F5E614",
+                "default_color": DEFAULT_CALENDAR_TYPE_COLORS["unavailability"],
             },
         ]
         preferences = UserCalendarPreference.objects.filter(user=self.request.user)
@@ -126,9 +146,7 @@ class SaveCalendarPreferencesView(LoginRequiredMixin, View):
                         if not UserCalendarPreference.objects.filter(
                             user=request.user, calendar_type=ct
                         ).exists():
-                            defaults["color"] = (
-                                "#F5E614" if ct == "unavailability" else "#000000"
-                            )
+                            defaults["color"] = DEFAULT_CALENDAR_TYPE_COLORS[ct]
                         preference, created = (
                             UserCalendarPreference.objects.update_or_create(
                                 user=request.user,

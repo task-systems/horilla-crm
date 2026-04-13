@@ -1,0 +1,561 @@
+{% extends "settings/settings.html" %}
+{% load static i18n horilla_tags %}
+
+{% block settings %}
+    <style>
+        #approval-process-view .accordion-content.open {
+            max-height: 3000px;
+        }
+        #approval-process-view .rule-nested-accordion .accordion-content.open {
+            max-height: 2800px;
+        }
+    </style>
+
+    {% has_perm "approvals.view_approvalrule" as can_view_approval %}
+    {% has_perm "approvals.change_approvalrule" as can_change_rule %}
+    {% if can_view_approval %}
+        <div id="approval-process-view">
+            {% include "messages.html" %}
+            <button
+                id="reloadButton"
+                hidden
+                hx-get="{{ request.path }}?{{ request.GET.urlencode }}"
+                hx-target="#approval-process-view"
+                hx-trigger="click"
+                hx-swap="outerHTML"
+                hx-select="#approval-process-view"
+            >
+                reload
+            </button>
+
+            <div
+                id="navBar"
+                hx-get="{{ nav_url }}?{{ request.GET.urlencode }}&obj={{ current_obj.pk }}"
+                hx-trigger="load"
+            >
+            </div>
+
+            <div id="mainSession">
+                <div class="mb-4 flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600">
+                    <span><span class="font-semibold text-gray-800">{% trans "Module" %}:</span>
+                        {{ approval_rule.model }}</span>
+                    <span><span class="font-semibold text-gray-800">{% trans "Execute on" %}:</span>
+                        {{ approval_rule.get_execute_display }}</span>
+                </div>
+
+                {% csrf_token %}
+                {% if process_rules %}
+                    <div class="border border-primary-300 rounded-md mb-6 bg-white max-h-[calc(_100vh_-_300px_)] custom-scroll overflow-y-auto overflow-hidden">
+                        {% for wr in process_rules %}
+                            {% with border_top=forloop.first|yesno:",border-t border-primary-300" %}
+                                <div class="{{ border_top }}">
+                                    <div
+                                        class="cursor-pointer flex justify-between items-center w-full px-4 py-3 text-left bg-white font-medium text-gray-800 transition hover:bg-primary-50/30"
+                                        onclick="toggleAccordion(this)"
+                                    >
+                                        <div class="flex gap-3 w-full font-medium text-sm">
+                                            {% trans "Rule" %} {{ wr.order }}
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            {% if can_change_rule %}
+                                                <button
+                                                    type="button"
+                                                    class="p-0 border-0 bg-transparent"
+                                                    title="{% trans 'Edit' %}"
+                                                    hx-get="{{ wr.get_edit_url }}?new=true"
+                                                    hx-target="#modalBox"
+                                                    hx-swap="innerHTML"
+                                                    onclick="event.stopPropagation();openModal()"
+                                                >
+                                                    <img
+                                                        src="{% static 'assets/icons/a1.svg' %}"
+                                                        alt=""
+                                                        width="20"
+                                                        height="20"
+                                                    >
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class="p-0 border-0"
+                                                    title="{% trans 'Delete' %}"
+                                                    hx-post="{{ wr.get_delete_url }}"
+                                                    hx-target="#deleteModeBox"
+                                                    hx-swap="innerHTML"
+                                                    hx-trigger="click"
+                                                    hx-vals='{"check_dependencies": "true"}'
+                                                    hx-include="[name='csrfmiddlewaretoken']"
+                                                    onclick="event.stopPropagation();openDeleteModeModal()"
+                                                >
+                                                    <img
+                                                        src="{% static 'assets/icons/a4.svg' %}"
+                                                        alt=""
+                                                        width="18"
+                                                        height="18"
+                                                    >
+                                                </button>
+                                            {% endif %}
+                                            {% with rotate=forloop.first|yesno:"rotate-90," %}
+                                                <svg
+                                                    class="w-5 transform transition-transform {{ rotate }}"
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M19 9l-7 7-7-7"
+                                                    />
+                                                </svg>
+                                            {% endwith %}
+                                        </div>
+                                    </div>
+                                    {% with open_cls=forloop.first|yesno:"open," %}
+                                        <div class="accordion-content text-sm text-dark-500 {{ open_cls }}">
+                                            <div class="px-4 border-t border-primary-300 pt-3 pb-4">
+                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                                                    <div class="text-sm flex">
+                                                        <span
+                                                            class="text-dark-200 font-semibold w-40 shrink-0"
+                                                        >{% trans "Conditions" %}</span>
+                                                        <span class="flex-1 text-dark-200">
+                                                            <span class="pe-2">:</span>
+                                                            {% with conds=wr.conditions.all %}
+                                                                {% if conds %}
+                                                                    {% for c in conds %}
+                                                                        {{ c.field|humanize_field_name }}
+                                                                        {{ c.get_operator_display }}
+                                                                        {{ c.value }}
+                                                                        {% if not forloop.last %}
+                                                                            {{ c.get_logical_operator_display }}
+                                                                        {% endif %}
+                                                                    {% endfor %}
+                                                                {% else %}
+                                                                    —
+                                                                {% endif %}
+                                                            {% endwith %}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                                                    {% with steps=wr.steps.all %}
+                                                        {% if steps %}
+                                                            {% for step in steps %}
+                                                                <div class="text-sm flex md:col-span-2 items-start justify-between gap-3">
+                                                                    <span
+                                                                        class="text-dark-200 font-semibold w-40 shrink-0"
+                                                                    >{% trans "Approver" %} {{ step.order }}</span>
+                                                                    <span class="flex-1 text-dark-200">
+                                                                        <span class="pe-2">:</span>
+                                                                        {% if step.approver_type == "user" and step.approver_user %}
+                                                                            {{ step.approver_user.get_full_name|default:step.approver_user.username }}
+                                                                        {% else %}
+                                                                            {{ step.get_approver_type_display }}{% if step.role_identifier %}:
+                                                                                {{ step.role_identifier }}{% endif %}
+                                                                        {% endif %}
+                                                                    </span>
+                                                                </div>
+                                                            {% endfor %}
+                                                        {% else %}
+                                                            <div class="text-sm flex md:col-span-2">
+                                                                <span
+                                                                    class="text-dark-200 font-semibold w-40 shrink-0"
+                                                                >{% trans "Approver" %}</span>
+                                                                <span class="flex-1 text-dark-200"><span class="pe-2"
+                                                                    >:</span>—</span>
+                                                            </div>
+                                                        {% endif %}
+                                                    {% endwith %}
+                                                </div>
+
+                                                {% with rc=wr.rule_config %}
+                                                    {% with na=rc.notify_approver %}
+                                                        <div class="text-sm mb-4 flex md:col-span-2 items-start justify-between gap-3">
+                                                            <span
+                                                                class="text-dark-200 font-semibold w-40 shrink-0"
+                                                            >{% trans "Notify approver" %}</span>
+                                                            <span class="flex-1 text-dark-200">
+                                                                <span class="pe-2">:</span>
+                                                                {% if na.email or na.notification %}
+                                                                    {% if na.email %}{% trans "Email" %}{% endif %}
+                                                                    {% if na.email and na.notification %}
+                                                                        |
+                                                                    {% endif %}
+                                                                    {% if na.notification %}{% trans "Notification" %}{% endif %}
+                                                                {% else %}
+                                                                    —
+                                                                {% endif %}
+                                                            </span>
+                                                        </div>
+                                                    {% endwith %}
+                                                    <div>
+                                                        <div class="rule-nested-accordion border border-primary-200 rounded-md overflow-hidden bg-gray-50/50">
+                                                            <div
+                                                                class="cursor-pointer flex justify-between items-center w-full px-3 py-2.5 text-left bg-white text-gray-800 text-sm font-medium"
+                                                                onclick="toggleAccordion(this)"
+                                                            >
+                                                                <span>{% trans "On approval" %}</span>
+                                                                <svg
+                                                                    class="w-4 transform transition-transform"
+                                                                    xmlns="http://www.w3.org/2000/svg"
+                                                                    fill="none"
+                                                                    viewBox="0 0 24 24"
+                                                                    stroke="currentColor"
+                                                                >
+                                                                    <path
+                                                                        stroke-linecap="round"
+                                                                        stroke-linejoin="round"
+                                                                        stroke-width="2"
+                                                                        d="M19 9l-7 7-7-7"
+                                                                    />
+                                                                </svg>
+                                                            </div>
+                                                            <div class="accordion-content text-sm px-3 border-t border-primary-200 bg-white">
+                                                                <div class="py-3">
+                                                                    {% if rc.approval_actions %}
+                                                                        <div class="text-xs bg-gray-50 p-2 rounded-md space-y-2">
+                                                                            <div>
+                                                                                <span
+                                                                                    class="font-semibold"
+                                                                                >{% trans "Actions" %}:</span>
+                                                                                {{ rc.approval_actions|humanize_field_name }}
+                                                                            </div>
+                                                                            {% with ac=rc.approval_action_config %}
+                                                                                {% if ac.update_field or ac.update_value %}
+                                                                                    <div>
+                                                                                        <span
+                                                                                            class="font-semibold"
+                                                                                        >{% trans "Update field" %}:</span>
+                                                                                        {{ ac.update_field|default:"-"|humanize_field_name }}
+                                                                                        ->
+                                                                                        {{ ac.update_value|default:"-"|humanize_field_name }}
+                                                                                    </div>
+                                                                                {% endif %}
+                                                                                {% if ac.task_title or ac.task_description or ac.task_payload %}
+                                                                                    <div>
+                                                                                        <span
+                                                                                            class="font-semibold"
+                                                                                        >{% trans "Assign task" %}:</span>
+                                                                                        {{ ac.task_title|default:"-" }}
+                                                                                        {% if ac.task_payload.due_days %}
+                                                                                            | {% trans "Due in days" %}:
+                                                                                            {{ ac.task_payload.due_days }}{% endif %}
+                                                                                        {% if ac.task_payload.priority %}
+                                                                                            | {% trans "Priority" %}:
+                                                                                            {{ ac.task_payload.priority|humanize_field_name }}{% endif %}
+                                                                                        {% if ac.task_payload.status %}
+                                                                                            | {% trans "Status" %}:
+                                                                                            {{ ac.task_payload.status|humanize_field_name }}{% endif %}
+                                                                                    </div>
+                                                                                {% endif %}
+                                                                                {% if ac.email_template_id or ac.email_to or ac.email_also_sent_to %}
+                                                                                    <div>
+                                                                                        <span
+                                                                                            class="font-semibold"
+                                                                                        >{% trans "Mail" %}:</span>
+                                                                                        {% if ac.email_template_id %}{% trans "Template" %}
+                                                                                            {{ ac.email_template_id }}{% else %}{% trans "Template" %}
+                                                                                            -{% endif %}
+                                                                                        {% if ac.email_to %}
+                                                                                            | {% trans "To" %}:
+                                                                                            {{ ac.email_to }}{% endif %}
+                                                                                        {% if ac.email_also_sent_to %}
+                                                                                            |
+                                                                                            {% trans "Also send to" %}:
+                                                                                            {{ ac.email_also_sent_to }}{% endif %}
+                                                                                    </div>
+                                                                                {% endif %}
+                                                                                {% if ac.notification_template_id or ac.notification_to or ac.notification_also_sent_to or ac.notification_message %}
+                                                                                    <div>
+                                                                                        <span
+                                                                                            class="font-semibold"
+                                                                                        >{% trans "Notification" %}:</span>
+                                                                                        {% if ac.notification_template_id %}{% trans "Template" %}
+                                                                                            {{ ac.notification_template_id }}{% else %}{% trans "Template" %}
+                                                                                            -{% endif %}
+                                                                                        {% if ac.notification_to %}
+                                                                                            | {% trans "To" %}:
+                                                                                            {{ ac.notification_to }}{% endif %}
+                                                                                        {% if ac.notification_also_sent_to %}
+                                                                                            |
+                                                                                            {% trans "Also notify to" %}:
+                                                                                            {{ ac.notification_also_sent_to }}{% endif %}
+                                                                                        {% if ac.notification_message %}
+                                                                                            |
+                                                                                            {% trans "Custom message" %}:
+                                                                                            {{ ac.notification_message }}{% endif %}
+                                                                                    </div>
+                                                                                {% endif %}
+                                                                            {% endwith %}
+                                                                        </div>
+                                                                    {% else %}
+                                                                        <pre class="text-xs bg-gray-50 p-2 rounded-md overflow-x-auto whitespace-pre-wrap">—</pre>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="border-t border-primary-200">
+                                                                <div
+                                                                    class="cursor-pointer flex justify-between items-center w-full px-3 py-2.5 text-left bg-white text-gray-800 text-sm font-medium"
+                                                                    onclick="toggleAccordion(this)"
+                                                                >
+                                                                    <span>{% trans "On rejection" %}</span>
+                                                                    <svg
+                                                                        class="w-4 transform transition-transform"
+                                                                        xmlns="http://www.w3.org/2000/svg"
+                                                                        fill="none"
+                                                                        viewBox="0 0 24 24"
+                                                                        stroke="currentColor"
+                                                                    >
+                                                                        <path
+                                                                            stroke-linecap="round"
+                                                                            stroke-linejoin="round"
+                                                                            stroke-width="2"
+                                                                            d="M19 9l-7 7-7-7"
+                                                                        />
+                                                                    </svg>
+                                                                </div>
+                                                                <div class="accordion-content text-sm px-3 border-t border-primary-200 bg-white">
+                                                                    <div class="py-3">
+                                                                        {% if rc.rejection_actions %}
+                                                                            <div class="text-xs bg-gray-50 p-2 rounded-md space-y-2">
+                                                                                <div>
+                                                                                    <span
+                                                                                        class="font-semibold"
+                                                                                    >{% trans "Actions" %}:</span>
+                                                                                    {{ rc.rejection_actions|humanize_field_name }}
+                                                                                </div>
+                                                                                {% with ac=rc.rejection_action_config %}
+                                                                                    {% if ac.update_field or ac.update_value %}
+                                                                                        <div>
+                                                                                            <span
+                                                                                                class="font-semibold"
+                                                                                            >{% trans "Update field" %}:</span>
+                                                                                            {{ ac.update_field|default:"-"|humanize_field_name }}
+                                                                                            ->
+                                                                                            {{ ac.update_value|default:"-"|humanize_field_name }}
+                                                                                        </div>
+                                                                                    {% endif %}
+                                                                                    {% if ac.task_title or ac.task_description or ac.task_payload %}
+                                                                                        <div>
+                                                                                            <span
+                                                                                                class="font-semibold"
+                                                                                            >{% trans "Assign task" %}:</span>
+                                                                                            {{ ac.task_title|default:"-" }}
+                                                                                            {% if ac.task_payload.due_days %}
+                                                                                                |
+                                                                                                {% trans "Due in days" %}:
+                                                                                                {{ ac.task_payload.due_days }}{% endif %}
+                                                                                            {% if ac.task_payload.priority %}
+                                                                                                |
+                                                                                                {% trans "Priority" %}:
+                                                                                                {{ ac.task_payload.priority|humanize_field_name }}{% endif %}
+                                                                                            {% if ac.task_payload.status %}
+                                                                                                | {% trans "Status" %}:
+                                                                                                {{ ac.task_payload.status|humanize_field_name }}{% endif %}
+                                                                                        </div>
+                                                                                    {% endif %}
+                                                                                    {% if ac.email_template_id or ac.email_to or ac.email_also_sent_to %}
+                                                                                        <div>
+                                                                                            <span
+                                                                                                class="font-semibold"
+                                                                                            >{% trans "Mail" %}:</span>
+                                                                                            {% if ac.email_template_id %}{% trans "Template" %}
+                                                                                                {{ ac.email_template_id }}{% else %}{% trans "Template" %}
+                                                                                                -{% endif %}
+                                                                                            {% if ac.email_to %}
+                                                                                                | {% trans "To" %}:
+                                                                                                {{ ac.email_to }}{% endif %}
+                                                                                            {% if ac.email_also_sent_to %}
+                                                                                                |
+                                                                                                {% trans "Also send to" %}:
+                                                                                                {{ ac.email_also_sent_to }}{% endif %}
+                                                                                        </div>
+                                                                                    {% endif %}
+                                                                                    {% if ac.notification_template_id or ac.notification_to or ac.notification_also_sent_to or ac.notification_message %}
+                                                                                        <div>
+                                                                                            <span
+                                                                                                class="font-semibold"
+                                                                                            >{% trans "Notification" %}:</span>
+                                                                                            {% if ac.notification_template_id %}{% trans "Template" %}
+                                                                                                {{ ac.notification_template_id }}{% else %}{% trans "Template" %}
+                                                                                                -{% endif %}
+                                                                                            {% if ac.notification_to %}
+                                                                                                | {% trans "To" %}:
+                                                                                                {{ ac.notification_to }}{% endif %}
+                                                                                            {% if ac.notification_also_sent_to %}
+                                                                                                |
+                                                                                                {% trans "Also notify to" %}:
+                                                                                                {{ ac.notification_also_sent_to }}{% endif %}
+                                                                                            {% if ac.notification_message %}
+                                                                                                |
+                                                                                                {% trans "Custom message" %}:
+                                                                                                {{ ac.notification_message }}{% endif %}
+                                                                                        </div>
+                                                                                    {% endif %}
+                                                                                {% endwith %}
+                                                                            </div>
+                                                                        {% else %}
+                                                                            <pre class="text-xs bg-gray-50 p-2 rounded-md overflow-x-auto whitespace-pre-wrap">—</pre>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="border-t border-primary-200">
+                                                                <div
+                                                                    class="cursor-pointer flex justify-between items-center w-full px-3 py-2.5 text-left bg-white text-gray-800 text-sm font-medium"
+                                                                    onclick="toggleAccordion(this)"
+                                                                >
+                                                                    <span>{% trans "Record modification" %}</span>
+                                                                    <svg
+                                                                        class="w-4 transform transition-transform"
+                                                                        xmlns="http://www.w3.org/2000/svg"
+                                                                        fill="none"
+                                                                        viewBox="0 0 24 24"
+                                                                        stroke="currentColor"
+                                                                    >
+                                                                        <path
+                                                                            stroke-linecap="round"
+                                                                            stroke-linejoin="round"
+                                                                            stroke-width="2"
+                                                                            d="M19 9l-7 7-7-7"
+                                                                        />
+                                                                    </svg>
+                                                                </div>
+                                                                <div class="accordion-content text-sm px-3 border-t border-primary-200 bg-white">
+                                                                    <div class="py-3">
+                                                                        {% with rm=rc.record_modification %}
+                                                                            {% if rm.by_stage %}
+                                                                                <div class="text-xs bg-gray-50 p-2 rounded-md space-y-3">
+                                                                                    {% for stage_key in rm.by_stage %}
+                                                                                        {% with block=rm.by_stage|get_item:stage_key %}
+                                                                                            {% with border_cls=forloop.last|yesno:",border-b border-primary-100 pb-2" %}
+                                                                                                <div class="{{ border_cls }}">
+                                                                                                    <div class="font-semibold text-gray-800 mb-1">
+                                                                                                        {% trans "Stage" %}
+                                                                                                        {{ forloop.counter }}
+                                                                                                    </div>
+                                                                                                    <div class="space-y-1">
+                                                                                                        <div>
+                                                                                                            <span
+                                                                                                                class="font-semibold"
+                                                                                                            >{% trans "While waiting for approval" %}:</span>
+                                                                                                            {% with w=block.waiting %}
+                                                                                                                {% if w.scope == "all_fields" %}
+                                                                                                                    {% trans "All Fields" %}
+                                                                                                                {% elif w.scope == "specific_fields" %}
+                                                                                                                    {% if w.fields %}
+                                                                                                                        {% for f in w.fields %}
+                                                                                                                            {{ f|humanize_field_name }}{% if not forloop.last %},
+                                                                                                                            {% endif %}
+                                                                                                                        {% endfor %}
+                                                                                                                    {% else %}
+                                                                                                                        —
+                                                                                                                    {% endif %}
+                                                                                                                {% else %}
+                                                                                                                    {% trans "No Fields" %}
+                                                                                                                {% endif %}
+                                                                                                            {% endwith %}
+                                                                                                        </div>
+                                                                                                        <div>
+                                                                                                            <span
+                                                                                                                class="font-semibold"
+                                                                                                            >{% trans "When record is in rejected state" %}:</span>
+                                                                                                            {% with r=block.rejected %}
+                                                                                                                {% if r.scope == "all_fields" %}
+                                                                                                                    {% trans "All Fields" %}
+                                                                                                                {% elif r.scope == "specific_fields" %}
+                                                                                                                    {% if r.fields %}
+                                                                                                                        {% for f in r.fields %}
+                                                                                                                            {{ f|humanize_field_name }}{% if not forloop.last %},
+                                                                                                                            {% endif %}
+                                                                                                                        {% endfor %}
+                                                                                                                    {% else %}
+                                                                                                                        —
+                                                                                                                    {% endif %}
+                                                                                                                {% else %}
+                                                                                                                    {% trans "No Fields" %}
+                                                                                                                {% endif %}
+                                                                                                            {% endwith %}
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            {% endwith %}
+                                                                                        {% endwith %}
+                                                                                    {% endfor %}
+                                                                                </div>
+                                                                            {% elif rm.waiting_scope or rm.rejected_scope %}
+                                                                                <div class="text-xs bg-gray-50 p-2 rounded-md space-y-1">
+                                                                                    <div>
+                                                                                        <span
+                                                                                            class="font-semibold"
+                                                                                        >{% trans "While waiting for approval" %}:</span>
+                                                                                        {% if rm.waiting_scope == "all_fields" %}
+                                                                                            {% trans "All Fields" %}
+                                                                                        {% elif rm.waiting_scope == "specific_fields" %}
+                                                                                            {% if rm.waiting_fields %}
+                                                                                                {% for f in rm.waiting_fields %}
+                                                                                                    {{ f|humanize_field_name }}{% if not forloop.last %},
+                                                                                                    {% endif %}
+                                                                                                {% endfor %}
+                                                                                            {% else %}
+                                                                                                —
+                                                                                            {% endif %}
+                                                                                        {% else %}
+                                                                                            {% trans "No Fields" %}
+                                                                                        {% endif %}
+                                                                                    </div>
+                                                                                    <div>
+                                                                                        <span
+                                                                                            class="font-semibold"
+                                                                                        >{% trans "When record is in rejected state" %}:</span>
+                                                                                        {% if rm.rejected_scope == "all_fields" %}
+                                                                                            {% trans "All Fields" %}
+                                                                                        {% elif rm.rejected_scope == "specific_fields" %}
+                                                                                            {% if rm.rejected_fields %}
+                                                                                                {% for f in rm.rejected_fields %}
+                                                                                                    {{ f|humanize_field_name }}{% if not forloop.last %},
+                                                                                                    {% endif %}
+                                                                                                {% endfor %}
+                                                                                            {% else %}
+                                                                                                —
+                                                                                            {% endif %}
+                                                                                        {% else %}
+                                                                                            {% trans "No Fields" %}
+                                                                                        {% endif %}
+                                                                                    </div>
+                                                                                </div>
+                                                                            {% elif rm %}
+                                                                                <pre class="text-xs bg-gray-50 p-2 rounded-md overflow-x-auto whitespace-pre-wrap">{{ rm|humanize_field_name }}</pre>
+                                                                            {% else %}
+                                                                                <pre class="text-xs bg-gray-50 p-2 rounded-md overflow-x-auto whitespace-pre-wrap">—</pre>
+                                                                            {% endif %}
+                                                                        {% endwith %}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% endwith %}
+                                            </div>
+                                        </div>
+                                    {% endwith %}
+                                </div>
+                            {% endwith %}
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="border border-dashed border-gray-300 rounded-md p-6 text-center text-sm text-gray-500 mb-6">
+                        {% trans "No process rules yet. Use Add rule in the header above." %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        {% include "403.html" with embed=True %}
+    {% endif %}
+{% endblock %}

@@ -1,13 +1,16 @@
-<div class="bg-white rounded-lg border border-primary-300 p-4 shadow-sm" style="width: 30vh;">
-    <div class="flex items-center gap-4 pr-8">
-        <!-- Icon with robust image handling -->
-        <div class="bg-[#E0F2F1] p-3 rounded-xl flex items-center justify-center" style="min-width: 48px; min-height: 48px;">
-                <i class="fas fa-chart-line text-teal-500 text-xl"></i>
+<div class="bg-white rounded-xl border border-primary-300 p-4 shadow-sm" style="width: 30vh">
+    <div class="flex items-center gap-3 sm:gap-4">
+        <div
+            class="bg-[#E0F2F1] p-2 sm:p-3 rounded-xl flex-shrink-0"
+            style="min-width: 48px; min-height: 48px"
+        >
+            <i class="fas fa-chart-line text-teal-500 text-xl"></i>
         </div>
-    <div class="flex flex-col space-y-2">
-        <h3 class="text-sm font-medium text-gray-500">{{ title }}</h3>
-        <div class="flex items-baseline space-x-2">
-            <span class="text-2xl font-bold text-gray-900">{{ value }}</span>
+        <div class="min-w-0 flex-1">
+            <h3 class="text-gray-500 text-xs sm:text-sm mb-1 truncate">{{ title }}</h3>
+            <div class="flex items-center gap-3">
+                <span class="text-2xl font-bold text-gray-900">{{ value }}</span>
+            </div>
         </div>
     </div>
 </div>

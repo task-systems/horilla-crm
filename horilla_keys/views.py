@@ -84,7 +84,7 @@ class ShortKeyListView(LoginRequiredMixin, HorillaListView):
     bulk_update_option = False
     bulk_export_option = False
     store_ordered_ids = True
-    table_height_as_class = "h-[500px]"
+    table_height_as_class = "h-[calc(_100vh_-_310px_)]"
     list_column_visibility = False
 
     columns = [(_("Page"), "get_page_title"), (_("Key"), "custom_key_col")]

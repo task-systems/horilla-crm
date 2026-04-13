@@ -219,6 +219,19 @@ class ForecastTypeTabMixin:
             else {}
         )
 
+        # Pre-fetch once — used inside the per-period loop
+        cached_user = None
+        if user_id:
+            try:
+                cached_user = User.objects.select_related("role").get(id=user_id)
+            except User.DoesNotExist:
+                cached_user = None
+
+        if not user_id:
+            all_active_users = list(
+                User.objects.select_related("role").filter(is_active=True)
+            )
+
         period_forecasts = []
         for period in periods_list:
             user_forecasts = forecasts_by_period.get(period.id, [])
@@ -230,8 +243,8 @@ class ForecastTypeTabMixin:
                 # SINGLE USER VIEW - This is where the fix is critical
                 if not user_forecasts:
                     # Create empty forecast for user with no data
-                    try:
-                        user = User.objects.get(id=user_id)
+                    user = cached_user
+                    if user:
                         empty_forecast = Forecast()
                         empty_forecast.id = f"empty_{period.id}_{user_id}"
                         empty_forecast.period = period
@@ -262,7 +275,7 @@ class ForecastTypeTabMixin:
                             empty_forecast.actual_amount = 0
 
                         user_forecasts = [empty_forecast]
-                    except User.DoesNotExist:
+                    else:
                         user_forecasts = []
 
                 # Create aggregated forecast
@@ -314,15 +327,9 @@ class ForecastTypeTabMixin:
             else:
                 users_with_data = []
                 users_without_data = []
-                all_active_users = User.objects.select_related("role").filter(
-                    is_active=True
-                )
-                user_targets = self.get_target_for_period_bulk(
-                    [period], forecast_type, None
-                )
                 user_target_map = {
                     target.assigned_to_id: target
-                    for target in user_targets.get(period.id, [])
+                    for target in targets_data.get(period.id, [])
                 }
 
                 for user in all_active_users:

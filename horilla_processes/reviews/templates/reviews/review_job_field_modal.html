@@ -1,0 +1,74 @@
+{% load i18n static %}
+
+<form
+    hx-post="{% url 'reviews:review_job_field_review_view' job.pk %}"
+    hx-target="#detailModalBox"
+    hx-swap="innerHTML"
+>
+    {% csrf_token %}
+    <input type="hidden" name="field_key" value="{{ field_key }}">
+    <div class="relative bg-white rounded-lg shadow-sm">
+        <div class="p-5">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-md font-semibold">{% trans "Field Review" %}</h2>
+                <button
+                    type="button"
+                    onclick="closeDetailModal()"
+                    class="text-gray-500 hover:text-red-500 text-xl cursor-pointer"
+                >
+                    <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}">
+                </button>
+            </div>
+
+            <div class="text-sm mb-4">
+                <div><span class="font-semibold"> {{ field_label }} </span> : {{ field_value|default:"-" }}</div>
+                {% if field_status %}
+                    <div class="mt-1">
+                        <span class="font-semibold">{% trans "Your Decision" %}:</span>
+                        {% if field_status == "approved" %}
+                            <span
+                                class="px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs"
+                            >{% trans "Approved" %}</span>
+                        {% elif field_status == "rejected" %}
+                            <span
+                                class="px-2 py-0.5 rounded bg-red-100 text-red-700 text-xs"
+                            >{% trans "Rejected" %}</span>
+                        {% else %}
+                            <span
+                                class="px-2 py-0.5 rounded bg-gray-100 text-gray-600 text-xs"
+                            >{% trans "Pending" %}</span>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <label class="text-xs text-color-600" for="field_comment">{% trans "Comment" %}</label>
+            <textarea
+                id="field_comment"
+                name="field_comment"
+                rows="3"
+                class="text-color-600 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
+                placeholder="{% trans 'Add reason for this field decision' %}"
+            >{{ field_comment }}</textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 p-5">
+            <button
+                type="submit"
+                name="field_decision"
+                value="rejected"
+                class="text-sm px-4 py-2 bg-[#f11633] rounded-md text-white"
+            >
+                {% trans "Reject" %}
+            </button>
+            <button
+                type="submit"
+                name="field_decision"
+                value="approved"
+                class="text-sm px-4 py-2 bg-[#21b442] rounded-md text-white"
+            >
+                {% trans "Approve" %}
+            </button>
+        </div>
+    </div>
+</form>

@@ -1,0 +1,22 @@
+"""App configuration for the `reviews` app."""
+
+# First party imports (Horilla)
+from horilla.apps import AppLauncher
+from horilla.utils.translation import gettext_lazy as _
+
+
+class HorillaReviewProcessConfig(AppLauncher):
+    """Review Process app configuration."""
+
+    default = True
+    default_auto_field = "django.db.models.BigAutoField"
+
+    name = "horilla_processes.reviews"
+    verbose_name = _("Review Process")
+
+    # Mounted under this prefix by AppLauncher
+    url_prefix = "review-process/"
+    url_module = "horilla_processes.reviews.urls"
+    url_namespace = "reviews"
+
+    auto_import_modules = ["registration", "signals", "menu"]

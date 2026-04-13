@@ -4,8 +4,8 @@
 <div class="p-6">
     <div class="flex justify-between items-center mb-4">
         <h2 class="text-lg font-semibold text-gray-800">{% trans "Select Fields for Template" %}</h2>
-        <button type="button" onclick="closeContentModal();" class="text-gray-500  text-xl cursor-pointer">
-            <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}" />
+        <button type="button" onclick="closeContentModal()" class="text-gray-500 text-xl cursor-pointer">
+            <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}">
         </button>
     </div>
 
@@ -14,12 +14,14 @@
             {{ error }}
         </div>
     {% else %}
-        <form id="templateDownloadForm"
-              hx-post="{% url 'horilla_core:download_template' %}"
-              hx-ext="download"
-              hx-trigger="submit"
-              hx-on::after-request="closeContentModal();"
-              hx-swap="none">
+        <form
+            id="templateDownloadForm"
+            hx-post="{% url 'horilla_core:download_template' %}"
+            hx-ext="download"
+            hx-trigger="submit"
+            hx-on::after-request="closeContentModal();"
+            hx-swap="none"
+        >
             {% csrf_token %}
             <input type="hidden" name="module" value="{{ module }}">
             <input type="hidden" name="app_label" value="{{ app_label }}">
@@ -33,10 +35,12 @@
             </div>
 
             <div class="mb-4">
-                <button type="button"
-                        id="toggleSelectAllBtn"
-                        class="text-primary-600 hover:text-primary-800 text-sm font-semibold"
-                        onclick="toggleSelectAllFields()">
+                <button
+                    type="button"
+                    id="toggleSelectAllBtn"
+                    class="text-primary-600 hover:text-primary-800 text-sm font-semibold"
+                    onclick="toggleSelectAllFields()"
+                >
                     <span id="selectAllText">{% trans "Select All" %}</span>
                 </button>
             </div>
@@ -46,12 +50,17 @@
                     {% for field in fields %}
                         <div class="p-2">
                             <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox"
-                                       name="selected_fields"
-                                       value="{{ field.name }}"
-                                       class="w-4 h-4 bg-[#E9EDF7] rounded-sm accent-[#e54f38]"
-                                       {% if field.required %}checked data-required="true"{% endif %}
-                                       onchange="updateSelectAllButton()">
+                                <input
+                                    type="checkbox"
+                                    name="selected_fields"
+                                    value="{{ field.name }}"
+                                    class="w-4 h-4 bg-[#E9EDF7] rounded-sm accent-[#e54f38]"
+                                    {% if field.required %}
+                                        checked
+                                        data-required="true"
+                                    {% endif %}
+                                    onchange="updateSelectAllButton()"
+                                >
                                 <span class="flex-1 text-sm text-gray-700">
                                     {{ field.verbose_name }}
                                     {% if field.required %}
@@ -65,8 +74,10 @@
             </div>
 
             <div class="flex justify-end gap-2">
-                <button type="submit"
-                        class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition">
+                <button
+                    type="submit"
+                    class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition"
+                >
                     <i class="fa-solid fa-download mr-2"></i>
                     {% trans "Download Template" %}
                 </button>

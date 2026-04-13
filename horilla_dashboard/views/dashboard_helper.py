@@ -349,7 +349,12 @@ def apply_conditions(queryset, conditions):
         operator = condition.operator
         value = condition.value
 
-        if not value and operator not in ["is_null", "is_not_null"]:
+        if not value and operator not in [
+            "is_null",
+            "is_not_null",
+            "isnull",
+            "isnotnull",
+        ]:
             continue
 
         try:
@@ -409,7 +414,7 @@ def apply_conditions(queryset, conditions):
             if operator in ["equals", "exact"]:
                 queryset = queryset.filter(**{field: converted_value})
 
-            elif operator == "not_equals":
+            elif operator in ["not_equals", "ne"]:
                 queryset = queryset.exclude(**{field: converted_value})
 
             elif operator == "greater_than":
@@ -418,28 +423,34 @@ def apply_conditions(queryset, conditions):
             elif operator == "less_than":
                 queryset = queryset.filter(**{f"{field}__lt": converted_value})
 
-            elif operator == "greater_equal":
+            elif operator in ["greater_equal", "gte"]:
                 queryset = queryset.filter(**{f"{field}__gte": converted_value})
 
-            elif operator == "less_equal":
+            elif operator in ["less_equal", "lte"]:
                 queryset = queryset.filter(**{f"{field}__lte": converted_value})
 
-            elif operator == "contains":
+            elif operator == "gt":
+                queryset = queryset.filter(**{f"{field}__gt": converted_value})
+
+            elif operator == "lt":
+                queryset = queryset.filter(**{f"{field}__lt": converted_value})
+
+            elif operator in ["contains", "icontains"]:
                 queryset = queryset.filter(**{f"{field}__icontains": value})
 
             elif operator == "not_contains":
                 queryset = queryset.exclude(**{f"{field}__icontains": value})
 
-            elif operator == "starts_with":
+            elif operator in ["starts_with", "istartswith"]:
                 queryset = queryset.filter(**{f"{field}__istartswith": value})
 
-            elif operator == "ends_with":
+            elif operator in ["ends_with", "iendswith"]:
                 queryset = queryset.filter(**{f"{field}__iendswith": value})
 
-            elif operator == "is_null":
+            elif operator in ["is_null", "isnull"]:
                 queryset = queryset.filter(**{f"{field}__isnull": True})
 
-            elif operator == "is_not_null":
+            elif operator in ["is_not_null", "isnotnull"]:
                 queryset = queryset.filter(**{f"{field}__isnull": False})
 
             elif operator == "in":

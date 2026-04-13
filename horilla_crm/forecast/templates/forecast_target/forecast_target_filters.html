@@ -19,12 +19,14 @@
                     hx-include="[name='period']"
                 >
                     {% for forecast_type in forecast_types %}
-                    <option
-                        value="{{ forecast_type.pk }}"
-                        {% if current_forecast_type_id == forecast_type.pk|stringformat:"s" or forecast_type.pk == default_forecast_type.pk and not current_forecast_type_id %}selected{% endif %}
-                    >
-                        {{ forecast_type }}
-                    </option>
+                        <option
+                            value="{{ forecast_type.pk }}"
+                            {% if current_forecast_type_id == forecast_type.pk|stringformat:"s" or forecast_type.pk == default_forecast_type.pk and not current_forecast_type_id %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ forecast_type }}
+                        </option>
                     {% endfor %}
                 </select>
             </div>
@@ -44,12 +46,14 @@
                     hx-include="[name='forecast_type']"
                 >
                     {% for period in periods %}
-                    <option
-                        value="{{ period.pk }}"
-                        {% if current_period_id == period.pk|stringformat:"s" or period.pk == default_period.pk and not current_period_id %}selected{% endif %}
-                    >
-                        {{ period }}
-                    </option>
+                        <option
+                            value="{{ period.pk }}"
+                            {% if current_period_id == period.pk|stringformat:"s" or period.pk == default_period.pk and not current_period_id %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ period }}
+                        </option>
                     {% endfor %}
                 </select>
             </div>

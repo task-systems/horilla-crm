@@ -99,11 +99,6 @@ urlpatterns = [
         name="potential_duplicates_tab",
     ),
     path(
-        "update-merge-button/",
-        views.UpdateMergeButtonView.as_view(),
-        name="update_merge_button",
-    ),
-    path(
         "merge-duplicates-compare/",
         views.MergeDuplicatesCompareView.as_view(),
         name="merge_duplicates_compare",

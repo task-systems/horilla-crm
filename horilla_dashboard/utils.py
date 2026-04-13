@@ -5,6 +5,7 @@ import logging
 import traceback
 import uuid
 from datetime import datetime, timedelta
+from decimal import Decimal
 
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -195,7 +196,24 @@ def apply_date_range_to_queryset(
 
 class DefaultDashboardGenerator:
     """
-    Simple dashboard generator for specific predefined models
+    Simple dashboard generator for specific predefined models.
+
+    Each ``extra_models`` entry may include:
+
+    - ``chart_func``: a single callable ``(generator, queryset, model_info) -> dict``,
+      or a list/tuple of such callables (multiple charts per registration).
+    - ``table_func``: a single callable ``(generator, model_info) -> dict``, or a
+      list/tuple of such callables (multiple tables per registration).
+    - ``kpi_func``: optional callable or list of callables
+      ``(generator, model_info) -> dict | list[dict] | None``. Use
+      ``generator.get_queryset(model)`` then any filters, ``.count()``,
+      ``.aggregate(...)``, etc. Each dict needs ``title`` and ``value``. Optional:
+      ``icon``, ``color`` or ``color_style``, ``url``, ``section``. Display
+      formatting is inferred from ``value`` (ints → whole numbers, floats/Decimal →
+      decimals, str → plain text) unless you override with ``type``:
+      ``count`` | ``decimal`` | ``text``.
+    - ``include_kpi``: if True and ``kpi_func`` is not set, adds one KPI with the
+      total row count (original behaviour).
     """
 
     extra_models = []
@@ -223,6 +241,105 @@ class DefaultDashboardGenerator:
         """Map KPI color keyword to stable bg/icon hex colors."""
         key = (color_name or "").strip().lower()
         return cls.KPI_COLOR_STYLES.get(key, cls.KPI_COLOR_STYLES["primary"])
+
+    @staticmethod
+    def _iter_callables(value):
+        """Turn a single callable or a list/tuple of callables into a list."""
+        if value is None:
+            return []
+        if callable(value):
+            return [value]
+        if isinstance(value, (list, tuple)):
+            return [f for f in value if callable(f)]
+        return []
+
+    @staticmethod
+    def _normalize_kpi_results(result):
+        """Normalize kpi_func return value into a list of dicts."""
+        if result is None:
+            return []
+        if isinstance(result, dict):
+            return [result]
+        if isinstance(result, (list, tuple)):
+            return [x for x in result if isinstance(x, dict)]
+        return []
+
+    @staticmethod
+    def _infer_kpi_display_type(value):
+        """Choose template formatting from the computed value (if ``type`` omitted)."""
+        if value is None:
+            return "decimal"
+        if isinstance(value, str):
+            return "text"
+        if isinstance(value, bool):
+            return "count"
+        if isinstance(value, int):
+            return "count"
+        if isinstance(value, float):
+            return "decimal"
+        if isinstance(value, Decimal):
+            return "decimal"
+        return "text"
+
+    def _finalize_kpi_dict(self, raw, model_info, model_class):
+        """
+        Fill defaults for a KPI dict from ``kpi_func``.
+
+        Expected keys on ``raw``: ``title``, ``value`` (required). Optional:
+        ``icon``, ``color``, ``color_style``, ``url``, ``section``, ``type``
+        (only if you need to override inferred formatting).
+        """
+        if not isinstance(raw, dict):
+            return None
+        title = raw.get("title")
+        if title is None or str(title).strip() == "":
+            return None
+        if "value" not in raw:
+            return None
+
+        section_info = get_section_info_for_model(model_class)
+        url = raw.get("url")
+        if url is None:
+            url = section_info.get("url")
+        section = raw.get("section")
+        if section is None:
+            section = section_info.get("section")
+
+        icon = raw.get("icon") or model_info.get("icon") or "fa-chart-bar"
+        color = (
+            raw.get("color")
+            if raw.get("color") is not None
+            else model_info.get("color")
+        )
+
+        color_style = raw.get("color_style")
+        if not (
+            isinstance(color_style, dict)
+            and color_style.get("bg")
+            and color_style.get("icon")
+        ):
+            color_style = self.resolve_kpi_color_style(color)
+
+        val = raw["value"]
+        explicit_type = raw.get("type")
+        if explicit_type in ("count", "decimal", "text"):
+            kpi_type = explicit_type
+        else:
+            kpi_type = self._infer_kpi_display_type(val)
+
+        if val is None and kpi_type in ("count", "decimal"):
+            val = 0
+
+        return {
+            "title": title,
+            "value": val,
+            "icon": icon,
+            "color": color,
+            "color_style": color_style,
+            "url": url,
+            "section": section,
+            "type": kpi_type,
+        }
 
     def __init__(
         self, user, company=None, date_range=None, date_from=None, date_to=None
@@ -330,37 +447,46 @@ class DefaultDashboardGenerator:
         return has_view_all or has_view_own
 
     def generate_kpi_data(self):
-        """Generate simple count KPIs only if include_kpi flag is True"""
+        """Generate KPIs from ``kpi_func`` and/or legacy ``include_kpi``."""
         kpis = []
 
         for model_info in self.models:
             try:
                 model_class = model_info["model"]
 
-                # Only generate KPI if include_kpi flag is explicitly set to True
-                include_kpi = model_info.get("include_kpi", False)
-
-                if not include_kpi:
+                if not self.has_model_permission(model_class):
                     continue
 
-                if self.has_model_permission(model_class):
-                    count = self.get_queryset(model_info["model"]).count()
+                kpi_funcs = self._iter_callables(model_info.get("kpi_func"))
+                if kpi_funcs:
+                    for kpi_func in kpi_funcs:
+                        result = kpi_func(self, model_info)
+                        for raw in self._normalize_kpi_results(result):
+                            finalized = self._finalize_kpi_dict(
+                                raw, model_info, model_class
+                            )
+                            if finalized:
+                                kpis.append(finalized)
+                    continue
 
-                    section_info = get_section_info_for_model(model_class)
+                if not model_info.get("include_kpi", False):
+                    continue
 
-                    kpi = {
-                        "title": f"Total {model_info['name']}",
-                        "value": count,
-                        "icon": model_info["icon"],
-                        "color": model_info["color"],
-                        "color_style": self.resolve_kpi_color_style(
-                            model_info.get("color")
-                        ),
-                        "url": section_info["url"],
-                        "section": section_info["section"],
-                        "type": "count",
-                    }
-                    kpis.append(kpi)
+                count = self.get_queryset(model_info["model"]).count()
+                section_info = get_section_info_for_model(model_class)
+                kpi = {
+                    "title": f"Total {model_info['name']}",
+                    "value": count,
+                    "icon": model_info["icon"],
+                    "color": model_info["color"],
+                    "color_style": self.resolve_kpi_color_style(
+                        model_info.get("color")
+                    ),
+                    "url": section_info["url"],
+                    "section": section_info["section"],
+                    "type": "count",
+                }
+                kpis.append(kpi)
 
             except Exception as e:
                 traceback.print_exc()
@@ -382,15 +508,22 @@ class DefaultDashboardGenerator:
                 queryset = self.get_queryset(model_class)
                 count = queryset.count()
 
-                chart_func = model_info.get("chart_func")
+                chart_funcs = self._iter_callables(model_info.get("chart_func"))
+                if not chart_funcs:
+                    continue
 
-                if callable(chart_func):
+                base_name = model_info.get(
+                    "name", model_class._meta.verbose_name_plural
+                )
+                multi = len(chart_funcs) > 1
+
+                for idx, chart_func in enumerate(chart_funcs):
                     if count == 0:
-                        # Return empty chart with no_record message
+                        title = base_name
+                        if multi:
+                            title = f"{base_name} ({idx + 1})"
                         chart = {
-                            "title": model_info.get(
-                                "name", model_class._meta.verbose_name_plural
-                            ),
+                            "title": title,
                             "type": "pie",  # Default type, won't be rendered anyway
                             "data": {
                                 "labels": [],
@@ -399,7 +532,7 @@ class DefaultDashboardGenerator:
                                 "labelField": "",
                             },
                             "is_empty": True,
-                            "no_record_msg": f"No {model_info.get('name', model_class._meta.verbose_name_plural).lower()} found.",
+                            "no_record_msg": f"No {base_name.lower()} found.",
                         }
                         charts.append(chart)
                     else:
@@ -496,8 +629,7 @@ class DefaultDashboardGenerator:
                 if not self.has_model_permission(model_class):
                     continue
 
-                table_func = model_info.get("table_func")
-                if callable(table_func):
+                for table_func in self._iter_callables(model_info.get("table_func")):
                     table = table_func(self, model_info)
                     if table:
                         tables.append(table)

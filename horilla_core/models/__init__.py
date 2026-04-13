@@ -35,8 +35,8 @@ from horilla_core.models.filters import (
 from horilla_core.models.business_hours import (
     BusinessHourDayMixin,
     BusinessHour,
-    Holiday,
 )
+from horilla_core.models.holidays import Holiday
 from horilla_core.models.finance import (
     MultipleCurrency,
     DatedConversionRate,

@@ -184,6 +184,7 @@ class HorillaNavView(TemplateView):
         context["gap_enabled"] = self.gap_enabled
         context["enable_actions"] = self.enable_actions
         context["navbar_indication_attrs"] = self.get_navbar_indication_attrs()
+        context["save_to_list_option"] = getattr(self, "save_to_list_option", True)
         # Saved filter lists: user's own + public ones for this model (by position)
         context["available_saved_filter_lists"] = list(
             SavedFilterList.all_objects.filter(model_name=self.model_name)

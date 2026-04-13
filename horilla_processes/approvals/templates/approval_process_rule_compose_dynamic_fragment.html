@@ -1,0 +1,377 @@
+{% load i18n %}
+{% with sel_class="js-example-basic-single headselect text-color-600 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600" input_class="text-color-600 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600" %}
+    <div id="approval-compose-dynamic">
+        <p class="text-xs font-semibold text-color-600 mb-2">{% trans "Who should approve" %}</p>
+        <input type="hidden" name="steps-TOTAL_FORMS" id="id_steps-TOTAL_FORMS" value="{{ rows|length }}">
+        {% for row in rows %}
+            <div class="mb-3 p-3 border border-dark-50 rounded-md bg-gray-50/40 approval-step-row">
+                <div class="flex items-center justify-between gap-2 mb-2">
+                    <span class="text-xs text-gray-500 w-5">{{ forloop.counter }}</span>
+                    <button
+                        type="button"
+                        class="text-red-500 text-sm px-1"
+                        hx-post="{{ dynamic_url }}"
+                        hx-target="#approval-compose-dynamic"
+                        hx-swap="outerHTML"
+                        hx-include="#approval-process-rule-compose-form"
+                        hx-vals='{"action":"remove","row_idx":"{{ forloop.counter0 }}"}'
+                    >
+                        -
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs text-color-600">{% trans "Order" %}</label>
+                        <input
+                            type="number"
+                            min="1"
+                            name="steps-{{ forloop.counter0 }}-order"
+                            value="{{ row.order }}"
+                            class="{{ input_class }}"
+                        >
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs text-color-600">{% trans "Approver type" %}</label>
+                        <select
+                            name="steps-{{ forloop.counter0 }}-approver_type"
+                            class="{{ sel_class }}"
+                            hx-post="{{ dynamic_url }}"
+                            hx-target="#approval-compose-dynamic"
+                            hx-swap="outerHTML"
+                            hx-include="#approval-process-rule-compose-form"
+                            hx-vals='{"action":"refresh"}'
+                            hx-trigger="change"
+                        >
+                            <option value="user" {% if row.approver_type == "user" %}selected{% endif %}>
+                                {% trans "User" %}
+                            </option>
+                            <option value="role" {% if row.approver_type == "role" %}selected{% endif %}>
+                                {% trans "Role" %}
+                            </option>
+                            <option
+                                value="owner_manager"
+                                {% if row.approver_type == "owner_manager" %}
+                                    selected
+                                {% endif %}
+                            >
+                                {% trans "Record owner" %}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        {% if row.approver_type == "role" %}
+                            <label class="text-xs text-color-600">{% trans "Role" %}</label>
+                            <select name="steps-{{ forloop.counter0 }}-role_identifier" class="{{ sel_class }}">
+                                <option value="">{% trans "Select role" %}</option>
+                                {% for role in roles %}
+                                    <option
+                                        value="{{ role.role_name }}"
+                                        {% if row.role_identifier == role.role_name %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ role.role_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <input type="hidden" name="steps-{{ forloop.counter0 }}-approver_user" value="">
+                        {% elif row.approver_type == "owner_manager" %}
+                            <label class="text-xs text-color-600">{% trans "Record owner" %}</label>
+                            <div class="text-xs text-gray-500 p-2 border border-dark-50 rounded-md bg-gray-50">
+                                {% trans "Approver will be resolved from the record owner at runtime." %}
+                            </div>
+                            <input type="hidden" name="steps-{{ forloop.counter0 }}-approver_user" value="">
+                            <input type="hidden" name="steps-{{ forloop.counter0 }}-role_identifier" value="">
+                        {% else %}
+                            <label class="text-xs text-color-600">{% trans "User" %}</label>
+                            <select name="steps-{{ forloop.counter0 }}-approver_user" class="{{ sel_class }}">
+                                <option value="">{% trans "Select user" %}</option>
+                                {% for user in users %}
+                                    <option
+                                        value="{{ user.id }}"
+                                        {% if row.approver_user|stringformat:"s" == user.id|stringformat:"s" %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ user }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <input type="hidden" name="steps-{{ forloop.counter0 }}-role_identifier" value="">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        <button
+            type="button"
+            class="text-green-600 text-xs mb-2"
+            hx-post="{{ dynamic_url }}"
+            hx-target="#approval-compose-dynamic"
+            hx-swap="outerHTML"
+            hx-include="#approval-process-rule-compose-form"
+            hx-vals='{"action":"add"}'
+        >
+            + {% trans "Add More Approvers" %}
+        </button>
+
+        {% if has_multiple_approvers %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 mt-3">
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs text-color-600">{% trans "Set overall approval method" %}</label>
+                    <select
+                        name="who_overall_method"
+                        class="{{ sel_class }}"
+                        hx-post="{{ dynamic_url }}"
+                        hx-target="#approval-compose-dynamic"
+                        hx-swap="outerHTML"
+                        hx-include="#approval-process-rule-compose-form"
+                        hx-vals='{"action":"refresh"}'
+                        hx-trigger="change"
+                    >
+                        <option value="anyone" {% if who_overall_method == "anyone" %}selected{% endif %}>
+                            {% trans "Anyone" %}
+                        </option>
+                        <option value="everyone" {% if who_overall_method == "everyone" %}selected{% endif %}>
+                            {% trans "Everyone" %}
+                        </option>
+                    </select>
+                </div>
+                {% if who_overall_method == "everyone" %}
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs text-color-600">{% trans "Specify the order" %}</label>
+                        <select
+                            name="who_approval_order"
+                            class="{{ sel_class }}"
+                            hx-post="{{ dynamic_url }}"
+                            hx-target="#approval-compose-dynamic"
+                            hx-swap="outerHTML"
+                            hx-include="#approval-process-rule-compose-form"
+                            hx-vals='{"action":"refresh"}'
+                            hx-trigger="change"
+                        >
+                            <option value="sequential" {% if who_approval_order == "sequential" %}selected{% endif %}>
+                                {% trans "Sequential" %}
+                            </option>
+                            <option value="parallel" {% if who_approval_order == "parallel" %}selected{% endif %}>
+                                {% trans "Parallel" %}
+                            </option>
+                        </select>
+                    </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <input type="hidden" name="who_overall_method" value="anyone">
+            <input type="hidden" name="who_approval_order" value="sequential">
+        {% endif %}
+
+        <div class="rounded-md border border-dark-50 mb-4">
+            <div class="p-3 grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                <span class="text-xs font-semibold text-color-700">{% trans "Notify approver" %}</span>
+                <label class="inline-flex items-center gap-2 text-xs text-color-700">
+                    <input
+                        type="checkbox"
+                        name="notify_approver_email"
+                        class="w-4 h-4 bg-[#E9EDF7] rounded-sm accent-[#e54f38]"
+                        {% if notify_approver_email %}
+                            checked
+                        {% endif %}
+                    >
+                    {% trans "Email" %}
+                </label>
+                <label class="inline-flex items-center gap-2 text-xs text-color-700">
+                    <input
+                        type="checkbox"
+                        name="notify_approver_notification"
+                        class="w-4 h-4 bg-[#E9EDF7] rounded-sm accent-[#e54f38]"
+                        {% if notify_approver_notification %}
+                            checked
+                        {% endif %}
+                    >
+                    {% trans "Notification" %}
+                </label>
+            </div>
+        </div>
+
+        <div class="rounded-md border border-dark-50 mb-4">
+            <div class="px-3 py-2 text-xs font-semibold text-color-700">{% trans "Record Modification" %}</div>
+            <div class="p-3">
+                {% if stage_wise %}
+                    <p class="text-xs text-gray-500 mb-3">
+                        {% trans "Configure field access per approval stage (sequential approval)." %}
+                    </p>
+                    <div class="text-xs font-semibold text-color-700 mb-2">
+                        a) {% trans "While waiting for approval" %}
+                    </div>
+                    {% for row in waiting_stage_rows %}
+                        <div class="mb-4 pb-4 {% if not forloop.last %}border-b border-primary-100{% endif %}">
+                            <div class="text-xs font-medium text-gray-700 mb-2">
+                                {% trans "Stage" %} {{ row.stage_num }}
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
+                                <div class="flex flex-col gap-1 md:col-span-2">
+                                    <label class="text-xs text-color-600">{% trans "Field access" %}</label>
+                                    <select
+                                        name="record_waiting_scope_{{ row.stage_key }}"
+                                        class="{{ sel_class }}"
+                                        hx-get="{% url 'approvals:approval_process_rule_record_fields_fragment_view' %}?process_pk={{ process_pk }}&side=waiting&stage_key={{ row.stage_key }}"
+                                        hx-trigger="change"
+                                        hx-target="#record-waiting-fields-{{ row.stage_key }}"
+                                        hx-swap="innerHTML"
+                                        hx-include="#approval-process-rule-compose-form"
+                                    >
+                                        <option value="no_fields" {% if row.scope == "no_fields" %}selected{% endif %}>
+                                            {% trans "No Fields" %}
+                                        </option>
+                                        <option
+                                            value="all_fields"
+                                            {% if row.scope == "all_fields" %}
+                                                selected
+                                            {% endif %}
+                                        >
+                                            {% trans "All Fields" %}
+                                        </option>
+                                        <option
+                                            value="specific_fields"
+                                            {% if row.scope == "specific_fields" %}
+                                                selected
+                                            {% endif %}
+                                        >
+                                            {% trans "Specific Fields" %}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="record-waiting-fields-{{ row.stage_key }}">
+                                {% include "record_fields_fragment.html" with side="waiting" stage_key=row.stage_key scope=row.scope selected_values=row.fields record_field_choices=record_field_choices %}
+                            </div>
+                        </div>
+                    {% endfor %}
+
+                    <div class="text-xs font-semibold text-color-700 mb-2 mt-4">
+                        b) {% trans "When record is in rejected state" %}
+                    </div>
+                    {% for row in rejected_stage_rows %}
+                        <div class="mb-4 pb-4 {% if not forloop.last %}border-b border-primary-100{% endif %}">
+                            <div class="text-xs font-medium text-gray-700 mb-2">
+                                {% trans "Stage" %} {{ row.stage_num }}
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
+                                <div class="flex flex-col gap-1 md:col-span-2">
+                                    <label class="text-xs text-color-600">{% trans "Field access" %}</label>
+                                    <select
+                                        name="record_rejected_scope_{{ row.stage_key }}"
+                                        class="{{ sel_class }}"
+                                        hx-get="{% url 'approvals:approval_process_rule_record_fields_fragment_view' %}?process_pk={{ process_pk }}&side=rejected&stage_key={{ row.stage_key }}"
+                                        hx-trigger="change"
+                                        hx-target="#record-rejected-fields-{{ row.stage_key }}"
+                                        hx-swap="innerHTML"
+                                        hx-include="#approval-process-rule-compose-form"
+                                    >
+                                        <option
+                                            value="all_fields"
+                                            {% if row.scope == "all_fields" %}
+                                                selected
+                                            {% endif %}
+                                        >
+                                            {% trans "All Fields" %}
+                                        </option>
+                                        <option value="no_fields" {% if row.scope == "no_fields" %}selected{% endif %}>
+                                            {% trans "No Fields" %}
+                                        </option>
+                                        <option
+                                            value="specific_fields"
+                                            {% if row.scope == "specific_fields" %}
+                                                selected
+                                            {% endif %}
+                                        >
+                                            {% trans "Specific Fields" %}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="record-rejected-fields-{{ row.stage_key }}">
+                                {% include "record_fields_fragment.html" with side="rejected" stage_key=row.stage_key scope=row.scope selected_values=row.fields record_field_choices=record_field_choices %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-xs text-gray-500 mb-3">
+                        {% trans "One setting applies to the whole process (Anyone, Parallel, or a single approver)." %}
+                    </p>
+                    <div class="text-xs font-semibold text-color-700 mb-1">
+                        a) {% trans "While waiting for approval" %}
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                        <div class="flex flex-col gap-1 md:col-span-2">
+                            <label class="text-xs text-color-600">{% trans "Field access" %}</label>
+                            <select
+                                name="record_waiting_scope"
+                                class="{{ sel_class }}"
+                                hx-get="{% url 'approvals:approval_process_rule_record_fields_fragment_view' %}?process_pk={{ process_pk }}&side=waiting"
+                                hx-trigger="change"
+                                hx-target="#record-waiting-fields-container"
+                                hx-swap="innerHTML"
+                                hx-include="#approval-process-rule-compose-form"
+                            >
+                                <option value="no_fields" {% if waiting_scope == "no_fields" %}selected{% endif %}>
+                                    {% trans "No Fields" %}
+                                </option>
+                                <option value="all_fields" {% if waiting_scope == "all_fields" %}selected{% endif %}>
+                                    {% trans "All Fields" %}
+                                </option>
+                                <option
+                                    value="specific_fields"
+                                    {% if waiting_scope == "specific_fields" %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    {% trans "Specific Fields" %}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="record-waiting-fields-container">
+                        {% include "record_fields_fragment.html" with side="waiting" scope=waiting_scope selected_values=waiting_fields record_field_choices=record_field_choices %}
+                    </div>
+
+                    <div class="text-xs font-semibold text-color-700 mb-1">
+                        b) {% trans "When record is in rejected state" %}
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="flex flex-col gap-1 md:col-span-2">
+                            <label class="text-xs text-color-600">{% trans "Field access" %}</label>
+                            <select
+                                name="record_rejected_scope"
+                                class="{{ sel_class }}"
+                                hx-get="{% url 'approvals:approval_process_rule_record_fields_fragment_view' %}?process_pk={{ process_pk }}&side=rejected"
+                                hx-trigger="change"
+                                hx-target="#record-rejected-fields-container"
+                                hx-swap="innerHTML"
+                                hx-include="#approval-process-rule-compose-form"
+                            >
+                                <option value="all_fields" {% if rejected_scope == "all_fields" %}selected{% endif %}>
+                                    {% trans "All Fields" %}
+                                </option>
+                                <option value="no_fields" {% if rejected_scope == "no_fields" %}selected{% endif %}>
+                                    {% trans "No Fields" %}
+                                </option>
+                                <option
+                                    value="specific_fields"
+                                    {% if rejected_scope == "specific_fields" %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    {% trans "Specific Fields" %}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="record-rejected-fields-container">
+                        {% include "record_fields_fragment.html" with side="rejected" scope=rejected_scope selected_values=rejected_fields record_field_choices=record_field_choices %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endwith %}

@@ -2,11 +2,14 @@
 <div class="bg-white px-5 border-b border-b-dark-50 fixed w-fill-available z-50">
     <div class="flex flex-wrap items-center gap-2 justify-between">
         <div class="flex items-center gap-4">
-            <h3 class="text-md font-semibold">{% if has_view_own and not has_view_all %}{% trans "My Forecast" %}{% else %}{% trans "Forecast" %}{% endif %}</h3>
+            <h3 class="text-md font-semibold">
+                {% if has_view_own and not has_view_all %}{% trans "My Forecast" %}{% else %}{% trans "Forecast" %}{% endif %}
+            </h3>
             {% if type_count > 0 %}
                 {% if  has_view_all %}
                     <div id="user-data-container" class="w-48">
-                        <select id="user-data"
+                        <select
+                            id="user-data"
                             class="js-example-basic-single w-48"
                             hx-get="{% url 'forecast:forecast_view' %}?{% if not query_string %}{{ request.GET.urlencode }}{% else %}section={{ request.GET.section }}{% endif %}"
                             hx-push-url="true"
@@ -16,16 +19,20 @@
                             hx-trigger="change"
                             hx-select="#forecast-tab-content"
                             hx-swap="outerHTML"
-                            name="user_id">
-
+                            name="user_id"
+                        >
                             {% if show_all_users_option %}
                                 <option value="">{% trans "All Users" %}</option>
                             {% endif %}
 
                             <!-- Always show logged-in user first -->
-                            <option value="{{ request.user.pk }}"
+                            <option
+                                value="{{ request.user.pk }}"
                                 data-img="{% if request.user.profile %}{{ request.user.profile.url }}{% else %}{{ request.user.get_avatar }}{% endif %}"
-                                {% if request.GET.user_id == request.user.pk|stringformat:"s" %}selected{% endif %}>
+                                {% if request.GET.user_id == request.user.pk|stringformat:"s" %}
+                                    selected
+                                {% endif %}
+                            >
                                 {% trans "My Forecast" %}
                             </option>
 
@@ -33,9 +40,13 @@
                             {% if has_view_all %}
                                 {% for user in users %}
                                     {% if user != request.user %}
-                                        <option value="{{ user.pk }}"
+                                        <option
+                                            value="{{ user.pk }}"
                                             data-img="{% if user.profile %}{{ user.profile.url }}{% else %}{{ user.get_avatar }}{% endif %}"
-                                            {% if request.GET.user_id == user.pk|stringformat:"s" %}selected{% endif %}>
+                                            {% if request.GET.user_id == user.pk|stringformat:"s" %}
+                                                selected
+                                            {% endif %}
+                                        >
                                             {{ user }}
                                         </option>
                                     {% endif %}
@@ -47,25 +58,36 @@
             {% endif %}
         </div>
 
-        <div id="forecast-period-range" class="flex items-center gap-2 h-[70px] flex-wrap" data-navbar-reload-url="{% url 'forecast:forecast_navbar_view' %}">
+        <div
+            id="forecast-period-range"
+            class="flex items-center gap-2 h-[70px] flex-wrap"
+            data-navbar-reload-url="{% url 'forecast:forecast_navbar_view' %}"
+        >
             {% if type_count > 0 and periods %}
                 <div class="relative inline-block dropdown-wrapper">
                     <button
                         id="forecast-period-range-trigger"
                         type="button"
-                        class="inline-flex items-center justify-between gap-2 min-w-[200px] px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-dark-50 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+                        class="inline-flex items-center justify-between gap-2 min-w-[200px] px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-dark-50 dark:border-gray-600 rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
                         <span class="truncate">
                             {% if period_range_begin and period_range_end %}
                                 {% if period_range_begin.quarter.fiscal_year.fiscal_year_config.fiscal_year_type == "standard" %}
-                                    {% trans "Period" %} {{ period_range_begin.get_display_period_number }}{% if period_range_begin.start_date %} ({{ period_range_begin.start_date|date:"M Y" }}){% endif %}
+                                    {% trans "Period" %}
+                                    {{ period_range_begin.get_display_period_number }}{% if period_range_begin.start_date %}
+                                        ({{ period_range_begin.start_date|date:"M Y" }}){% endif %}
                                 {% else %}
-                                    {{ period_range_begin.name }}{% if period_range_begin.start_date %} ({{ period_range_begin.start_date|date:"M Y" }}){% endif %}
+                                    {{ period_range_begin.name }}{% if period_range_begin.start_date %}
+                                        ({{ period_range_begin.start_date|date:"M Y" }}){% endif %}
                                 {% endif %}
                                 –
                                 {% if period_range_end.quarter.fiscal_year.fiscal_year_config.fiscal_year_type == "standard" %}
-                                    {% trans "Period" %} {{ period_range_end.get_display_period_number }}{% if period_range_end.start_date %} ({{ period_range_end.start_date|date:"M Y" }}){% endif %}
+                                    {% trans "Period" %}
+                                    {{ period_range_end.get_display_period_number }}{% if period_range_end.start_date %}
+                                        ({{ period_range_end.start_date|date:"M Y" }}){% endif %}
                                 {% else %}
-                                    {{ period_range_end.name }}{% if period_range_end.start_date %} ({{ period_range_end.start_date|date:"M Y" }}){% endif %}
+                                    {{ period_range_end.name }}{% if period_range_end.start_date %}
+                                        ({{ period_range_end.start_date|date:"M Y" }}){% endif %}
                                 {% endif %}
                             {% else %}
                                 {% trans "Showing all periods" %}
@@ -74,46 +96,88 @@
                         <i class="fas fa-sort-down text-gray-500 text-xs"></i>
                     </button>
                     <div class="dropdown-content absolute right-0 z-50 mt-1 w-full rounded-lg border border-dark-50 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg py-3 px-4">
-                        <form id="forecast-period-range-form"
+                        <form
+                            id="forecast-period-range-form"
                             hx-get="{% url 'forecast:forecast_view' %}"
                             hx-target="#forecast-tab-content"
                             hx-include="#user-data"
                             hx-push-url="true"
                             hx-select="#forecast-tab-content"
                             hx-select-oob="#forecast-navbar"
-                            hx-swap="outerHTML">
+                            hx-swap="outerHTML"
+                        >
                             <div class="space-y-3">
                                 <div>
-                                    <label for="period-begin-select" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{% trans "Beginning Period" %}</label>
-                                    <select id="period-begin-select" name="beginning_period_id" class="js-example-basic-single headselect w-full">
+                                    <label
+                                        for="period-begin-select"
+                                        class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    >{% trans "Beginning Period" %}</label>
+                                    <select
+                                        id="period-begin-select"
+                                        name="beginning_period_id"
+                                        class="js-example-basic-single headselect w-full"
+                                    >
                                         {% for p in periods %}
-                                        <option value="{{ p.id }}" {% if beginning_period_id == p.id|stringformat:"s" %}selected{% endif %}>
-                                            {% if p.quarter.fiscal_year.fiscal_year_config.fiscal_year_type == "standard" %}
-                                                {% trans "Period" %} {{ p.get_display_period_number }} {% if p.start_date %} ({{ p.start_date|date:"M Y" }} {% if p.is_current %} - {% trans "Current" %} {% endif %} ){% endif %}
-                                            {% else %}
-                                                {{ p.name }} {% if p.start_date %} ({{ p.start_date|date:"M Y" }} {% if p.is_current %} - {% trans "Current" %} {% endif %} ){% endif %}
-                                            {% endif %}
-                                        </option>
+                                            <option
+                                                value="{{ p.id }}"
+                                                {% if beginning_period_id == p.id|stringformat:"s" %}
+                                                    selected
+                                                {% endif %}
+                                            >
+                                                {% if p.quarter.fiscal_year.fiscal_year_config.fiscal_year_type == "standard" %}
+                                                    {% trans "Period" %} {{ p.get_display_period_number }}
+                                                    {% if p.start_date %}
+                                                        ({{ p.start_date|date:"M Y" }} {% if p.is_current %}
+                                                            - {% trans "Current" %}
+                                                        {% endif %} ){% endif %}
+                                                {% else %}
+                                                    {{ p.name }} {% if p.start_date %}
+                                                        ({{ p.start_date|date:"M Y" }} {% if p.is_current %}
+                                                            - {% trans "Current" %}
+                                                        {% endif %} ){% endif %}
+                                                {% endif %}
+                                            </option>
                                         {% endfor %}
                                     </select>
                                 </div>
                                 <div>
-                                    <label for="period-end-select" class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{% trans "Ending Period" %}</label>
-                                    <select id="period-end-select" name="ending_period_id" class="js-example-basic-single headselect w-full">
+                                    <label
+                                        for="period-end-select"
+                                        class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    >{% trans "Ending Period" %}</label>
+                                    <select
+                                        id="period-end-select"
+                                        name="ending_period_id"
+                                        class="js-example-basic-single headselect w-full"
+                                    >
                                         {% for p in ending_periods %}
-                                        <option value="{{ p.id }}" {% if ending_period_id == p.id|stringformat:"s" %}selected{% endif %}>
-                                            {% if p.quarter.fiscal_year.fiscal_year_config.fiscal_year_type == "standard" %}
-                                                {% trans "Period" %} {{ p.get_display_period_number }} {% if p.start_date %} ({{ p.start_date|date:"M Y" }} {% if p.is_current %} - {% trans "Current" %} {% endif %}){% endif %}
-                                            {% else %}
-                                                {{ p.name }}{% if p.start_date %} ({{ p.start_date|date:"M Y" }} {% if p.is_current %} - {% trans "Current" %} {% endif %}){% endif %}
-                                            {% endif %}
-                                        </option>
+                                            <option
+                                                value="{{ p.id }}"
+                                                {% if ending_period_id == p.id|stringformat:"s" %}
+                                                    selected
+                                                {% endif %}
+                                            >
+                                                {% if p.quarter.fiscal_year.fiscal_year_config.fiscal_year_type == "standard" %}
+                                                    {% trans "Period" %} {{ p.get_display_period_number }}
+                                                    {% if p.start_date %}
+                                                        ({{ p.start_date|date:"M Y" }} {% if p.is_current %}
+                                                            - {% trans "Current" %}
+                                                        {% endif %}){% endif %}
+                                                {% else %}
+                                                    {{ p.name }}{% if p.start_date %}
+                                                        ({{ p.start_date|date:"M Y" }} {% if p.is_current %}
+                                                            - {% trans "Current" %}
+                                                        {% endif %}){% endif %}
+                                                {% endif %}
+                                            </option>
                                         {% endfor %}
                                     </select>
                                 </div>
                                 <div class="flex justify-end gap-2 pt-2 border-t border-dark-50 dark:border-gray-600">
-                                    <button type="submit"
-                                        class="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
+                                    <button
+                                        type="submit"
+                                        class="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700"
+                                    >
                                         {% trans "Apply" %}
                                     </button>
                                 </div>
@@ -127,46 +191,46 @@
 </div>
 
 <script>
-(function () {
-  var beginSelect = document.getElementById('period-begin-select');
-  var endSelect = document.getElementById('period-end-select');
-  if (!beginSelect || !endSelect) return;
+    (function () {
+      var beginSelect = document.getElementById('period-begin-select');
+      var endSelect = document.getElementById('period-end-select');
+      if (!beginSelect || !endSelect) return;
 
-  var originalEndOptions = Array.prototype.slice.call(endSelect.options);
+      var originalEndOptions = Array.prototype.slice.call(endSelect.options);
 
-  function updateEndingOptions() {
-    var beginValue = beginSelect.value;
-    var reachedBegin = !beginValue;
+      function updateEndingOptions() {
+        var beginValue = beginSelect.value;
+        var reachedBegin = !beginValue;
 
-    var newOptions = [];
-    for (var i = 0; i < originalEndOptions.length; i++) {
-      var opt = originalEndOptions[i];
-      if (!opt.value) {
-        // Always keep placeholder as first element
-        newOptions.push(opt.cloneNode(true));
-        continue;
+        var newOptions = [];
+        for (var i = 0; i < originalEndOptions.length; i++) {
+          var opt = originalEndOptions[i];
+          if (!opt.value) {
+            // Always keep placeholder as first element
+            newOptions.push(opt.cloneNode(true));
+            continue;
+          }
+          if (!reachedBegin && opt.value === beginValue) {
+            reachedBegin = true;
+          }
+          if (reachedBegin) {
+            newOptions.push(opt.cloneNode(true));
+          }
+        }
+
+        while (endSelect.options.length) {
+          endSelect.remove(0);
+        }
+        newOptions.forEach(function (opt) {
+          endSelect.add(opt);
+        });
+
+        if (window.jQuery && jQuery(endSelect).data('select2')) {
+          jQuery(endSelect).trigger('change.select2');
+        }
       }
-      if (!reachedBegin && opt.value === beginValue) {
-        reachedBegin = true;
-      }
-      if (reachedBegin) {
-        newOptions.push(opt.cloneNode(true));
-      }
-    }
 
-    while (endSelect.options.length) {
-      endSelect.remove(0);
-    }
-    newOptions.forEach(function (opt) {
-      endSelect.add(opt);
-    });
-
-    if (window.jQuery && jQuery(endSelect).data('select2')) {
-      jQuery(endSelect).trigger('change.select2');
-    }
-  }
-
-  beginSelect.addEventListener('change', updateEndingOptions);
-  updateEndingOptions();
-})();
+      beginSelect.addEventListener('change', updateEndingOptions);
+      updateEndingOptions();
+    })();
 </script>

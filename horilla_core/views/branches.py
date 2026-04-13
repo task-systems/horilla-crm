@@ -124,6 +124,7 @@ class BranchListView(LoginRequiredMixin, HorillaListView):
     bulk_update_two_column = True
     table_width = False
     bulk_select_option = False
+    table_height_as_class = "h-[calc(_100vh_-_260px_)]"
 
     columns = [
         (_("Name"), "get_avatar_with_name"),

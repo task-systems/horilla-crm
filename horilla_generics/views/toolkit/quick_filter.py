@@ -232,19 +232,15 @@ def handle_quick_filter_post(request, action, view):
         if new_filters:
             QuickFilter.objects.bulk_create(new_filters)
 
-        context = view.get_context_data(object_list=view.get_queryset())
-        quick_filters_html = render_to_string(
-            "partials/quick_filters_bar.html", context, request=request
-        )
+        view.object_list = view.get_queryset()
+        context = view.get_context_data(object_list=view.object_list)
         list_view_html = render_to_string(view.template_name, context, request=request)
-        return render(
-            request,
-            "partials/quick_filter_response.html",
-            {
-                "quick_filters_html": quick_filters_html,
-                "list_view_html": list_view_html,
-            },
-        )
+        view_id = getattr(view, "view_id", "")
+        response = HttpResponse(list_view_html)
+        response["HX-Retarget"] = f"#{view_id}"
+        response["HX-Reswap"] = "outerHTML"
+        response["HX-Reselect"] = f"#{view_id}"
+        return response
 
     if action == "remove_quick_filter":
         filter_id = request.POST.get("filter_id")
@@ -273,24 +269,19 @@ def handle_quick_filter_post(request, action, view):
         request.GET = clean_params
 
         try:
-            context = view.get_context_data(object_list=view.get_queryset())
-            quick_filters_html = render_to_string(
-                "partials/quick_filters_bar.html", context, request=request
-            )
+            view.object_list = view.get_queryset()
+            context = view.get_context_data(object_list=view.object_list)
             list_view_html = render_to_string(
                 view.template_name, context, request=request
             )
         finally:
             request.GET = original_get
 
-        response = render(
-            request,
-            "partials/quick_filter_response.html",
-            {
-                "quick_filters_html": quick_filters_html,
-                "list_view_html": list_view_html,
-            },
-        )
+        view_id = getattr(view, "view_id", "")
+        response = HttpResponse(list_view_html)
+        response["HX-Retarget"] = f"#{view_id}"
+        response["HX-Reswap"] = "outerHTML"
+        response["HX-Reselect"] = f"#{view_id}"
 
         if getattr(view, "filter_url_push", True):
             clean_url = (

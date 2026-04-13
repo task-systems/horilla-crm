@@ -29,7 +29,7 @@
   position: absolute;
   height: 3px;
   width: 100%;
-  background-color: #ffe5e1;
+  background-color: var(--progress-track-bg, #ffe5e1);
   left: 0;
   top: 15px;
   bottom: 0;

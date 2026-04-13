@@ -179,7 +179,7 @@ class CurrencyListView(LoginRequiredMixin, HorillaListView):
     view_id = "currency-list-view"
     table_width = False
     bulk_select_option = False
-    table_height_as_class = "h-[400px]"
+    table_height_as_class = "h-[calc(_100vh_-_410px_)]"
     search_url = reverse_lazy("horilla_core:currency_list_view")
     main_url = reverse_lazy("horilla_core:currency_list_view")
     enable_sorting = False

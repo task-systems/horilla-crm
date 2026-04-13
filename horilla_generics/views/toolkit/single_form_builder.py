@@ -597,7 +597,8 @@ def get_add_condition_url(view):
 def save_conditions(view, form=None):
     """Save conditions from form.cleaned_data or POST; delete existing and create from submitted data."""
     if not (view.condition_fields and view.condition_model and view.object):
-        return
+        return False
+    has_errors = False
 
     condition_rows = None
     if form and hasattr(form, "cleaned_data") and "condition_rows" in form.cleaned_data:
@@ -661,6 +662,23 @@ def save_conditions(view, form=None):
                 row_data.get(f) for f in required_fields if f in view.condition_fields
             ):
                 continue
+            if "operator" in view.condition_fields and "operator" in row_data:
+                try:
+                    operator_field = view.condition_model._meta.get_field("operator")
+                    if operator_field.choices:
+                        valid_operators = {c[0] for c in operator_field.choices}
+                        if row_data["operator"] not in valid_operators:
+                            if form is not None:
+                                form.add_error(
+                                    None,
+                                    _(
+                                        "Please select a valid choice for the operator field."
+                                    ),
+                                )
+                            has_errors = True
+                            continue
+                except Exception:
+                    pass
             create_kwargs = {}
             for field in view.condition_model._meta.get_fields():
                 if (
@@ -686,6 +704,7 @@ def save_conditions(view, form=None):
                 create_kwargs["updated_by"] = view.request.user
             view.condition_model.objects.create(**create_kwargs)
             order += 1
+    return has_errors
 
 
 def build_condition_context(view, context):

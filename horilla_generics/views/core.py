@@ -4,7 +4,6 @@ Generic views for Horilla, including base view, tab view, history section, and d
 
 # Standard library
 import logging
-from typing import Any
 
 # Django / third-party imports
 from django import forms
@@ -27,7 +26,6 @@ from horilla.utils.translation import gettext_lazy as _
 from horilla_core.models import ActiveTab
 from horilla_core.utils import get_field_permissions_for_model
 from horilla_generics.forms import HorillaHistoryForm, HorillaModelForm
-from horilla_utils.middlewares import _thread_local
 
 logger = logging.getLogger(__name__)
 
@@ -106,15 +104,10 @@ class HorillaTabView(TemplateView):
     background_color = ""
     tab_class = ""
 
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
-        request = getattr(_thread_local, "request", None)
-        self.request = request
-
     def get_context_data(self, **kwargs):
         """Add active_target, tabs, view_id, and tab styling to context."""
         context = super().get_context_data(**kwargs)
-        if self.request.user:
+        if self.request and getattr(self.request, "user", None):
             active_tab = ActiveTab.objects.filter(
                 created_by=self.request.user, path=self.request.path
             ).first()
@@ -243,6 +236,22 @@ class HorillaDynamicCreateView(LoginRequiredMixin, FormView):
             messages.error(self.request, f"Model {app_label}.{model_name} not found")
             return None, None
 
+    def _modal_close_with_message_response(self):
+        """Return an HttpResponse that reloads messages and closes the dynamic modal."""
+        response = HttpResponse(
+            """<div></div>
+            <script>
+                setTimeout(function() {
+                    $('#reloadMessagesButton').click();
+                    closeDynamicModal();
+                }, 50);
+            </script>"""
+        )
+        response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response["Pragma"] = "no-cache"
+        response["Expires"] = "0"
+        return response
+
     def dispatch(self, request, *args, **kwargs):
         """Resolve target model and fields; validate and check add permission; then dispatch."""
         # Initialize model + fields once
@@ -250,19 +259,7 @@ class HorillaDynamicCreateView(LoginRequiredMixin, FormView):
 
         if not self.target_model:
             messages.error(self.request, "Invalid model or fields")
-            response = HttpResponse(
-                """<div></div>
-                <script>
-                    setTimeout(function() {
-                        $('#reloadMessagesButton').click();
-                        closeDynamicModal();
-                    }, 50);
-                </script>"""
-            )
-            response["Cache-Control"] = "no-cache, no-store, must-revalidate"
-            response["Pragma"] = "no-cache"
-            response["Expires"] = "0"
-            return response
+            return self._modal_close_with_message_response()
 
         # Validate field names against the model
         if self.field_names:
@@ -273,19 +270,7 @@ class HorillaDynamicCreateView(LoginRequiredMixin, FormView):
                     self.request,
                     f"Some fields are not valid: {', '.join(invalid_fields)}.",
                 )
-                response = HttpResponse(
-                    """<div></div>
-                    <script>
-                        setTimeout(function() {
-                            $('#reloadMessagesButton').click();
-                            closeDynamicModal();
-                        }, 50);
-                    </script>"""
-                )
-                response["Cache-Control"] = "no-cache, no-store, must-revalidate"
-                response["Pragma"] = "no-cache"
-                response["Expires"] = "0"
-                return response
+                return self._modal_close_with_message_response()
 
         custom_perms = self.get_permission_from_mapping()
 

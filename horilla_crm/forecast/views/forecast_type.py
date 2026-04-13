@@ -87,7 +87,7 @@ class ForecastTypeListView(LoginRequiredMixin, HorillaListView):
     bulk_select_option = False
     table_width = False
     enable_sorting = False
-    table_height_as_class = "h-[500px]"
+    table_height_as_class = "h-[calc(_100vh_-_260px_)]"
     columns = ["name", "forecast_type", "is_active"]
 
     actions = [

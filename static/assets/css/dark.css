@@ -69,7 +69,7 @@ body.dark input[type="checkbox"],
 body.dark .swal2-popup.swal2-toast.custom-toast,
 body.dark .panel-default>.panel-heading,
 body.dark .note-editor.note-frame .note-editing-area .note-editable{
-  background-color: #5d5d5d !important;
+  background-color: var(--progress-track-bg, #5d5d5d) !important;
 }
 /* Dropdown item hover (layout + actions) – match detail view: black in dark */
 body.dark .hover\:bg-gray-50:hover {
@@ -165,8 +165,7 @@ body.dark .cursor-pointer img {
 body.dark .svg-themed,
 body.dark button .svg-themed,
 body.dark button.cursor-pointer .svg-themed {
-  /* Allow theme-driven hue/saturation filters in dark mode */
-  filter: var(--svg-filter, contrast(1.1) saturate(1.3) hue-rotate(var(--svg-hue, 345deg))) !important;
+  filter: none !important;
 }
 /* Keep real profile/sidebar avatar colors in dark mode */
 body.dark img.header-profile-avatar,

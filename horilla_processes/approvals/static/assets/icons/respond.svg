@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 21 21">
+  <defs>
+    <style>
+      .cls-1 { fill: #191919; }
+    </style>
+  </defs>
+  <g>
+    <g id="Layer_1">
+      <!-- Reply arrow: left-pointing head + arm curving up and right -->
+      <path class="cls-1" d="M2,10.5L8,6V8.8H14C16.2,8.8,18,10.6,18,12.8V15.5H15.5V12.8C15.5,12,14.8,11.3,14,11.3H8V14L2,10.5Z"/>
+    </g>
+  </g>
+</svg>

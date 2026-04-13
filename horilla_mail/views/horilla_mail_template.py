@@ -109,7 +109,7 @@ class MailTemplateListView(LoginRequiredMixin, HorillaListView):
     bulk_update_two_column = True
     table_width = False
     bulk_delete_enabled = False
-    table_height_as_class = "h-[500px]"
+    table_height_as_class = "h-[calc(_100vh_-_260px_)]"
     bulk_select_option = False
     list_column_visibility = False
     filterset_class = HorillaMailTemplateFilter

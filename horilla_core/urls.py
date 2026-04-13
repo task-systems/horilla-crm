@@ -607,16 +607,16 @@ urlpatterns = [
     ),
     # Permission urls
     path(
-        "group-permission-view/",
-        views.GroupPermissionView.as_view(),
-        name="group_permission_view",
+        "role-permission-view/",
+        views.RolePermissionView.as_view(),
+        name="role_permission_view",
     ),
     path(
-        "group-permission-tab/",
-        views.GroupPermissionTabView.as_view(),
-        name="group_permission_tab",
+        "role-permission-tab/",
+        views.RolePermissionTabView.as_view(),
+        name="role_permission_tab",
     ),
-    path("group-tab/", views.GroupTab.as_view(), name="group_tab"),
+    path("role-tab/", views.GroupTab.as_view(), name="role_tab"),
     path(
         "permission-tab/",
         views.PermissionTab.as_view(),
@@ -628,7 +628,7 @@ urlpatterns = [
         name="role_permissions_view",
     ),
     path(
-        "groups-role-members/<int:role_id>/",
+        "role-members/<int:role_id>/",
         views.RoleMembersView.as_view(),
         name="role_members_view",
     ),

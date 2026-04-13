@@ -1,0 +1,103 @@
+{% load i18n static %}
+
+<div id="mainContent" class="flex-[1_0] transition-all duration-300 ease-in-out w-full leftspace">
+    <div class="p-5">
+        {% include "messages.html" %}
+
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+            <ul class="flex flex-wrap gap-y-3 gap-x-5 text-[14px] text-gray-500">
+                <li class="after:opacity-60 relative after:[content:''] after:absolute after:bg-[url(/static/assets/icons/right-arrow.svg)] after:right-[-13px] after:top-[0] after:bottom-[0] after:m-auto after:bg-no-repeat after:bg-contain after:bg-center after:w-[8px] after:h-[8px]">
+                    <a
+                        class="cursor-pointer hover:text-primary-600"
+                        hx-get="{% url 'approvals:approval_job_view' %}?section=my_jobs"
+                        hx-target="#mainContent"
+                        hx-select="#mainContent"
+                        hx-swap="outerHTML"
+                        hx-push-url="true"
+                    >{% trans "Approval Jobs" %}</a>
+                </li>
+                <li class="relative text-primary-600 font-semibold">{{ record|default:job.rule }}</li>
+            </ul>
+
+            {% if job.status == "pending" %}
+                <button
+                    type="button"
+                    class="flex items-center gap-1.5 px-3 py-1 bg-primary-600 text-white text-sm rounded hover:opacity-90 transition-colors"
+                    hx-get="{% url 'approvals:approval_job_respond_modal_view' job.pk %}"
+                    hx-target="#modalBox"
+                    hx-swap="innerHTML"
+                    onclick="openModal()"
+                >
+                    <i class="fa-solid fa-reply"></i>
+                    <span>{% trans "Respond" %}</span>
+                </button>
+            {% endif %}
+        </div>
+
+        <div class="bg-white p-4 mb-4 [box-shadow:0px_0px_20px_0px_rgb(0_0_0_/_5%)] rounded-md">
+            <div class="flex flex-wrap items-center gap-2 justify-between mb-4">
+                <h2 class="text-lg font-semibold">{{ record|default:job.rule }}</h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 text-sm">
+                <div>
+                    <p class="flex">
+                        <span class="flex w-[150px]">{% trans "Process" %}</span>:<span
+                            class="ps-3 font-medium"
+                        >{{ job.rule }}</span>
+                    </p>
+                </div>
+                <div>
+                    <p class="flex">
+                        <span class="flex w-[150px]">{% trans "Status" %}</span>:<span
+                            class="ps-3 font-medium"
+                        >{{ job.get_status_display }}</span>
+                    </p>
+                </div>
+                <div>
+                    <p class="flex">
+                        <span class="flex w-[150px]">{% trans "Current Step" %}</span>:<span
+                            class="ps-3 font-medium"
+                        >{{ job.current_step.order|default:"-" }}</span>
+                    </p>
+                </div>
+                <div>
+                    <p class="flex">
+                        <span class="flex w-[150px]">{% trans "Completed Steps" %}</span>:<span
+                            class="ps-3 font-medium"
+                        >{{ completed_steps }}/{{ total_steps|default:"0" }}</span>
+                    </p>
+                </div>
+                <div>
+                    <p class="flex">
+                        <span class="flex w-[150px]">{% trans "Progress" %}</span>:<span
+                            class="ps-3 font-medium"
+                        >{% if total_steps %}{% widthratio completed_steps total_steps 100 %}%{% else %}0%{% endif %}</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-md [box-shadow:0px_0px_20px_0px_rgb(0_0_0_/_5%)]">
+            <button
+                id="reloadButton"
+                hidden
+                hx-get="{% url 'approvals:approval_job_review_view' job.pk %}?section=my_jobs"
+                hx-target="#mainContent"
+                hx-select="#mainContent"
+                hx-swap="outerHTML"
+                hx-push-url="true"
+            >
+                reload
+            </button>
+            <div
+                id="approval-job-tab-host"
+                hx-get="{{ tab_url }}?pk={{ job.pk }}"
+                hx-trigger="load"
+                hx-target="#approval-job-tab-host"
+                hx-swap="outerHTML"
+            >
+            </div>
+        </div>
+    </div>
+</div>

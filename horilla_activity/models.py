@@ -16,6 +16,7 @@ from horilla.utils.translation import gettext_lazy as _
 
 # First-party / Horilla apps
 from horilla_core.models import HorillaContentType, HorillaCoreModel
+from horilla_utils.methods import render_template
 
 
 class Activity(HorillaCoreModel):
@@ -226,3 +227,20 @@ class Activity(HorillaCoreModel):
         if self.activity_type in ["event", "meeting"] and self.is_all_day:
             return "All Day Event"
         return self.end_datetime or self.due_datetime or self.created_at
+
+    def get_status_update_html(self):
+        """
+        Return an inline status dropdown for list views.
+        Callers must set _status_update_url on the instance before rendering.
+        """
+        url = getattr(self, "_status_update_url", None)
+        if not url:
+            return self.get_status_display()
+        return render_template(
+            path="history_task_status_col.html",
+            context={
+                "instance": self,
+                "url": url,
+                "status_choices": self.STATUS_CHOICES,
+            },
+        )

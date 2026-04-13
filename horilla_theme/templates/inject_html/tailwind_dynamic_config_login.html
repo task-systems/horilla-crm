@@ -106,56 +106,6 @@
                 },
             };
 
-            // SVG filter calculation
-            const defaultColor = '#AC3B2A';
-            const currentColor = themeData.primary_600 || '#e54f38';
-
-            function hexToRgb(hex) {
-                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-                return result ? {
-                    r: parseInt(result[1], 16) / 255,
-                    g: parseInt(result[2], 16) / 255,
-                    b: parseInt(result[3], 16) / 255
-                } : null;
-            }
-
-            function rgbToHsl(r, g, b) {
-                const max = Math.max(r, g, b);
-                const min = Math.min(r, g, b);
-                let h, s, l = (max + min) / 2;
-
-                if (max === min) {
-                    h = s = 0;
-                } else {
-                    const d = max - min;
-                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-
-                    switch (max) {
-                        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-                        case g: h = ((b - r) / d + 2) / 6; break;
-                        case b: h = ((r - g) / d + 4) / 6; break;
-                    }
-                }
-
-                return { h: h * 360, s: s * 100, l: l * 100 };
-            }
-
-            if (currentColor.toLowerCase() === defaultColor.toLowerCase()) {
-                document.documentElement.style.setProperty('--svg-filter', 'none');
-                document.documentElement.style.setProperty('--svg-hue', '0deg');
-            } else {
-                const defaultRgb = hexToRgb(defaultColor);
-                const currentRgb = hexToRgb(currentColor);
-
-                if (defaultRgb && currentRgb) {
-                    const defaultHsl = rgbToHsl(defaultRgb.r, defaultRgb.g, defaultRgb.b);
-                    const currentHsl = rgbToHsl(currentRgb.r, currentRgb.g, currentRgb.b);
-
-                    const hueDiff = currentHsl.h - defaultHsl.h;
-                    document.documentElement.style.setProperty('--svg-hue', `${hueDiff}deg`);
-                    document.documentElement.style.setProperty('--svg-filter', `hue-rotate(${hueDiff}deg)`);
-                }
-            }
         } else {
             // Fallback to default tailwind config if no theme available
             {% if theme %}
@@ -167,5 +117,5 @@
     })();
 </script>
 {% if not theme %}
-<script src="{% static 'assets/js/tailwind.config.js' %}"></script>
+    <script src="{% static 'assets/js/tailwind.config.js' %}"></script>
 {% endif %}

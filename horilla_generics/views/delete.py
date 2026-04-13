@@ -20,7 +20,7 @@ from horilla.core.exceptions import (
     ObjectDoesNotExist,
     PermissionDenied,
 )
-from horilla.http import HttpNotFound, HttpResponse
+from horilla.http import HttpResponse
 from horilla.shortcuts import redirect, render
 from horilla.urls import reverse_lazy
 from horilla.utils.translation import gettext_lazy as _
@@ -225,7 +225,10 @@ class HorillaSingleDeleteView(DeleteDependencyMixin, DeleteReassignMixin, Delete
 
         except Exception as e:
             logger.error("Error in get method: %s", str(e))
-            raise HttpNotFound(e)
+            messages.error(self.request, str(e))
+            return HttpResponse(
+                "<script>$('#reloadButton').click();$('#reloadMessagesButton').click();closeDeleteModeModal();closeModal();</script>"
+            )
 
     def get_object(self, queryset=None):
         """Override to check delete permissions on the specific object."""

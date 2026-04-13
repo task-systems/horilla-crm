@@ -2,7 +2,7 @@
 <div class="p-5">
     <div class="flex justify-end mb-2">
         <button onclick="closeContentModal()" class="text-gray-500 hover:text-red-500 text-xl cursor-pointer">
-            <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}" />
+            <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}">
         </button>
     </div>
 
@@ -14,13 +14,11 @@
 
             <!-- Subject Preview -->
             {% if subject %}
-
                 <div class="mb-4">
                     <p class="text-xs text-gray-500">{% trans "Subject" %}</p>
-                        <p>
-                            {{ subject|escape }}
-                        </p>
-
+                    <p>
+                        {{ subject|escape }}
+                    </p>
                 </div>
             {% endif %}
 

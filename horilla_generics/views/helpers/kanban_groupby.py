@@ -125,6 +125,7 @@ class KanbanLoadMoreView(LoginRequiredMixin, View):
             return HttpResponse("<script>$('#reloadButton').click();")
 
 
+@method_decorator(htmx_required, name="dispatch")
 class GroupByLoadMoreView(LoginRequiredMixin, View):
     """
     Handle AJAX request to load more items for a specific group in the group-by view.

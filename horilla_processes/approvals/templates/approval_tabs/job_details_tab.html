@@ -1,0 +1,20 @@
+{% load i18n %}
+
+{% include "details_tab.html" %}
+
+<div class="mt-4 text-sm">
+    <span class="font-semibold">{% trans "Edit Policy While Waiting" %}:</span>
+    {% if editable_scope == "all_fields" %}
+        <span>{% trans "All fields are editable." %}</span>
+    {% elif editable_scope == "specific_fields" %}
+        <span>
+            {% trans "Only specific fields are editable" %}:
+            {% for f in editable_fields %}
+                {% if not forloop.first %}, {% endif %}{{ f }}
+            {% empty %}-
+            {% endfor %}
+        </span>
+    {% else %}
+        <span>{% trans "No fields are editable while waiting." %}</span>
+    {% endif %}
+</div>

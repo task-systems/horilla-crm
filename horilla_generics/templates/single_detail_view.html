@@ -1,32 +1,38 @@
-{% load horilla_tags %}
-{% load static %}
-{% load i18n %}
+{% load static i18n horilla_tags %}
 
-<button id="detailViewReloadButton"  hidden hx-get="{{ request.path }}?{{request.GET.urlencode}}" hx-target="#detailViewContainer" hx-swap="outerHTML" hx-select="#detailViewContainer">click</button>
-<div class="modal-box mx-5 bg-white w-full max-w-md md:min-w-[700px] rounded-lg  p-0 transition-all duration-300 opacity-100 scale-100">
+<button
+    id="detailViewReloadButton"
+    hidden
+    hx-get="{{ request.path }}?{{request.GET.urlencode}}"
+    hx-target="#detailViewContainer"
+    hx-swap="outerHTML"
+    hx-select="#detailViewContainer"
+>
+    click
+</button>
+<div class="modal-box mx-5 bg-white w-full max-w-md md:min-w-[700px] rounded-lg p-0 transition-all duration-300 opacity-100 scale-100">
     <div class="p-5 pl-2" id="detailViewContainer">
-
         <!-- Modal Header -->
         <div class="flex justify-between items-center mb-2">
             <h2 class="text-md font-semibold" id="genericModalLabel">{{ title }}</h2>
-            <button onclick="closeDetailModal();" class="text-gray-500 hover:text-red-500 text-xl cursor-pointer">
-                <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}" />
+            <button onclick="closeDetailModal()" class="text-gray-500 hover:text-red-500 text-xl cursor-pointer">
+                <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}">
             </button>
         </div>
 
         <!-- Profile Header -->
         {% if header %}
-            <a class="flex items-center gap-5 mb-5 no-underline" {{ header.attrs|format:object|safe }}>
+            <a class="flex items-center gap-5 mb-5 no-underline min-w-0" {{ header.attrs|format:object|safe }}>
                 {% if header.avatar %}
                     <div class="w-[50px] h-[50px] rounded-full overflow-hidden">
-                        <img src="{{ object|get_field:header.avatar }}" class="w-full h-full object-cover" />
+                        <img src="{{ object|get_field:header.avatar }}" class="w-full h-full object-cover">
                     </div>
                 {% endif %}
-                <div>
-                    <p class="mb-1 text-sm font-semibold">
+                <div class="min-w-0 flex-1">
+                    <p class="mb-1 text-sm font-semibold truncate" title="{{ object|get_field:header.title }}">
                         {{ object|get_field:header.title }}
                     </p>
-                    <p class="text-xs text-[#666]">
+                    <p class="text-xs text-[#666] truncate" title="{{ object|get_field:header.subtitle }}">
                         {{ object|get_field:header.subtitle }}
                     </p>
                 </div>
@@ -58,10 +64,21 @@
                 <div class="flex gap-1">
                     {% if actions and not action_method %}
                         {% for action in actions %}
-                            <a {{ action.attrs|format:object|safe }}
-                                class="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800">
+                            <a
+                                {{ action.attrs|format:object|safe }}
+                                class="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800"
+                            >
                                 {% if action.src %}
-                                    <img src="{% static action.src %}" alt="{{ action.action }}" class="{{ action.img_class }}" style="{{ action.image_style}}"/>
+                                    {% if 'svg-themed' in action.img_class %}
+                                        {% themed_icon action.src action.img_class action.image_style %}
+                                    {% else %}
+                                        <img
+                                            src="{% static action.src %}"
+                                            alt="{{ action.action }}"
+                                            class="{{ action.img_class }}"
+                                            style="{{ action.image_style }}"
+                                        >
+                                    {% endif %}
                                 {% else %}
                                     <ion-icon name="{{ action.icon }}"></ion-icon>
                                 {% endif %}
@@ -78,18 +95,22 @@
             <!-- Prev/Next Buttons -->
             {% if instance_ids %}
                 <div class="flex gap-1 ml-auto">
-                    <button data-action="previous"
+                    <button
+                        data-action="previous"
                         hx-get="{{ previous_url }}?{{ ids_key }}={{ instance_id }}&{{ request.GET.urlencode }}"
                         hx-on:click="$('#detailViewContainer').toggleClass('animate-pulse');"
                         hx-target="#detailModalBox"
-                        class="p-2 w-8 h-8 justify-center bg-primary-600 text-white rounded-full text-xs flex items-center gap-2 hover:bg-primary-800 transition duration-300">
+                        class="p-2 w-8 h-8 justify-center bg-primary-600 text-white rounded-full text-xs flex items-center gap-2 hover:bg-primary-800 transition duration-300"
+                    >
                         <i class="fa-solid fa-angle-left"></i>
                     </button>
-                    <button data-action="next"
+                    <button
+                        data-action="next"
                         hx-get="{{ next_url }}?{{ ids_key }}={{ instance_id }}&{{ request.GET.urlencode }}"
                         hx-on:click="$('#detailViewContainer').toggleClass('animate-pulse');"
                         hx-target="#detailModalBox"
-                        class="p-2 w-8 h-8 justify-center bg-primary-600 text-white rounded-full text-xs flex items-center gap-2 hover:bg-primary-800 transition duration-300">
+                        class="p-2 w-8 h-8 justify-center bg-primary-600 text-white rounded-full text-xs flex items-center gap-2 hover:bg-primary-800 transition duration-300"
+                    >
                         <i class="fa-solid fa-angle-right"></i>
                     </button>
                 </div>

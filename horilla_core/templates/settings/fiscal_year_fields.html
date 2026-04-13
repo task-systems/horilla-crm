@@ -11,8 +11,14 @@
                         <span class="text-red-500">*</span>
                     {% endif %}
                 </label>
-                <select name="start_date_month" id="{{ form.start_date_month.id_for_label }}"
-                        class="js-example-basic-single w-full text-sm" {% if form.start_date_month.field.required %}required{% endif %}>
+                <select
+                    name="start_date_month"
+                    id="{{ form.start_date_month.id_for_label }}"
+                    class="js-example-basic-single w-full text-sm"
+                    {% if form.start_date_month.field.required %}
+                        required
+                    {% endif %}
+                >
                     <option value="">Select {{ form.start_date_month.label }}</option>
                     {% for value, label in form.start_date_month.field.choices %}
                         <option value="{{ value }}" {% if form.start_date_month.value == value %}selected{% endif %}>
@@ -29,17 +35,31 @@
                 {% endif %}
             </div>
             <div class="{% if 'display_year_based_on' in full_width_fields %}col-span-2{% else %}col-span-1{% endif %} flex flex-col">
-                <label for="{{ form.display_year_based_on.id_for_label }}" class="text-xs text-gray-600 mb-1 font-medium">
+                <label
+                    for="{{ form.display_year_based_on.id_for_label }}"
+                    class="text-xs text-gray-600 mb-1 font-medium"
+                >
                     {{ form.display_year_based_on.label }}
                     {% if form.display_year_based_on.field.required %}
                         <span class="text-red-500">*</span>
                     {% endif %}
                 </label>
-                <select name="display_year_based_on" id="{{ form.display_year_based_on.id_for_label }}"
-                        class="js-example-basic-single w-full text-sm" {% if form.display_year_based_on.field.required %}required{% endif %}>
+                <select
+                    name="display_year_based_on"
+                    id="{{ form.display_year_based_on.id_for_label }}"
+                    class="js-example-basic-single w-full text-sm"
+                    {% if form.display_year_based_on.field.required %}
+                        required
+                    {% endif %}
+                >
                     <option value="">Select {{ form.display_year_based_on.label }}</option>
                     {% for value, label in form.display_year_based_on.field.choices %}
-                        <option value="{{ value }}" {% if form.display_year_based_on.value == value %}selected{% endif %}>
+                        <option
+                            value="{{ value }}"
+                            {% if form.display_year_based_on.value == value %}
+                                selected
+                            {% endif %}
+                        >
                             {{ label }}
                         </option>
                     {% endfor %}
@@ -61,14 +81,19 @@
                         <span class="text-red-500">*</span>
                     {% endif %}
                 </label>
-                <select name="format_type" id="{{ form.format_type.id_for_label }}"
-                        class="js-example-basic-single w-full text-sm"
-                        hx-get="{% url 'horilla_core:fiscal_year_fields' %}"
-                        hx-target="#dynamic-fields"
-                        hx-swap="innerHTML"
-                       hx-include="#fiscalyear-form-view"
-                       hx-trigger="change"
-                        {% if form.format_type.field.required %}required{% endif %}>
+                <select
+                    name="format_type"
+                    id="{{ form.format_type.id_for_label }}"
+                    class="js-example-basic-single w-full text-sm"
+                    hx-get="{% url 'horilla_core:fiscal_year_fields' %}"
+                    hx-target="#dynamic-fields"
+                    hx-swap="innerHTML"
+                    hx-include="#fiscalyear-form-view"
+                    hx-trigger="change"
+                    {% if form.format_type.field.required %}
+                        required
+                    {% endif %}
+                >
                     <option value="">Select {{ form.format_type.label }}</option>
                     {% for value, label in form.format_type.field.choices %}
                         <option value="{{ value }}" {% if form.format_type.value == value %}selected{% endif %}>
@@ -87,23 +112,36 @@
 
             {% if show_year_based_format %}
                 <div class="{% if 'year_based_format' in full_width_fields %}col-span-2{% else %}col-span-1{% endif %} flex flex-col">
-                    <label for="{{ form.year_based_format.id_for_label }}" class="text-xs text-gray-600 mb-1 font-medium">
+                    <label
+                        for="{{ form.year_based_format.id_for_label }}"
+                        class="text-xs text-gray-600 mb-1 font-medium"
+                    >
                         {{ form.year_based_format.label }}
                         {% if form.year_based_format.field.required %}
                             <span class="text-red-500">*</span>
                         {% endif %}
                     </label>
-                    <select name="year_based_format" id="{{ form.year_based_format.id_for_label }}"
-                            class="js-example-basic-single w-full text-sm"
-                            hx-get="{% url 'horilla_core:fiscal_year_fields' %}"
-                            hx-target="#dynamic-fields"
-                            hx-swap="innerHTML"
-                            hx-include="#fiscalyear-form-view"
-                            hx-trigger="change"
-                            {% if form.year_based_format.field.required %}required{% endif %}>
+                    <select
+                        name="year_based_format"
+                        id="{{ form.year_based_format.id_for_label }}"
+                        class="js-example-basic-single w-full text-sm"
+                        hx-get="{% url 'horilla_core:fiscal_year_fields' %}"
+                        hx-target="#dynamic-fields"
+                        hx-swap="innerHTML"
+                        hx-include="#fiscalyear-form-view"
+                        hx-trigger="change"
+                        {% if form.year_based_format.field.required %}
+                            required
+                        {% endif %}
+                    >
                         <option value="">Select {{ form.year_based_format.label }}</option>
                         {% for value, label in form.year_based_format.field.choices %}
-                            <option value="{{ value }}" {% if form.year_based_format.value == value %}selected{% endif %}>
+                            <option
+                                value="{{ value }}"
+                                {% if form.year_based_format.value == value %}
+                                    selected
+                                {% endif %}
+                            >
                                 {{ label }}
                             </option>
                         {% endfor %}
@@ -117,7 +155,7 @@
                     {% endif %}
                 </div>
                 <div class="col-span-2 mt-4 p-4 bg-gray-50 rounded-lg">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-2">{% trans 'Configuration Preview'%}</h3>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2">{% trans 'Configuration Preview' %}</h3>
                     {% if preview_data.format_preview %}
                         <p class="text-sm text-gray-600">{{ preview_data.format_preview }}</p>
                     {% endif %}
@@ -132,23 +170,36 @@
             {% endif %}
             {% if show_quarter_based_format %}
                 <div class="{% if 'quarter_based_format' in full_width_fields %}col-span-2{% else %}col-span-1{% endif %} flex flex-col">
-                    <label for="{{ form.quarter_based_format.id_for_label }}" class="text-xs text-gray-600 mb-1 font-medium">
+                    <label
+                        for="{{ form.quarter_based_format.id_for_label }}"
+                        class="text-xs text-gray-600 mb-1 font-medium"
+                    >
                         {{ form.quarter_based_format.label }}
                         {% if form.quarter_based_format.field.required %}
                             <span class="text-red-500">*</span>
                         {% endif %}
                     </label>
-                    <select name="quarter_based_format" id="{{ form.quarter_based_format.id_for_label }}"
-                            class="js-example-basic-single w-full text-sm"
-                            hx-get="{% url 'horilla_core:fiscal_year_fields' %}"
-                            hx-target="#dynamic-fields"
-                            hx-swap="innerHTML"
-                            hx-include="#fiscalyear-form-view"
-                            hx-trigger="change"
-                            {% if form.quarter_based_format.field.required %}required{% endif %}>
+                    <select
+                        name="quarter_based_format"
+                        id="{{ form.quarter_based_format.id_for_label }}"
+                        class="js-example-basic-single w-full text-sm"
+                        hx-get="{% url 'horilla_core:fiscal_year_fields' %}"
+                        hx-target="#dynamic-fields"
+                        hx-swap="innerHTML"
+                        hx-include="#fiscalyear-form-view"
+                        hx-trigger="change"
+                        {% if form.quarter_based_format.field.required %}
+                            required
+                        {% endif %}
+                    >
                         <option value="">Select {{ form.quarter_based_format.label }}</option>
                         {% for value, label in form.quarter_based_format.field.choices %}
-                            <option value="{{ value }}" {% if form.quarter_based_format.value == value %}selected{% endif %}>
+                            <option
+                                value="{{ value }}"
+                                {% if form.quarter_based_format.value == value %}
+                                    selected
+                                {% endif %}
+                            >
                                 {{ label }}
                             </option>
                         {% endfor %}
@@ -161,9 +212,9 @@
                         </div>
                     {% endif %}
                 </div>
-                {% if preview_data  %}
+                {% if preview_data %}
                     <div class="col-span-2 mt-4 p-4 bg-gray-50 rounded-lg">
-                        <h3 class="text-sm font-semibold text-gray-700 mb-2">Configuration Preview</h3>
+                        <h3 class="text-sm font-semibold text-gray-700 mb-2">{% trans "Configuration Preview" %}</h3>
                         {% if preview_data.format_preview %}
                             <p class="text-sm text-gray-600">{{ preview_data.format_preview }}</p>
                         {% endif %}
@@ -185,8 +236,14 @@
                         <span class="text-red-500">*</span>
                     {% endif %}
                 </label>
-                <select name="start_date_month" id="{{ form.start_date_month.id_for_label }}"
-                        class="js-example-basic-single w-full text-sm" {% if form.start_date_month.field.required %}required{% endif %}>
+                <select
+                    name="start_date_month"
+                    id="{{ form.start_date_month.id_for_label }}"
+                    class="js-example-basic-single w-full text-sm"
+                    {% if form.start_date_month.field.required %}
+                        required
+                    {% endif %}
+                >
                     <option value="">Select {{ form.start_date_month.label }}</option>
                     {% for value, label in form.start_date_month.field.choices %}
                         <option value="{{ value }}" {% if form.start_date_month.value == value %}selected{% endif %}>
@@ -210,16 +267,25 @@
                         <span class="text-red-500">*</span>
                     {% endif %}
                 </label>
-                <input type="number" name="start_date_day" id="{{ form.start_date_day.id_for_label }}"
-                       value="{{ form.start_date_day.value|default_if_none:'' }}"
-                       class="text-color-600 p-2 placeholder:text-xs w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
-                       placeholder="Enter {{ form.start_date_day.label }}" {% if form.start_date_day.field.required %}required{% endif %}
-                       {% if form.start_date_day.field.required %}required{% endif %}
-                        hx-get="{% url 'horilla_core:calculate_week_start_day' %}"
-                        hx-target="#week_start_day_container"
-                        hx-swap="outerHTML"
-                        hx-include="[name='start_date_month'],[name='start_date_day']"
-                        hx-trigger="change">
+                <input
+                    type="number"
+                    name="start_date_day"
+                    id="{{ form.start_date_day.id_for_label }}"
+                    value="{{ form.start_date_day.value|default_if_none:'' }}"
+                    class="text-color-600 p-2 placeholder:text-xs w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
+                    placeholder="Enter {{ form.start_date_day.label }}"
+                    {% if form.start_date_day.field.required %}
+                        required
+                    {% endif %}
+                    {% if form.start_date_day.field.required %}
+                        required
+                    {% endif %}
+                    hx-get="{% url 'horilla_core:calculate_week_start_day' %}"
+                    hx-target="#week_start_day_container"
+                    hx-swap="outerHTML"
+                    hx-include="[name='start_date_month'],[name='start_date_day']"
+                    hx-trigger="change"
+                >
                 {% if form.start_date_day.errors %}
                     <div class="bg-red-50 text-red-500 px-3 py-2 rounded text-xs mt-1">
                         {% for error in form.start_date_day.errors %}
@@ -229,15 +295,24 @@
                 {% endif %}
             </div>
 
-            <div id="week_start_day_container" class="{% if 'week_start_day' in full_width_fields %}col-span-2{% else %}col-span-1{% endif %} flex flex-col">
+            <div
+                id="week_start_day_container"
+                class="{% if 'week_start_day' in full_width_fields %}col-span-2{% else %}col-span-1{% endif %} flex flex-col"
+            >
                 <label for="{{ form.week_start_day.id_for_label }}" class="text-xs text-gray-600 mb-1 font-medium">
                     {{ form.week_start_day.label }}
                     {% if form.week_start_day.field.required %}
                         <span class="text-red-500">*</span>
                     {% endif %}
                 </label>
-                <select name="week_start_day" id="{{ form.week_start_day.id_for_label }}"
-                        class="js-example-basic-single w-full text-sm" {% if form.week_start_day.field.required %}required{% endif %}>
+                <select
+                    name="week_start_day"
+                    id="{{ form.week_start_day.id_for_label }}"
+                    class="js-example-basic-single w-full text-sm"
+                    {% if form.week_start_day.field.required %}
+                        required
+                    {% endif %}
+                >
                     <option value="">Select {{ form.week_start_day.label }}</option>
                     {% for value, label in form.week_start_day.field.choices %}
                         <option value="{{ value }}" {% if form.week_start_day.value == value %}selected{% endif %}>
@@ -255,17 +330,31 @@
             </div>
 
             <div class="{% if 'display_year_based_on' in full_width_fields %}col-span-2{% else %}col-span-1{% endif %} flex flex-col">
-                <label for="{{ form.display_year_based_on.id_for_label }}" class="text-xs text-gray-600 mb-1 font-medium">
+                <label
+                    for="{{ form.display_year_based_on.id_for_label }}"
+                    class="text-xs text-gray-600 mb-1 font-medium"
+                >
                     {{ form.display_year_based_on.label }}
                     {% if form.display_year_based_on.field.required %}
                         <span class="text-red-500">*</span>
                     {% endif %}
                 </label>
-                <select name="display_year_based_on" id="{{ form.display_year_based_on.id_for_label }}"
-                        class="js-example-basic-single w-full text-sm" {% if form.display_year_based_on.field.required %}required{% endif %}>
+                <select
+                    name="display_year_based_on"
+                    id="{{ form.display_year_based_on.id_for_label }}"
+                    class="js-example-basic-single w-full text-sm"
+                    {% if form.display_year_based_on.field.required %}
+                        required
+                    {% endif %}
+                >
                     <option value="">Select {{ form.display_year_based_on.label }}</option>
                     {% for value, label in form.display_year_based_on.field.choices %}
-                        <option value="{{ value }}" {% if form.display_year_based_on.value == value %}selected{% endif %}>
+                        <option
+                            value="{{ value }}"
+                            {% if form.display_year_based_on.value == value %}
+                                selected
+                            {% endif %}
+                        >
                             {{ label }}
                         </option>
                     {% endfor %}
@@ -286,8 +375,14 @@
                         <span class="text-red-500">*</span>
                     {% endif %}
                 </label>
-                <select name="number_weeks_by" id="{{ form.number_weeks_by.id_for_label }}"
-                        class="js-example-basic-single w-full text-sm" {% if form.number_weeks_by.field.required %}required{% endif %}>
+                <select
+                    name="number_weeks_by"
+                    id="{{ form.number_weeks_by.id_for_label }}"
+                    class="js-example-basic-single w-full text-sm"
+                    {% if form.number_weeks_by.field.required %}
+                        required
+                    {% endif %}
+                >
                     <option value="">Select {{ form.number_weeks_by.label }}</option>
                     {% for value, label in form.number_weeks_by.field.choices %}
                         <option value="{{ value }}" {% if form.number_weeks_by.value == value %}selected{% endif %}>
@@ -305,29 +400,44 @@
             </div>
 
             <div class="{% if 'period_display_option' in full_width_fields %}col-span-2{% else %}col-span-1{% endif %} flex flex-col">
-                <label for="{{ form.period_display_option.id_for_label }}" class="text-xs text-gray-600 mb-1 font-medium">
+                <label
+                    for="{{ form.period_display_option.id_for_label }}"
+                    class="text-xs text-gray-600 mb-1 font-medium"
+                >
                     {{ form.period_display_option.label }}
                     {% if form.period_display_option.field.required %}
                         <span class="text-red-500">*</span>
                     {% endif %}
                 </label>
-                <select name="period_display_option" id="{{ form.period_display_option.id_for_label }}"
-                        class="js-example-basic-single w-full text-sm"
-                        hx-get="{% url 'horilla_core:fiscal_year_fields' %}"
-                        hx-target="#dynamic-fields"
-                        hx-swap="innerHTML"
-                        hx-include="#fiscalyear-form-view"
-                        hx-trigger="change"
-                        {% if form.period_display_option.field.required %}required{% endif %}>
+                <select
+                    name="period_display_option"
+                    id="{{ form.period_display_option.id_for_label }}"
+                    class="js-example-basic-single w-full text-sm"
+                    hx-get="{% url 'horilla_core:fiscal_year_fields' %}"
+                    hx-target="#dynamic-fields"
+                    hx-swap="innerHTML"
+                    hx-include="#fiscalyear-form-view"
+                    hx-trigger="change"
+                    {% if form.period_display_option.field.required %}
+                        required
+                    {% endif %}
+                >
                     <option value="">Select {{ form.period_display_option.label }}</option>
                     {% for value, label in form.period_display_option.field.choices %}
-                        <option value="{{ value }}" {% if form.period_display_option.value == value %}selected{% endif %}>
+                        <option
+                            value="{{ value }}"
+                            {% if form.period_display_option.value == value %}
+                                selected
+                            {% endif %}
+                        >
                             {{ label }}
                         </option>
                     {% endfor %}
                 </select>
                 {% if preview_data.period_display %}
-                    <p class="text-sm text-gray-600 mt-2">{% trans 'Period Display:' %} {{ preview_data.period_display }}</p>
+                    <p class="text-sm text-gray-600 mt-2">
+                        {% trans 'Period Display:' %} {{ preview_data.period_display }}
+                    </p>
                 {% endif %}
                 {% if form.period_display_option.errors %}
                     <div class="bg-red-50 text-red-500 px-3 py-2 rounded text-xs mt-1">

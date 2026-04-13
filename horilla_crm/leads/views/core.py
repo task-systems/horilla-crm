@@ -40,7 +40,6 @@ from horilla_generics.views import (
     HorillaView,
 )
 from horilla_generics.views.timeline import HorillaTimelineView
-from horilla_utils.middlewares import _thread_local
 
 
 class LeadView(LoginRequiredMixin, HorillaView):
@@ -890,9 +889,7 @@ class LeadsNotesAndAttachments(LoginRequiredMixin, HorillaNotesAttachementSectio
 class LeadsDetailViewTabView(LoginRequiredMixin, HorillaDetailTabView):
     """Lead Detail Tab View"""
 
-    def __init__(self, **kwargs):
-        request = getattr(_thread_local, "request", None)
-        self.request = request
+    def _prepare_detail_tabs(self):
         self.object_id = self.request.GET.get("object_id")
         if self.object_id:
             obj = Lead.objects.get(pk=self.object_id)
@@ -910,7 +907,7 @@ class LeadsDetailViewTabView(LoginRequiredMixin, HorillaDetailTabView):
                     "notes_attachments": "leads:leads_notes_attachments",
                     "history": "leads:leads_history_tab_view",
                 }
-        super().__init__(**kwargs)
+        super()._prepare_detail_tabs()
 
 
 @method_decorator(

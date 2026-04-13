@@ -122,18 +122,15 @@ def evaluate_condition(condition, instance):
 
         # Filter-style operators for date/datetime: exact, gt, lt, between, isnull, isnotnull
         if is_date_field or is_datetime_field:
-            if op in ("isnull", "is_empty"):
+            if op == "isnull":
                 return field_value in (None, "") or (
                     getattr(instance, condition.field, None) is None
                 )
-            if op in ("isnotnull", "is_not_empty"):
+            if op == "isnotnull":
                 return getattr(instance, condition.field, None) is not None
-            # Normalize for single-value comparisons
-            if op == "exact":
-                op = "equals"
-            if op in ("gt", "lt", "between", "equals"):
+            if op in ("exact", "gt", "lt", "between"):
                 raw_value = getattr(instance, condition.field, None)
-                if op == "equals":
+                if op == "exact":
                     comp_value = (
                         parse_date(value) if is_date_field else parse_datetime(value)
                     )
@@ -175,20 +172,8 @@ def evaluate_condition(condition, instance):
                             return start_val <= raw_value <= end_val
                     return False
 
-        # Map filter-style operators to legacy for non-date handling below
-        if op == "exact":
-            op = "equals"
-        if op == "gt":
-            op = "greater_than"
-        if op == "lt":
-            op = "less_than"
-        if op == "isnull":
-            op = "is_empty"
-        if op == "isnotnull":
-            op = "is_not_empty"
-
         # For numeric fields with equals/not_equals, do numeric comparison
-        if is_numeric_field and op in ["equals", "not_equals"]:
+        if is_numeric_field and op in ["exact", "ne"]:
             try:
                 # Convert both to float for comparison (handles Decimal, Float, Integer)
                 field_num = float(field_value) if field_value else None
@@ -201,7 +186,7 @@ def evaluate_condition(condition, instance):
                     if field_num is None or value_num is None:
                         return False
                     return field_num == value_num
-                if op == "not_equals":
+                if op == "ne":
                     # Handle None/empty values
                     if field_num is None and value_num is None:
                         return False
@@ -213,41 +198,41 @@ def evaluate_condition(condition, instance):
                 pass
 
         # Perform comparison based on operator (string comparison for non-numeric or fallback)
-        if op == "equals":
+        if op == "exact":
             return field_value == value
-        if op == "not_equals":
+        if op == "ne":
             return field_value != value
-        if op == "contains":
+        if op == "icontains":
             return value.lower() in field_value.lower()
         if op == "not_contains":
             return value.lower() not in field_value.lower()
-        if op == "starts_with":
+        if op == "istartswith":
             return field_value.lower().startswith(value.lower())
-        if op == "ends_with":
+        if op == "iendswith":
             return field_value.lower().endswith(value.lower())
-        if op == "greater_than":
+        if op == "gt":
             try:
                 return float(field_value) > float(value)
             except (ValueError, TypeError):
                 return False
-        if op == "greater_than_equal":
+        if op == "gte":
             try:
                 return float(field_value) >= float(value)
             except (ValueError, TypeError):
                 return False
-        if op == "less_than":
+        if op == "lt":
             try:
                 return float(field_value) < float(value)
             except (ValueError, TypeError):
                 return False
-        if op == "less_than_equal":
+        if op == "lte":
             try:
                 return float(field_value) <= float(value)
             except (ValueError, TypeError):
                 return False
-        if op == "is_empty":
+        if op == "isnull":
             return not field_value or field_value.strip() == ""
-        if op == "is_not_empty":
+        if op == "isnotnull":
             return bool(field_value and field_value.strip())
 
         return False

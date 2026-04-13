@@ -1,7 +1,12 @@
 {% load i18n static %}
 <div id="model-fields-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden" onclick="event.stopPropagation()">
-        <form id="field-permissions-form" method="post"
+    <div
+        class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden"
+        onclick="event.stopPropagation()"
+    >
+        <form
+            id="field-permissions-form"
+            method="post"
             {% if role %}
                 action="{% url 'horilla_core:save_all_field_permissions_role' role.id %}"
                 hx-post="{% url 'horilla_core:save_all_field_permissions_role' role.id %}"
@@ -12,7 +17,8 @@
                 action="{% url 'horilla_core:save_bulk_field_permissions' %}"
                 hx-post="{% url 'horilla_core:save_bulk_field_permissions' %}"
             {% endif %}
-            hx-swap="innerHTML">
+            hx-swap="innerHTML"
+        >
             {% csrf_token %}
             <input type="hidden" name="app_label" value="{{ app_label }}">
             <input type="hidden" name="model_name" value="{{ model_name }}">
@@ -24,10 +30,10 @@
             <!-- Modal Header -->
             <div class="text-primary-600 px-6 py-4 flex justify-between items-center">
                 <h3 class="text-lg font-semibold">
-                   {% trans "Field Level Permissions" %}
+                    {% trans "Field Level Permissions" %}
                 </h3>
                 <button type="button" onclick="closeModal()" class="cursor-pointer">
-                    <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}" />
+                    <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}">
                 </button>
             </div>
 
@@ -61,14 +67,16 @@
                     {% if is_bulk and selected_users_count == 0 %}
                         <div class="mt-3 p-3 bg-yellow-50 border border-[#f3edb0] rounded-lg">
                             <p class="text-xs text-yellow-800">
-                                <strong>{% trans "Warning:" %}</strong> {% trans "No users selected. Please select atleast one user." %}
+                                <strong>{% trans "Warning:" %}</strong>
+                                {% trans "No users selected. Please select atleast one user." %}
                             </p>
                         </div>
                     {% endif %}
 
                     <div class="mb-5 p-3 mt-3 bg-yellow-50 border border-[#f3edb0] rounded-lg">
                         <p class="text-xs text-yellow-800">
-                          <strong>{% trans "Note:" %}</strong> {% trans "Required fields are always visible when creating or duplicating. Permissions for these fields apply only during editing." %}
+                            <strong>{% trans "Note:" %}</strong>
+                            {% trans "Required fields are always visible when creating or duplicating. Permissions for these fields apply only during editing." %}
                         </p>
                     </div>
                 </div>
@@ -101,7 +109,10 @@
                                                     <div class="font-medium flex items-center gap-1">
                                                         {{ field.verbose_name }}
                                                         {% if field.is_mandatory %}
-                                                            <span class="text-red-500" title="{% trans 'Mandatory field' %}">*</span>
+                                                            <span
+                                                                class="text-red-500"
+                                                                title="{% trans 'Mandatory field' %}"
+                                                            >*</span>
                                                         {% endif %}
                                                     </div>
                                                 </div>
@@ -115,8 +126,10 @@
                                                         type="radio"
                                                         value="readonly"
                                                         name="field-{{ field.name }}"
-                                                        {% if field.current_permission == 'readonly' %}checked{% endif %}
-                                                    />
+                                                        {% if field.current_permission == 'readonly' %}
+                                                            checked
+                                                        {% endif %}
+                                                    >
                                                     <span class="custom-radio"></span>
                                                 </label>
                                             </div>
@@ -129,8 +142,10 @@
                                                         type="radio"
                                                         value="readwrite"
                                                         name="field-{{ field.name }}"
-                                                        {% if field.current_permission == 'readwrite' or not field.current_permission %}checked{% endif %}
-                                                    />
+                                                        {% if field.current_permission == 'readwrite' or not field.current_permission %}
+                                                            checked
+                                                        {% endif %}
+                                                    >
                                                     <span class="custom-radio"></span>
                                                 </label>
                                             </div>
@@ -143,8 +158,10 @@
                                                         type="radio"
                                                         value="hidden"
                                                         name="field-{{ field.name }}"
-                                                        {% if field.current_permission == 'hidden' %}checked{% endif %}
-                                                    />
+                                                        {% if field.current_permission == 'hidden' %}
+                                                            checked
+                                                        {% endif %}
+                                                    >
                                                     <span class="custom-radio"></span>
                                                 </label>
                                             </div>
@@ -164,19 +181,14 @@
             <!-- Modal Footer -->
             <div class="bg-gray-50 px-6 py-4 flex justify-end gap-3">
                 <button
-                    type="button"
-                    onclick="closeModal()"
-                    class="text-primary-600 px-4 py-2 border border-primary-600 rounded hover:bg-gray-300 transition-colors text-sm"
+                    type="submit"
+                    class="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors text-sm {% if is_bulk and selected_users_count == 0 %}opacity-50 cursor-not-allowed{% endif %}"
+                    {% if is_bulk and selected_users_count == 0 %}
+                        disabled
+                    {% endif %}
                 >
-                    {% trans "Cancel" %}
+                    {% trans "Save All Changes" %}
                 </button>
-                <button
-                type="submit"
-                class="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors text-sm {% if is_bulk and selected_users_count == 0 %}opacity-50 cursor-not-allowed{% endif %}"
-                {% if is_bulk and selected_users_count == 0 %}disabled {% endif %}
-            >
-                {% trans "Save All Changes" %}
-            </button>
             </div>
         </form>
     </div>

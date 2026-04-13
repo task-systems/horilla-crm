@@ -189,6 +189,7 @@ class HorillaNotesAttachementSectionView(DetailView):
         list_view = AttachmentListView()
         list_view.request = self.request
         list_view.queryset = queryset
+        list_view.object_list = queryset
         list_view.view_id = f"attachments_{content_type.model}_{object_id}"
         list_view.actions = self.get_actions()
         context = list_view.get_context_data(object_list=queryset)

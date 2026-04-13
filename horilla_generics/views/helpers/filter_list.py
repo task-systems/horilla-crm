@@ -69,6 +69,7 @@ class SaveFilterListView(LoginRequiredMixin, FormView):
         saved_list_id = self.request.GET.get("saved_list_id") or self.request.POST.get(
             "saved_list_id"
         )
+        create_new = self.request.GET.get("create_new") == "true"
         if saved_list_id:
             try:
                 saved_list = self.request.user.saved_filter_lists.get(id=saved_list_id)
@@ -88,6 +89,32 @@ class SaveFilterListView(LoginRequiredMixin, FormView):
                 in ["field", "operator", "value", "start_value", "end_value", "search"]
             }
             context["is_edit"] = False
+        context["create_new"] = create_new
+        search_url = (
+            self.request.GET.get("search_url")
+            or self.request.POST.get("search_url")
+            or ""
+        )
+        context["search_url"] = search_url
+
+        # Build the URL to load filter rows into the modal (used with hx-trigger="load")
+        if search_url and (create_new or context.get("is_edit")):
+            query_params = context.get("query_params", {})
+            if query_params.get("field"):
+                params = urlencode(
+                    [("render_filter_rows", "true"), ("row_id_offset", "10000")]
+                    + [("field", v) for v in query_params.get("field", [])]
+                    + [("operator", v) for v in query_params.get("operator", [])]
+                    + [("value", v) for v in query_params.get("value", [])]
+                    + [("start_value", v) for v in query_params.get("start_value", [])]
+                    + [("end_value", v) for v in query_params.get("end_value", [])]
+                )
+            else:
+                params = "add_filter_row=true&row_id=9999"
+            context["filter_rows_url"] = f"{search_url}?{params}"
+        else:
+            context["filter_rows_url"] = ""
+
         context["main_url"] = (
             self.request.GET.get("main_url")
             or self.request.POST.get("main_url")
@@ -141,7 +168,8 @@ class SaveFilterListView(LoginRequiredMixin, FormView):
                 )
                 return self.form_invalid(form)
 
-        if not any(filter_params.values()):
+        create_new = self.request.POST.get("create_new") == "true"
+        if not create_new and not any(filter_params.values()):
             form.add_error(None, "At least one filter is required.")
             return self.form_invalid(form)
         try:

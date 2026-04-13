@@ -350,7 +350,8 @@ class ReportDetailFilteredView(LoginRequiredMixin, View):
             queryset = list_view._apply_sorting(queryset, sort_field, sort_direction)
         else:
             queryset = queryset.order_by("-id")
-        list_view.queryset = queryset  # Set object_list to avoid AttributeError
+        list_view.queryset = queryset
+        list_view.object_list = queryset
         context = list_view.get_context_data(object_list=queryset)
 
         # Add no_record_msg if queryset is empty

@@ -1,0 +1,29 @@
+{% extends "index.html" %}
+{% load i18n %}
+
+{% block content %}
+    <div class="modelcontent">
+        {% include "components/sub_sidebar.html" %}
+        <div id="mainContent" class="flex-[1_0] leftspace transition-all duration-300 ease-in-out pt-0">
+            <div id="mainSession" class="pt-0">
+                <div
+                    id="approval-job-navbar"
+                    hx-get="{% url 'approvals:approval_job_navbar_view' %}?{{ request.GET.urlencode }}"
+                    hx-trigger="load"
+                >
+                </div>
+
+                <div class="p-5 pt-24">
+                    <div class="relative h-[calc(_100vh_-_200px_)] [box-shadow:0px_0px_20px_0px_rgb(0_0_0_/_5%)] p-4 pb-0 bg-white rounded-md">
+                        <div
+                            id="approval-jobs-tab-content"
+                            hx-get="{% url 'approvals:approval_jobs_tab_view' %}?{{ request.GET.urlencode }}"
+                            hx-trigger="load"
+                        >
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

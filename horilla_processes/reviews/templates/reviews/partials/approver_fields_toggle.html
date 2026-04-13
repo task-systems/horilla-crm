@@ -1,0 +1,39 @@
+<div
+    id="approver_users_container"
+    class="col-span-2 flex flex-col"
+    hx-swap-oob="true"
+    {% if not show_users %}
+        style="display: none"
+    {% endif %}
+>
+    <div class="flex justify-between items-center mb-2">
+        <div class="flex justify-between mb-1 w-full">
+            <label for="{{ form.approver_users.id_for_label }}" class="text-xs text-color-600">
+                {{ form.approver_users.label }}
+            </label>
+        </div>
+    </div>
+    <div class="relative">
+        {{ form.approver_users }}
+    </div>
+</div>
+
+<div
+    id="approver_roles_container"
+    class="col-span-2 flex flex-col"
+    hx-swap-oob="true"
+    {% if not show_roles %}
+        style="display: none"
+    {% endif %}
+>
+    <div class="flex justify-between items-center mb-2">
+        <div class="flex justify-between mb-1 w-full">
+            <label for="{{ form.approver_roles.id_for_label }}" class="text-xs text-color-600">
+                {{ form.approver_roles.label }}
+            </label>
+        </div>
+    </div>
+    <div class="relative">
+        {{ form.approver_roles }}
+    </div>
+</div>

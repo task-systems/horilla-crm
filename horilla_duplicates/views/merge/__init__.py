@@ -2,7 +2,7 @@
 
 
 from .generic import GenericDuplicateDetailView, DuplicateWarningModalView
-from .potential import PotentialDuplicatesTabView, UpdateMergeButtonView
+from .potential import PotentialDuplicatesTabView
 from .merge_flow import (
     MergeDuplicatesCompareView,
     MergeDuplicatesSummaryView,
@@ -13,7 +13,6 @@ __all__ = [
     "GenericDuplicateDetailView",
     "DuplicateWarningModalView",
     "PotentialDuplicatesTabView",
-    "UpdateMergeButtonView",
     "MergeDuplicatesCompareView",
     "MergeDuplicatesSummaryView",
     "MergeDuplicatesView",

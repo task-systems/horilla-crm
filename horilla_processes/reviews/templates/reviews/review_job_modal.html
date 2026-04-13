@@ -1,0 +1,192 @@
+{% load i18n static %}
+
+<form
+    hx-post="{% url 'reviews:review_job_detail_view' job.pk %}"
+    hx-target="#modalBox"
+    hx-swap="innerHTML"
+>
+    {% csrf_token %}
+    <div class="relative bg-white rounded-lg shadow-sm">
+        <div class="p-5">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-md font-semibold">{% trans "Review Job" %}</h2>
+                <button
+                    type="button"
+                    onclick="closeModal()"
+                    class="text-gray-500 hover:text-red-500 text-xl cursor-pointer"
+                >
+                    <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}">
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-x-8 text-sm mb-3">
+                <div><span class="font-semibold">{% trans "Process" %}:</span> {{ job.reviews }}</div>
+                <div><span class="font-semibold">{% trans "Record" %}:</span> {{ job.record }}</div>
+            </div>
+
+            {% if total_approvers > 1 %}
+                <div class="flex items-center gap-2 text-xs mb-4 rounded-md px-3 py-2">
+                    <svg
+                        class="w-4 h-4 text-primary-600 shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                        />
+                    </svg>
+                    <span class="text-primary-700 font-bold">
+                        {% blocktrans with done=approvers_done total=total_approvers %}
+                            {{ done }} / {{ total }} approved.
+                        {% endblocktrans %}
+                    </span>
+                </div>
+            {% endif %}
+
+            <h3 class="text-sm font-semibold bg-primary-300 text-primary-600 rounded-md p-3 mb-3">
+                {% trans "Record Details" %}
+            </h3>
+            <div class="space-y-2 text-sm mb-4">
+                {% if record_details %}
+                    {% for label, value in record_details %}
+                        <div class="grid grid-cols-12 gap-3 border-b border-primary-100 py-2">
+                            <div class="col-span-5 font-medium">{{ label }}</div>
+                            <div class="col-span-7 text-dark-200">{{ value|default:"-" }}</div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-dark-200">{% trans "No additional record details available." %}</p>
+                {% endif %}
+            </div>
+
+            <h3 class="text-sm font-semibold bg-primary-300 text-primary-600 rounded-md p-3 mb-3">
+                {% trans "Fields To Review" %}
+            </h3>
+            <div class="space-y-2 text-sm max-h-64 overflow-y-auto">
+                {% if field_values %}
+                    {% for field in field_values %}
+                        <div class="grid grid-cols-12 gap-3 border-b border-primary-100 py-2 items-center">
+                            <div class="col-span-4 font-medium">{{ field.label }}</div>
+                            <div class="col-span-4 text-dark-200 overflow-hidden">
+                                {% if field.can_inline_edit %}
+                                    <div id="inline-edit-wrap-{{ forloop.counter }}" class="flex items-center gap-2">
+                                        <span
+                                            id="inline-value-text-{{ forloop.counter }}"
+                                        >{{ field.value|default:"-" }}</span>
+                                        <form
+                                            id="inline-edit-form-{{ forloop.counter }}"
+                                            hx-post="{% url 'reviews:review_job_detail_view' job.pk %}"
+                                            hx-target="#modalBox"
+                                            hx-swap="innerHTML"
+                                            class="hidden w-full"
+                                        >
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="edit_rejected_field">
+                                            <input type="hidden" name="field_key" value="{{ field.key }}">
+                                            <input
+                                                type="text"
+                                                name="field_value"
+                                                value="{{ field.value|default:'' }}"
+                                                class="w-full border border-primary-300 rounded-md p-2 text-sm"
+                                            >
+                                        </form>
+                                    </div>
+                                {% else %}
+                                    {{ field.value|default:"-" }}
+                                {% endif %}
+                            </div>
+                            <div class="col-span-2 text-xs">
+                                {% if field.status == "approved" %}
+                                    <span
+                                        class="px-2 py-1 rounded bg-green-100 text-green-700"
+                                    >{% trans "Approved" %}</span>
+                                {% elif field.status == "rejected" %}
+                                    <span
+                                        class="px-2 py-1 rounded bg-red-100 text-red-700"
+                                    >{% trans "Rejected" %}</span>
+                                {% else %}
+                                    <span
+                                        class="px-2 py-1 rounded bg-gray-100 text-gray-600"
+                                    >{% trans "Pending" %}</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-span-2 text-right relative">
+                                {% if can_decide and job.status == "pending" and not field.can_inline_edit %}
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center justify-center p-1"
+                                        hx-get="{% url 'reviews:review_job_field_review_view' job.pk %}?field={{ field.key|urlencode }}"
+                                        hx-target="#detailModalBox"
+                                        hx-swap="innerHTML"
+                                        hx-on:click="openDetailModal()"
+                                    >
+                                        <img
+                                            src="{% static 'assets/icons/comment.svg' %}"
+                                            alt="{% trans 'Review field' %}"
+                                            class="w-4 h-4"
+                                        >
+                                    </button>
+                                {% endif %}
+                                {% if field.can_inline_edit %}
+                                    <button
+                                        id="inline-edit-btn-{{ forloop.counter }}"
+                                        type="button"
+                                        class="inline-flex items-center justify-center p-1"
+                                        onclick="document.getElementById('inline-value-text-{{ forloop.counter }}').classList.add('hidden'); document.getElementById('inline-edit-form-{{ forloop.counter }}').classList.remove('hidden'); this.classList.add('hidden'); document.getElementById('inline-action-btns-{{ forloop.counter }}').classList.remove('hidden')"
+                                        title="{% trans 'Edit rejected field' %}"
+                                    >
+                                        <img
+                                            src="{% static 'assets/icons/pen.svg' %}"
+                                            alt="{% trans 'Edit' %}"
+                                            class="w-4 h-4"
+                                        >
+                                    </button>
+                                    <div
+                                        id="inline-action-btns-{{ forloop.counter }}"
+                                        class="hidden inline-flex items-center gap-1"
+                                    >
+                                        <button
+                                            type="submit"
+                                            form="inline-edit-form-{{ forloop.counter }}"
+                                            class="inline-flex items-center justify-center w-7 h-7 rounded text-green-700"
+                                            title="{% trans 'Save and resubmit' %}"
+                                        >
+                                            <img
+                                                src="{% static 'assets/icons/tick.svg' %}"
+                                                alt="{% trans 'Save' %}"
+                                                class="w-4 h-4"
+                                            >
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="inline-flex items-center justify-center w-7 h-7 rounded text-primary-600"
+                                            onclick="document.getElementById('inline-edit-form-{{ forloop.counter }}').classList.add('hidden'); document.getElementById('inline-value-text-{{ forloop.counter }}').classList.remove('hidden'); document.getElementById('inline-action-btns-{{ forloop.counter }}').classList.add('hidden'); document.getElementById('inline-edit-btn-{{ forloop.counter }}').classList.remove('hidden')"
+                                            title="{% trans 'Cancel' %}"
+                                        >
+                                            <img
+                                                src="{% static 'assets/icons/close1.svg' %}"
+                                                alt="{% trans 'Cancel' %}"
+                                                class="w-4 h-4"
+                                            >
+                                        </button>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% if field.comment %}
+                                <div class="col-span-12 text-xs text-dark-200 pb-1">
+                                    <span class="font-medium">{% trans "Comment" %}:</span> {{ field.comment }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-dark-200">{% trans "No review fields captured for this job." %}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</form>

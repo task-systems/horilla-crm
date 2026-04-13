@@ -58,9 +58,12 @@ class BusinessHourListView(LoginRequiredMixin, HorillaListView):
     model = BusinessHour
     view_id = "business-hour-list-view"
     table_width = False
-    bulk_select_option = False
+    bulk_select_option = True
     search_url = reverse_lazy("horilla_core:business_hour_list_view")
     store_ordered_ids = True
+    table_height_as_class = "h-[calc(_100vh_-_410px_)]"
+    list_column_visibility = False
+    bulk_update_option = False
 
     columns = [
         "name",

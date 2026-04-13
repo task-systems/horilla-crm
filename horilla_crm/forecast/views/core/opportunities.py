@@ -121,7 +121,12 @@ class ForecastOpportunitiesView(LoginRequiredMixin, View):
                 {"key": "open_pipeline", "display_name": "Open Pipeline"},
             ]
 
+            page = request.GET.get("page")
+
             for type_info in opportunity_types:
+                if page and type_info["key"] != opportunity_type:
+                    continue
+
                 type_info["opportunities"] = self.get_opportunities_by_type(
                     forecast, type_info["key"], user_id
                 )
@@ -169,6 +174,7 @@ class ForecastOpportunitiesView(LoginRequiredMixin, View):
                     bulk_update_option=False,
                     enable_sorting=False,
                     save_to_list_option=False,
+                    apply_pinned_view_default=False,
                 )
 
                 list_view.get_queryset = lambda ti=type_info: ti[
@@ -183,6 +189,10 @@ class ForecastOpportunitiesView(LoginRequiredMixin, View):
                 list_view.no_record_msg = no_record_msg
                 list_view.col_attrs = self.col_attrs()
                 list_context = list_view.get_context_data()
+
+                if page and type_info["key"] == opportunity_type:
+                    return render(request, "partials/list_view_rows.html", list_context)
+
                 type_info["list_view_html"] = render_to_string(
                     "list_view.html", list_context, request=request
                 )

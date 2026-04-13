@@ -17,6 +17,7 @@ from horilla.db.models import Prefetch
 from horilla.http import HttpResponse
 from horilla.shortcuts import render
 from horilla.urls import reverse_lazy
+from horilla.utils.decorators import htmx_required, method_decorator
 from horilla.utils.translation import gettext_lazy as _
 
 # First-party / Horilla apps
@@ -42,6 +43,7 @@ class MatchingRuleView(LoginRequiredMixin, HorillaView):
     list_url = reverse_lazy("horilla_duplicates:matching_rule_list_view")
 
 
+@method_decorator(htmx_required, name="dispatch")
 class MatchingRuleNavView(LoginRequiredMixin, HorillaNavView):
     """
     Navbar view for Matching Rules
@@ -71,6 +73,7 @@ class MatchingRuleNavView(LoginRequiredMixin, HorillaNavView):
         return None
 
 
+@method_decorator(htmx_required, name="dispatch")
 class MatchingRuleListView(LoginRequiredMixin, View):
     """
     Accordion view for Matching Rules
@@ -100,6 +103,7 @@ class MatchingRuleListView(LoginRequiredMixin, View):
         return render(request, self.template_name, context)
 
 
+@method_decorator(htmx_required, name="dispatch")
 class MatchingRuleFormView(LoginRequiredMixin, HorillaSingleFormView):
     """
     Form view for creating and updating Matching Rule with criteria
@@ -143,6 +147,7 @@ class MatchingRuleDeleteView(LoginRequiredMixin, HorillaSingleDeleteView):
         return HttpResponse("<script>$('#reloadButton').click();</script>")
 
 
+@method_decorator(htmx_required, name="dispatch")
 class MatchingRuleCriteriaFieldChoicesView(LoginRequiredMixin, View):
     """
     View to return matching rule field choices based on selected content type

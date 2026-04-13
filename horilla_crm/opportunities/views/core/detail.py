@@ -21,7 +21,6 @@ from horilla_generics.views import (
     HorillaHistorySectionView,
     HorillaNotesAttachementSectionView,
 )
-from horilla_utils.middlewares import _thread_local
 
 from .base import OpportunityListView
 
@@ -271,11 +270,9 @@ class OpportunityDetailView(RecentlyViewedMixin, LoginRequiredMixin, HorillaDeta
 class OpportunityDetailViewTabView(LoginRequiredMixin, HorillaDetailTabView):
     """Detail view tab view for opportunities."""
 
-    def __init__(self, **kwargs):
-        request = getattr(_thread_local, "request", None)
-        self.request = request
+    def _prepare_detail_tabs(self):
         self.object_id = self.request.GET.get("object_id")
-        super().__init__(**kwargs)
+        super()._prepare_detail_tabs()
 
     urls = {
         "details": "opportunities:opportunity_details_tab",

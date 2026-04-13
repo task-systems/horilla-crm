@@ -279,7 +279,7 @@ class HorillaSingleFormView(FormViewCommonMixin, FormView):
 
     def save_conditions(self, form=None):
         """Save conditions from form.cleaned_data or POST; delete existing and create from submitted data."""
-        single_form_builder.save_conditions(self, form)
+        return single_form_builder.save_conditions(self, form)
 
     def save_multiple_main_instances(self, form=None):
         """Generic method to create multiple instances of the main model from condition rows.
@@ -529,7 +529,10 @@ class HorillaSingleFormView(FormViewCommonMixin, FormView):
 
             # Save conditions if condition_fields and condition_model are set
             if self.condition_fields and self.condition_model:
-                self.save_conditions(form)
+                condition_errors = self.save_conditions(form)
+                if condition_errors:
+                    self.object.delete()
+                    return self.form_invalid(form)
 
             self.request.session["condition_row_count"] = 0
             self.request.session.modified = True

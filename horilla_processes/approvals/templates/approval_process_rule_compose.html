@@ -1,0 +1,217 @@
+{% extends "single_form_view.html" %}
+{% load i18n %}
+{% block extra_form_content_after_conditions %}
+    <div class="w-full mb-4 pt-3 mt-2 border-t border-primary-100">
+        <div
+            id="approval-compose-dynamic"
+            hx-get="{{ compose_dynamic_url }}"
+            hx-trigger="load"
+            hx-target="#approval-compose-dynamic"
+            hx-swap="outerHTML"
+        >
+        </div>
+
+        <div class="rounded-md border border-dark-50 mb-4">
+            <div class="px-3 py-2 text-xs font-semibold text-color-700">
+                {% trans "Action on approval" %}
+            </div>
+            <div class="p-3 pt-0">
+                <div class="text-xs text-gray-500 mb-1">
+                    {% trans "Selected:" %} <span id="approval-action-selected">none</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2">
+                    <button
+                        type="button"
+                        class="text-xs px-3 py-2 border border-primary-200 rounded-md hover:bg-primary-50"
+                        hx-get="{% url 'approvals:approval_process_rule_action_form_view' %}?side=approval&action=update_field&process_pk={{ process_pk }}&model_name={{ action_model_name }}"
+                        hx-target="#dynamicCreateModalBox"
+                        hx-swap="innerHTML"
+                        hx-on:click="openDynamicModal()"
+                    >
+                        {% trans "Update Field" %}
+                    </button>
+                    <button
+                        type="button"
+                        class="text-xs px-3 py-2 border border-primary-200 rounded-md hover:bg-primary-50"
+                        hx-get="{% url 'approvals:approval_process_rule_action_form_view' %}?side=approval&action=assign_task&process_pk={{ process_pk }}&model_name={{ action_model_name }}"
+                        hx-target="#dynamicCreateModalBox"
+                        hx-swap="innerHTML"
+                        hx-on:click="openDynamicModal()"
+                    >
+                        {% trans "Assign Task" %}
+                    </button>
+                    <button
+                        type="button"
+                        class="text-xs px-3 py-2 border border-primary-200 rounded-md hover:bg-primary-50"
+                        hx-get="{% url 'approvals:approval_process_rule_action_form_view' %}?side=approval&action=mail&process_pk={{ process_pk }}&model_name={{ action_model_name }}"
+                        hx-target="#dynamicCreateModalBox"
+                        hx-swap="innerHTML"
+                        hx-on:click="openDynamicModal()"
+                    >
+                        {% trans "Mail" %}
+                    </button>
+                    <button
+                        type="button"
+                        class="text-xs px-3 py-2 border border-primary-200 rounded-md hover:bg-primary-50"
+                        hx-get="{% url 'approvals:approval_process_rule_action_form_view' %}?side=approval&action=notification&process_pk={{ process_pk }}&model_name={{ action_model_name }}"
+                        hx-target="#dynamicCreateModalBox"
+                        hx-swap="innerHTML"
+                        hx-on:click="openDynamicModal()"
+                    >
+                        {% trans "Notification" %}
+                    </button>
+                </div>
+                <div
+                    id="approval-action-summary"
+                    class="text-xs text-primary-700 bg-primary-50 border border-primary-100 rounded-md px-2 py-1 hidden"
+                >
+                </div>
+            </div>
+        </div>
+
+        <div class="rounded-md border border-dark-50 mb-4">
+            <div class="px-3 py-2 text-xs font-semibold text-color-700">
+                {% trans "Action on rejection" %}
+            </div>
+            <div class="p-3 pt-0">
+                <div class="text-xs text-gray-500 mb-1">
+                    {% trans "Selected:" %} <span id="rejection-action-selected">none</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2">
+                    <button
+                        type="button"
+                        class="text-xs px-3 py-2 border border-primary-200 rounded-md hover:bg-primary-50"
+                        hx-get="{% url 'approvals:approval_process_rule_action_form_view' %}?side=rejection&action=update_field&process_pk={{ process_pk }}&model_name={{ action_model_name }}"
+                        hx-target="#dynamicCreateModalBox"
+                        hx-swap="innerHTML"
+                        hx-on:click="openDynamicModal()"
+                    >
+                        {% trans "Update Field" %}
+                    </button>
+                    <button
+                        type="button"
+                        class="text-xs px-3 py-2 border border-primary-200 rounded-md hover:bg-primary-50"
+                        hx-get="{% url 'approvals:approval_process_rule_action_form_view' %}?side=rejection&action=assign_task&process_pk={{ process_pk }}&model_name={{ action_model_name }}"
+                        hx-target="#dynamicCreateModalBox"
+                        hx-swap="innerHTML"
+                        hx-on:click="openDynamicModal()"
+                    >
+                        {% trans "Assign Task" %}
+                    </button>
+                    <button
+                        type="button"
+                        class="text-xs px-3 py-2 border border-primary-200 rounded-md hover:bg-primary-50"
+                        hx-get="{% url 'approvals:approval_process_rule_action_form_view' %}?side=rejection&action=mail&process_pk={{ process_pk }}&model_name={{ action_model_name }}"
+                        hx-target="#dynamicCreateModalBox"
+                        hx-swap="innerHTML"
+                        hx-on:click="openDynamicModal()"
+                    >
+                        {% trans "Mail" %}
+                    </button>
+                    <button
+                        type="button"
+                        class="text-xs px-3 py-2 border border-primary-200 rounded-md hover:bg-primary-50"
+                        hx-get="{% url 'approvals:approval_process_rule_action_form_view' %}?side=rejection&action=notification&process_pk={{ process_pk }}&model_name={{ action_model_name }}"
+                        hx-target="#dynamicCreateModalBox"
+                        hx-swap="innerHTML"
+                        hx-on:click="openDynamicModal()"
+                    >
+                        {% trans "Notification" %}
+                    </button>
+                </div>
+                <div
+                    id="rejection-action-summary"
+                    class="text-xs text-primary-700 bg-primary-50 border border-primary-100 rounded-md px-2 py-1 hidden"
+                >
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function () {
+          const formId = "approval-process-rule-compose-form";
+          const humanize = (value) =>
+            (value || "")
+              .toString()
+              .split("_")
+              .join(" ")
+              .replace(/\b\w/g, (m) => m.toUpperCase());
+
+          const parseCsv = (value) =>
+            (value || "")
+              .split(",")
+              .map((x) => x.trim())
+              .filter(Boolean);
+
+          window.refreshActionSummary = function (side) {
+            const form = document.getElementById(formId);
+            if (!form) return;
+            const actionInput = form.querySelector(`[name="${side}_actions"]`);
+            const selectedBadge = document.getElementById(`${side}-action-selected`);
+            const summaryBox = document.getElementById(`${side}-action-summary`);
+            if (!selectedBadge || !summaryBox) return;
+
+            const actions = parseCsv(actionInput?.value || "");
+            selectedBadge.textContent = actions.length
+              ? actions.map(humanize).join(", ")
+              : "none";
+
+            const lines = [];
+            if (actions.includes("update_field")) {
+              const fld =
+                form.querySelector(`[name="${side}_update_field"]`)?.value || "-";
+              const val =
+                form.querySelector(`[name="${side}_update_value"]`)?.value || "-";
+              lines.push(`Update Field: ${fld} -> ${val}`);
+            }
+            if (actions.includes("assign_task")) {
+              const title =
+                form.querySelector(`[name="${side}_task_title"]`)?.value || "-";
+              lines.push(`Assign Task: ${title}`);
+            }
+            if (actions.includes("mail")) {
+              const template =
+                form.querySelector(`[name="${side}_email_template_id"]`)?.value || "-";
+              const to = form.querySelector(`[name="${side}_email_to"]`)?.value || "-";
+              lines.push(`Mail: template ${template}, to ${to}`);
+            }
+            if (actions.includes("notification")) {
+              const tmpl =
+                form.querySelector(`[name="${side}_notification_template_id"]`)?.value || "-";
+              const to =
+                form.querySelector(`[name="${side}_notification_to"]`)?.value || "-";
+              const also =
+                form.querySelector(`[name="${side}_notification_also_sent_to"]`)?.value || "-";
+              lines.push(
+                `Notification: template ${tmpl}, to ${to}${also && also !== "-" ? `, also ${also}` : ""}`
+              );
+            }
+
+            if (lines.length) {
+              summaryBox.innerHTML = lines.map((l) => `<div>${l}</div>`).join("");
+              summaryBox.classList.remove("hidden");
+            } else {
+              summaryBox.innerHTML = "";
+              summaryBox.classList.add("hidden");
+            }
+          };
+
+          const initActionSummary = () => {
+            window.refreshActionSummary("approval");
+            window.refreshActionSummary("rejection");
+          };
+
+          if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initActionSummary);
+          } else {
+            initActionSummary();
+          }
+
+          document.body.addEventListener("htmx:afterSettle", function () {
+            if (document.getElementById(formId)) {
+              initActionSummary();
+            }
+          });
+        })();
+    </script>
+{% endblock %}

@@ -1,7 +1,7 @@
 {% load static i18n %}
 <div class="flex justify-between p-5 pb-0">
     <h2 class="text-lg font-semibold">{% trans "Select Mail Template" %}</h2>
-    <button id="close" class="text-gray-500 hover:text-red-500 text-xl cursor-pointer" onclick="closeModal();">
+    <button id="close" class="text-gray-500 hover:text-red-500 text-xl cursor-pointer" onclick="closeModal()">
         <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}">
     </button>
 </div>
@@ -13,7 +13,8 @@
             <button
                 class="text-sm px-4 py-2 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-white"
                 type="button"
-                onclick="selectTemplate()">
+                onclick="selectTemplate()"
+            >
                 {% trans "Select Template" %}
             </button>
         </div>

@@ -1,9 +1,8 @@
 {% load i18n static %}
 
 <style>
-    .note-modal-backdrop{
-        z-index:39 !important;
-
+    .note-modal-backdrop {
+        z-index: 39 !important;
     }
 </style>
 
@@ -11,18 +10,20 @@
     <h2 class="text-lg font-semibold">{{ form_title|default:"Create Mail Template" }}</h2>
     <button
         id="close-template-btn"
-        onclick="closehorillaModal();"
-        class="text-gray-500 hover:text-red-500 text-xl cursor-pointer">
-        <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}" />
+        onclick="closehorillaModal()"
+        class="text-gray-500 hover:text-red-500 text-xl cursor-pointer"
+    >
+        <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}">
     </button>
 </div>
 <div class="p-5 pt-2">
-    <form id="template-form"
+    <form
+        id="template-form"
         hx-post="{{action_url}}"
         hx-target="#horillaModalBox"
         hx-indicator="#template-spinner"
         hx-on::before-request="syncEditorContent()"
-        >
+    >
         {% csrf_token %}
 
         <div class="overflow-hidden overflow-y-auto h-[600px]">
@@ -34,7 +35,8 @@
                 placeholder="Enter template title"
                 value="{{ form.title.value|default:'' }}"
                 class="mb-4 text-color-600 p-2 placeholder:text-xs w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
-                required />
+                required
+            >
             {% if form.title.errors %}
                 <div class="text-red-500 text-xs mb-2">{{ form.title.errors.0 }}</div>
             {% endif %}
@@ -50,10 +52,12 @@
                     name="subject"
                     placeholder="{% trans 'Enter email subject (optional)' %}"
                     value="{{ form.subject.value|default:'' }}"
-                    class="text-color-600 p-2 placeholder:text-xs w-full border border-dark-50 rounded-md mt-1
+                    class="
+                        text-color-600 p-2 placeholder:text-xs w-full border border-dark-50 rounded-md mt-1
                         focus-visible:outline-0 placeholder:text-dark-100 text-sm
-                        [transition:.3s] focus:border-primary-600"
-                />
+                        [transition:.3s] focus:border-primary-600
+                    "
+                >
                 {% if form.subject.errors %}
                     <div class="text-red-500 text-xs mt-1">
                         {{ form.subject.errors.0 }}
@@ -67,7 +71,8 @@
                 <select
                     name="content_type"
                     id="content_type"
-                    class="js-example-basic-single w-full">
+                    class="js-example-basic-single w-full"
+                >
                     <option value="">{% trans "Select content type (optional)" %}</option>
                     {% for value, label in form.fields.content_type.choices %}
                         <option value="{{ value }}" {% if form.content_type.value == value %}selected{% endif %}>
@@ -96,11 +101,21 @@
                         hx-get="{% url 'horilla_mail:field_selection' %}"
                         hx-include="#content_type"
                         hx-target="#contentModalBox"
-                        hx-on:click="saveCursorPosition(); openContentModal()">
+                        hx-on:click="saveCursorPosition(); openContentModal()"
+                    >
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-                            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1">
+                            <g
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="1"
+                            >
                                 <path stroke-width="2" d="M8 12h.009m3.986 0h.01m3.986 0H16" />
-                                <path stroke-width="1.5" d="M18 21c1.232 0 2.231-1.151 2.231-2.571c0-2.248-.1-3.743 1.442-5.52c.436-.502.436-1.316 0-1.818c-1.542-1.777-1.442-3.272-1.442-5.52C20.231 4.151 19.232 3 18 3M6 21c-1.232 0-2.231-1.151-2.231-2.571c0-2.248.1-3.743-1.442-5.52c-.436-.502-.436-1.316 0-1.818C3.835 9.352 3.769 7.84 3.769 5.57C3.769 4.151 4.768 3 6 3" />
+                                <path
+                                    stroke-width="1.5"
+                                    d="M18 21c1.232 0 2.231-1.151 2.231-2.571c0-2.248-.1-3.743 1.442-5.52c.436-.502.436-1.316 0-1.818c-1.542-1.777-1.442-3.272-1.442-5.52C20.231 4.151 19.232 3 18 3M6 21c-1.232 0-2.231-1.151-2.231-2.571c0-2.248.1-3.743-1.442-5.52c-.436-.502-.436-1.316 0-1.818C3.835 9.352 3.769 7.84 3.769 5.57C3.769 4.151 4.768 3 6 3"
+                                />
                             </g>
                         </svg>
                     </button>
@@ -112,7 +127,8 @@
                         hx-post="{% url 'horilla_mail:mail_template_preview_view' %}"
                         hx-include="#template_body"
                         hx-target="#contentModalBox"
-                        hx-on:click="openContentModal()">
+                        hx-on:click="openContentModal()"
+                    >
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                             <g fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="12" r="3" />
@@ -126,7 +142,7 @@
                 <textarea id="summernote" name="summernote"> {{ form.body.value|default:'' }}</textarea>
             </div>
             {% if form.body.errors %}
-              <div class="text-red-500 text-xs mt-2">{{ form.body.errors.0 }}</div>
+                <div class="text-red-500 text-xs mt-2">{{ form.body.errors.0 }}</div>
             {% endif %}
 
             <input type="hidden" name="body" id="template_body" value="{{ form.body.value|default:'' }}">
@@ -135,7 +151,8 @@
             <button
                 type="submit"
                 id="save-template-btn"
-                class="text-sm px-4 py-2 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white]">
+                class="text-sm px-4 py-2 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white]"
+            >
                 <span class="flex items-center gap-2">
                     <span id="template-spinner" class="htmx-indicator hidden">
                         <img src="{% static 'assets/icons/spinner.svg' %}" alt="{% trans 'Loading...' %}" width="20">

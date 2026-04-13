@@ -265,8 +265,8 @@ class ForecastTabView(LoginRequiredMixin, HorillaTabView):
     background_class = "rounded-md"
     tab_class = "h-[calc(_100vh_-_290px_)] overflow-x-auto custom-scroll"
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
         self.tabs = self.get_forecast_tabs()
 
     def get_forecast_tabs(self):

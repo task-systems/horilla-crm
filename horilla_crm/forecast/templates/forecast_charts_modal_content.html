@@ -1,182 +1,191 @@
 {% load static i18n %}
 <script>
-(function() {
-  var box = document.getElementById('contentModalBox');
-  if (box) {
-    box.classList.add('!max-w-[90vw]', '!md:max-w-[800px]', '!lg:max-w-[1100px]');
-  }
-})();
+    (function() {
+      var box = document.getElementById('contentModalBox');
+      if (box) {
+        box.classList.add('!max-w-[90vw]', '!md:max-w-[800px]', '!lg:max-w-[1100px]');
+      }
+    })();
 </script>
 <div class="p-5 w-full min-w-0">
-  <div class="flex justify-between items-center mb-4">
-    <h3 class="text-base font-semibold text-gray-700 dark:text-gray-300">{% trans "Chart Analysis" %}</h3>
-    <a role="button" tabindex="0"
-      onclick="closeContentModal();"
-      class="text-gray-500 hover:text-red-500 text-xl cursor-pointer">
-      <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}" />
-    </a>
-  </div>
-  {% if forecast_chart_data and forecast_chart_data.categories %}
-  <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
-    {% if forecast_chart_data.is_quantity_based %}
-      {% trans "Values in number of deals." %}
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-base font-semibold text-gray-700 dark:text-gray-300">{% trans "Chart Analysis" %}</h3>
+        <a
+            role="button"
+            tabindex="0"
+            onclick="closeContentModal()"
+            class="text-gray-500 hover:text-red-500 text-xl cursor-pointer"
+        >
+            <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}">
+        </a>
+    </div>
+    {% if forecast_chart_data and forecast_chart_data.categories %}
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+            {% if forecast_chart_data.is_quantity_based %}
+                {% trans "Values in number of deals." %}
+            {% else %}
+                {% trans "Values in" %} {{ currency_symbol }}.
+            {% endif %}
+        </p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div class="rounded-md border border-dark-50 bg-white dark:bg-gray-800 p-4 min-w-0">
+                <h4 class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                    {% trans "Forecast vs Actual" %}
+                </h4>
+                <div id="forecast-modal-chart-column" class="w-full" style="height: 320px"></div>
+            </div>
+            <div class="rounded-md border border-dark-50 bg-white dark:bg-gray-800 p-4 min-w-0">
+                <h4 class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">{% trans "Trend" %}</h4>
+                <div id="forecast-modal-chart-line" class="w-full" style="height: 320px"></div>
+            </div>
+            <div class="rounded-md border border-dark-50 bg-white dark:bg-gray-800 p-4 min-w-0">
+                <h4 class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                    {% trans "Forecast Category" %}
+                </h4>
+                <div id="forecast-modal-chart-stacked" class="w-full" style="height: 320px"></div>
+            </div>
+        </div>
+
+        {{ forecast_chart_data|json_script:"forecast-modal-chart-data" }}
+        <script>
+            (function() {
+              var chartDataEl = document.getElementById('forecast-modal-chart-data');
+              if (!chartDataEl || typeof EChartsConfig === 'undefined' || typeof echarts === 'undefined') return;
+              var payload = JSON.parse(chartDataEl.textContent);
+              var categories = payload.categories || [];
+              var fva = payload.forecast_vs_actual || {};
+              var trend = payload.trend || {};
+              var stackedCategory = payload.stacked_category_series || [];
+              var colors = EChartsConfig.defaultColors;
+              var chartInstances = [];
+              var resizeObserver = null;
+
+              function initEChart(domId, option) {
+                var dom = document.getElementById(domId);
+                if (!dom) return null;
+
+                // Ensure container can shrink/expand inside flex/grid
+                dom.style.width = '100%';
+
+                // If modal is opened multiple times, dispose old instances on same DOM
+                try {
+                  var existing = echarts.getInstanceByDom(dom);
+                  if (existing) existing.dispose();
+                } catch (e) {}
+
+                var inst = echarts.init(dom);
+                inst.setOption(option, { notMerge: true });
+                return inst;
+              }
+
+              function initColumnChart() {
+                if (!fva.categories || fva.categories.length === 0) return null;
+                var opt = {
+                  ...EChartsConfig.getAnimationConfig(),
+                  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                  legend: { ...EChartsConfig.getLegendConfig(), show: true },
+                  grid: EChartsConfig.getGridConfig(),
+                  xAxis: {
+                    type: 'category',
+                    data: fva.categories,
+                    axisLabel: { ...EChartsConfig.getAxisLabelStyle(), rotate: fva.categories.some(function(l) { return String(l).length > 6; }) ? 35 : 0 },
+                    axisLine: EChartsConfig.getAxisLineStyle()
+                  },
+                  yAxis: {
+                    type: 'value',
+                    axisLabel: EChartsConfig.getAxisLabelStyle(),
+                    axisLine: EChartsConfig.getAxisLineStyle(),
+                    splitLine: EChartsConfig.getSplitLineStyle()
+                  },
+                  color: [colors[0], colors[1]],
+                  series: [
+                    { name: '{% trans "Forecast (Target)" %}', type: 'bar', data: fva.target || [], barWidth: '35%', itemStyle: { borderRadius: [4, 4, 0, 0] } },
+                    { name: '{% trans "Actual" %}', type: 'bar', data: fva.actual || [], barWidth: '35%', itemStyle: { borderRadius: [4, 4, 0, 0] } }
+                  ]
+                };
+                return initEChart('forecast-modal-chart-column', opt);
+              }
+
+              function initLineChart() {
+                if (!trend.categories || trend.categories.length === 0) return null;
+                var opt = {
+                  ...EChartsConfig.getAnimationConfig(),
+                  tooltip: { trigger: 'axis' },
+                  legend: { ...EChartsConfig.getLegendConfig(), show: true },
+                  grid: EChartsConfig.getGridConfig(),
+                  xAxis: {
+                    type: 'category',
+                    data: trend.categories,
+                    boundaryGap: false,
+                    axisLabel: { ...EChartsConfig.getAxisLabelStyle(), rotate: trend.categories.some(function(l) { return String(l).length > 6; }) ? 35 : 0 },
+                    axisLine: EChartsConfig.getAxisLineStyle()
+                  },
+                  yAxis: {
+                    type: 'value',
+                    axisLabel: EChartsConfig.getAxisLabelStyle(),
+                    axisLine: EChartsConfig.getAxisLineStyle(),
+                    splitLine: EChartsConfig.getSplitLineStyle()
+                  },
+                  color: [colors[0], colors[1]],
+                  series: [
+                    { name: '{% trans "Forecast (Target)" %}', type: 'line', data: trend.target || [], smooth: true, symbol: 'circle', symbolSize: 6 },
+                    { name: '{% trans "Actual" %}', type: 'line', data: trend.actual || [], smooth: true, symbol: 'circle', symbolSize: 6 }
+                  ]
+                };
+                return initEChart('forecast-modal-chart-line', opt);
+              }
+
+              function initStackedChart() {
+                if (categories.length === 0 || stackedCategory.length === 0) return null;
+                var stackedData = { categories: categories, series: stackedCategory };
+                var config = {
+                  type: 'stacked_vertical',
+                  labels: categories,
+                  data: stackedCategory[0] ? stackedCategory[0].data : [],
+                  colors: colors,
+                  labelField: '{% trans "Amount" %}',
+                  stackedData: stackedData,
+                  hasMultipleGroups: true,
+                  urls: []
+                };
+                var option = EChartsConfig.getChartOption(config);
+                var ch = initEChart('forecast-modal-chart-stacked', option);
+                // Enable stacked dual-legend toggling (category legend) for this chart.
+                if (ch && typeof EChartsConfig.attachStackedDualLegendHandler === 'function') {
+                  EChartsConfig.attachStackedDualLegendHandler(ch, config);
+                }
+                return ch;
+              }
+
+              var c1 = initColumnChart();
+              var c2 = initLineChart();
+              var c3 = initStackedChart();
+              chartInstances = [c1, c2, c3].filter(Boolean);
+
+              function resizeCharts() {
+                chartInstances.forEach(function(ch) { if (ch) ch.resize(); });
+              }
+
+              // Resize when modal content box changes size (common in HTMX + modal transitions)
+              try {
+                var modalBox = document.getElementById('contentModalBox');
+                if (modalBox && typeof ResizeObserver !== 'undefined') {
+                  resizeObserver = new ResizeObserver(function() { resizeCharts(); });
+                  resizeObserver.observe(modalBox);
+                }
+              } catch (e) {}
+
+              window.addEventListener('resize', resizeCharts);
+              // Run a couple times to catch transition/layout settling
+              requestAnimationFrame(resizeCharts);
+              setTimeout(resizeCharts, 150);
+              setTimeout(resizeCharts, 450);
+            })();
+        </script>
     {% else %}
-      {% trans "Values in" %} {{ currency_symbol }}.
+        <p class="text-sm text-gray-500 dark:text-gray-400 py-4">
+            {% trans "No chart data available for this forecast." %}
+        </p>
     {% endif %}
-  </p>
-
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-    <div class="rounded-md border border-dark-50 bg-white dark:bg-gray-800 p-4 min-w-0">
-      <h4 class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">{% trans "Forecast vs Actual" %}</h4>
-      <div id="forecast-modal-chart-column" class="w-full" style="height: 320px;"></div>
-    </div>
-    <div class="rounded-md border border-dark-50 bg-white dark:bg-gray-800 p-4 min-w-0">
-      <h4 class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">{% trans "Trend" %}</h4>
-      <div id="forecast-modal-chart-line" class="w-full" style="height: 320px;"></div>
-    </div>
-    <div class="rounded-md border border-dark-50 bg-white dark:bg-gray-800 p-4 min-w-0">
-      <h4 class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">{% trans "Forecast Category" %}</h4>
-      <div id="forecast-modal-chart-stacked" class="w-full" style="height: 320px;"></div>
-    </div>
-  </div>
-
-  {{ forecast_chart_data|json_script:"forecast-modal-chart-data" }}
-  <script>
-  (function() {
-    var chartDataEl = document.getElementById('forecast-modal-chart-data');
-    if (!chartDataEl || typeof EChartsConfig === 'undefined' || typeof echarts === 'undefined') return;
-    var payload = JSON.parse(chartDataEl.textContent);
-    var categories = payload.categories || [];
-    var fva = payload.forecast_vs_actual || {};
-    var trend = payload.trend || {};
-    var stackedCategory = payload.stacked_category_series || [];
-    var colors = EChartsConfig.defaultColors;
-    var chartInstances = [];
-    var resizeObserver = null;
-
-    function initEChart(domId, option) {
-      var dom = document.getElementById(domId);
-      if (!dom) return null;
-
-      // Ensure container can shrink/expand inside flex/grid
-      dom.style.width = '100%';
-
-      // If modal is opened multiple times, dispose old instances on same DOM
-      try {
-        var existing = echarts.getInstanceByDom(dom);
-        if (existing) existing.dispose();
-      } catch (e) {}
-
-      var inst = echarts.init(dom);
-      inst.setOption(option, { notMerge: true });
-      return inst;
-    }
-
-    function initColumnChart() {
-      if (!fva.categories || fva.categories.length === 0) return null;
-      var opt = {
-        ...EChartsConfig.getAnimationConfig(),
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-        legend: { ...EChartsConfig.getLegendConfig(), show: true },
-        grid: EChartsConfig.getGridConfig(),
-        xAxis: {
-          type: 'category',
-          data: fva.categories,
-          axisLabel: { ...EChartsConfig.getAxisLabelStyle(), rotate: fva.categories.some(function(l) { return String(l).length > 6; }) ? 35 : 0 },
-          axisLine: EChartsConfig.getAxisLineStyle()
-        },
-        yAxis: {
-          type: 'value',
-          axisLabel: EChartsConfig.getAxisLabelStyle(),
-          axisLine: EChartsConfig.getAxisLineStyle(),
-          splitLine: EChartsConfig.getSplitLineStyle()
-        },
-        color: [colors[0], colors[1]],
-        series: [
-          { name: '{% trans "Forecast (Target)" %}', type: 'bar', data: fva.target || [], barWidth: '35%', itemStyle: { borderRadius: [4, 4, 0, 0] } },
-          { name: '{% trans "Actual" %}', type: 'bar', data: fva.actual || [], barWidth: '35%', itemStyle: { borderRadius: [4, 4, 0, 0] } }
-        ]
-      };
-      return initEChart('forecast-modal-chart-column', opt);
-    }
-
-    function initLineChart() {
-      if (!trend.categories || trend.categories.length === 0) return null;
-      var opt = {
-        ...EChartsConfig.getAnimationConfig(),
-        tooltip: { trigger: 'axis' },
-        legend: { ...EChartsConfig.getLegendConfig(), show: true },
-        grid: EChartsConfig.getGridConfig(),
-        xAxis: {
-          type: 'category',
-          data: trend.categories,
-          boundaryGap: false,
-          axisLabel: { ...EChartsConfig.getAxisLabelStyle(), rotate: trend.categories.some(function(l) { return String(l).length > 6; }) ? 35 : 0 },
-          axisLine: EChartsConfig.getAxisLineStyle()
-        },
-        yAxis: {
-          type: 'value',
-          axisLabel: EChartsConfig.getAxisLabelStyle(),
-          axisLine: EChartsConfig.getAxisLineStyle(),
-          splitLine: EChartsConfig.getSplitLineStyle()
-        },
-        color: [colors[0], colors[1]],
-        series: [
-          { name: '{% trans "Forecast (Target)" %}', type: 'line', data: trend.target || [], smooth: true, symbol: 'circle', symbolSize: 6 },
-          { name: '{% trans "Actual" %}', type: 'line', data: trend.actual || [], smooth: true, symbol: 'circle', symbolSize: 6 }
-        ]
-      };
-      return initEChart('forecast-modal-chart-line', opt);
-    }
-
-    function initStackedChart() {
-      if (categories.length === 0 || stackedCategory.length === 0) return null;
-      var stackedData = { categories: categories, series: stackedCategory };
-      var config = {
-        type: 'stacked_vertical',
-        labels: categories,
-        data: stackedCategory[0] ? stackedCategory[0].data : [],
-        colors: colors,
-        labelField: '{% trans "Amount" %}',
-        stackedData: stackedData,
-        hasMultipleGroups: true,
-        urls: []
-      };
-      var option = EChartsConfig.getChartOption(config);
-      var ch = initEChart('forecast-modal-chart-stacked', option);
-      // Enable stacked dual-legend toggling (category legend) for this chart.
-      if (ch && typeof EChartsConfig.attachStackedDualLegendHandler === 'function') {
-        EChartsConfig.attachStackedDualLegendHandler(ch, config);
-      }
-      return ch;
-    }
-
-    var c1 = initColumnChart();
-    var c2 = initLineChart();
-    var c3 = initStackedChart();
-    chartInstances = [c1, c2, c3].filter(Boolean);
-
-    function resizeCharts() {
-      chartInstances.forEach(function(ch) { if (ch) ch.resize(); });
-    }
-
-    // Resize when modal content box changes size (common in HTMX + modal transitions)
-    try {
-      var modalBox = document.getElementById('contentModalBox');
-      if (modalBox && typeof ResizeObserver !== 'undefined') {
-        resizeObserver = new ResizeObserver(function() { resizeCharts(); });
-        resizeObserver.observe(modalBox);
-      }
-    } catch (e) {}
-
-    window.addEventListener('resize', resizeCharts);
-    // Run a couple times to catch transition/layout settling
-    requestAnimationFrame(resizeCharts);
-    setTimeout(resizeCharts, 150);
-    setTimeout(resizeCharts, 450);
-  })();
-  </script>
-  {% else %}
-  <p class="text-sm text-gray-500 dark:text-gray-400 py-4">{% trans "No chart data available for this forecast." %}</p>
-  {% endif %}
 </div>

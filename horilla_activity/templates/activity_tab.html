@@ -2,32 +2,55 @@
 {% load i18n %}
 {% load horilla_tags %}
 {% has_perm "activity.add_activity" as can_add_activity %}
-<div id="styled-activity" role="tabpanel" aria-labelledby="activity-tab" style="height:100%">
-    <div class="flex flex-col sm:flex-row gap-3" style="height:100%">
+<div id="styled-activity" role="tabpanel" aria-labelledby="activity-tab" style="height: 100%">
+    <div class="flex flex-col sm:flex-row gap-3" style="height: 100%">
         <div class="sm:w-[180px] w-full border-r-[1px] border-[#dddddd]">
-            <ul id="custom-tabs" class="flex flex-col space-y-1 text-sm font-normal text-gray-500 dark:text-gray-400 pr-3">
+            <ul
+                id="custom-tabs"
+                class="flex flex-col space-y-1 text-sm font-normal text-gray-500 dark:text-gray-400 pr-3"
+            >
                 <li class="mb-0">
-                    <a href="#" data-tab="tab-tasks" class="tab-btn items-center px-5 py-2 text-white bg-primary-600 rounded-md w-full flex gap-3">
+                    <a
+                        href="#"
+                        data-tab="tab-tasks"
+                        class="tab-btn items-center px-5 py-2 text-white bg-primary-600 rounded-md w-full flex gap-3"
+                    >
                         <i class="fa-solid fa-list-check"></i> {% trans "Tasks" %}
                     </a>
                 </li>
                 <li>
-                    <a href="#" data-tab="tab-meetings" class="tab-btn items-center px-5 py-2 rounded-md bg-transparent text-[#3d3d3d] w-full flex gap-3">
+                    <a
+                        href="#"
+                        data-tab="tab-meetings"
+                        class="tab-btn items-center px-5 py-2 rounded-md bg-transparent text-[#3d3d3d] w-full flex gap-3"
+                    >
                         <i class="fa-solid fa-users"></i> {% trans "Meetings" %}
                     </a>
                 </li>
                 <li>
-                    <a href="#" data-tab="tab-call" class="tab-btn items-center px-5 py-2 rounded-md bg-transparent text-[#3d3d3d] w-full flex gap-3">
+                    <a
+                        href="#"
+                        data-tab="tab-call"
+                        class="tab-btn items-center px-5 py-2 rounded-md bg-transparent text-[#3d3d3d] w-full flex gap-3"
+                    >
                         <i class="fa-solid fa-phone"></i> {% trans "Call" %}
                     </a>
                 </li>
                 <li>
-                    <a href="#" data-tab="tab-email" class="tab-btn items-center px-5 py-2 rounded-md bg-transparent text-[#3d3d3d] w-full flex gap-3">
+                    <a
+                        href="#"
+                        data-tab="tab-email"
+                        class="tab-btn items-center px-5 py-2 rounded-md bg-transparent text-[#3d3d3d] w-full flex gap-3"
+                    >
                         <i class="fa-solid fa-envelope"></i> {% trans "Email" %}
                     </a>
                 </li>
                 <li>
-                    <a href="#" data-tab="tab-events" class="tab-btn items-center px-5 py-2 rounded-md bg-transparent text-[#3d3d3d] w-full flex gap-3">
+                    <a
+                        href="#"
+                        data-tab="tab-events"
+                        class="tab-btn items-center px-5 py-2 rounded-md bg-transparent text-[#3d3d3d] w-full flex gap-3"
+                    >
                         <i class="fa-solid fa-calendar-days"></i> {% trans "Events" %}
                     </a>
                 </li>
@@ -35,29 +58,35 @@
         </div>
         <div class="sm:flex-[1_0] w-full">
             <div id="tab-contents">
-                 <!-- Task Tab -->
+                <!-- Task Tab -->
                 <div id="tab-tasks" class="tab-content block p-2 pt-0 text-sm">
                     <div class="flex flex-wrap gap-y-2 justify-between mb-2">
-                         <ul id="followup-tabs" class="flex gap-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+                        <ul id="followup-tabs" class="flex gap-2 text-sm font-normal text-gray-500 dark:text-gray-400">
                             <li>
-                                <a id="TaskTab" href="{% url 'horilla_activity:task_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
-                                   data-tab="pending"
-                                   class="fu-tab-btn inline-flex items-center px-3 py-1 text-white bg-primary-600 rounded-sm w-full text-xs"
-                                   hx-get="{% url 'horilla_activity:task_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
-                                   hx-target="#task-list-content"
-                                   hx-swap="innerHTML">
-                                   {% trans "Pending Tasks" %}
-                                </a>
+                                <button
+                                    id="TaskTab"
+                                    type="button"
+                                    data-tab="pending"
+                                    class="fu-tab-btn inline-flex items-center px-3 py-1 text-white bg-primary-600 rounded-sm w-full text-xs"
+                                    hx-get="{% url 'horilla_activity:task_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
+                                    hx-target="#task-list-content"
+                                    hx-swap="innerHTML"
+                                >
+                                    {% trans "Pending Tasks" %}
+                                </button>
                             </li>
                             <li>
-                                <a id="TaskTab" href="{% url 'horilla_activity:task_list' object_id=object_id %}?view_type=completed&content_type_id={{ content_type_id }}"
-                                   data-tab="completed"
-                                   class="fu-tab-btn inline-flex items-center px-3 py-1 rounded-sm bg-primary-200 text-primary-600 w-full text-xs"
-                                   hx-get="{% url 'horilla_activity:task_list' object_id=object_id %}?view_type=completed&content_type_id={{ content_type_id }}"
-                                   hx-target="#task-list-content"
-                                   hx-swap="innerHTML">
-                                   {% trans "Completed Tasks" %}
-                                </a>
+                                <button
+                                    id="TaskTab"
+                                    type="button"
+                                    data-tab="completed"
+                                    class="fu-tab-btn inline-flex items-center px-3 py-1 rounded-sm bg-primary-200 text-primary-600 w-full text-xs"
+                                    hx-get="{% url 'horilla_activity:task_list' object_id=object_id %}?view_type=completed&content_type_id={{ content_type_id }}"
+                                    hx-target="#task-list-content"
+                                    hx-swap="innerHTML"
+                                >
+                                    {% trans "Completed Tasks" %}
+                                </button>
                             </li>
                         </ul>
                         {% if can_add_activity %}
@@ -68,17 +97,23 @@
                                     hx-swap="{{ add_task_button.swap|default:'innerHTML' }}"
                                     onclick="{{ add_task_button.after_request|default:'openModal()' }}"
                                     class="{{ add_task_button.class|default:'text-xs px-4 py-1.5 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white]' }}"
-                                    {% if add_task_button.attrs %}{{ add_task_button.attrs|safe }}{% endif %}>
+                                    {% if add_task_button.attrs %}
+                                        {{ add_task_button.attrs|safe }}
+                                    {% endif %}
+                                >
                                     {{ add_task_button.title|default:_("Add Task") }}
                                 </button>
                             {% endif %}
                         {% endif %}
                     </div>
-                    <div id="task-list-content" class="text-[.8rem]"
-                         hx-get="{% url 'horilla_activity:task_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
-                         hx-trigger="load"
-                         hx-target="#task-list-content"
-                         hx-swap="innerHTML">
+                    <div
+                        id="task-list-content"
+                        class="text-[.8rem]"
+                        hx-get="{% url 'horilla_activity:task_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
+                        hx-trigger="load"
+                        hx-target="#task-list-content"
+                        hx-swap="innerHTML"
+                    >
                     </div>
                 </div>
                 <!-- Meetings Tab -->
@@ -86,23 +121,29 @@
                     <div class="flex flex-wrap gap-y-2 justify-between mb-2">
                         <ul id="followup-tabs1" class="flex gap-2 text-sm font-normal text-gray-500 dark:text-gray-400">
                             <li>
-                                <a id="MeetingsTab" href="{% url 'horilla_activity:meeting_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
-                                   data-tab="pending"
-                                   class="fu-tab-btn inline-flex items-center px-3 py-1 text-white bg-primary-600 rounded-sm w-full text-xs"
-                                   hx-get="{% url 'horilla_activity:meeting_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
-                                   hx-target="#meeting-list-content"
-                                   hx-swap="innerHTML">
-                                   {% trans "Pending Meetings" %}
+                                <a
+                                    id="MeetingsTab"
+                                    href="{% url 'horilla_activity:meeting_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
+                                    data-tab="pending"
+                                    class="fu-tab-btn inline-flex items-center px-3 py-1 text-white bg-primary-600 rounded-sm w-full text-xs"
+                                    hx-get="{% url 'horilla_activity:meeting_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
+                                    hx-target="#meeting-list-content"
+                                    hx-swap="innerHTML"
+                                >
+                                    {% trans "Pending Meetings" %}
                                 </a>
                             </li>
                             <li>
-                                <a id="MeetingsTab" href="{% url 'horilla_activity:meeting_list' object_id=object_id %}?view_type=completed&content_type_id={{ content_type_id }}"
-                                   data-tab="completed"
-                                   class="fu-tab-btn inline-flex items-center px-3 py-1 rounded-sm bg-primary-200 text-primary-600 w-full text-xs"
-                                   hx-get="{% url 'horilla_activity:meeting_list' object_id=object_id %}?view_type=completed&content_type_id={{ content_type_id }}"
-                                   hx-target="#meeting-list-content"
-                                   hx-swap="innerHTML">
-                                   {% trans "Completed Meetings" %}
+                                <a
+                                    id="MeetingsTab"
+                                    href="{% url 'horilla_activity:meeting_list' object_id=object_id %}?view_type=completed&content_type_id={{ content_type_id }}"
+                                    data-tab="completed"
+                                    class="fu-tab-btn inline-flex items-center px-3 py-1 rounded-sm bg-primary-200 text-primary-600 w-full text-xs"
+                                    hx-get="{% url 'horilla_activity:meeting_list' object_id=object_id %}?view_type=completed&content_type_id={{ content_type_id }}"
+                                    hx-target="#meeting-list-content"
+                                    hx-swap="innerHTML"
+                                >
+                                    {% trans "Completed Meetings" %}
                                 </a>
                             </li>
                         </ul>
@@ -114,17 +155,23 @@
                                     hx-swap="{{ add_meetings_button.swap|default:'innerHTML' }}"
                                     onclick="{{ add_meetings_button.after_request|default:'openModal()' }}"
                                     class="{{ add_meetings_button.class|default:'text-xs px-4 py-1.5 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white]' }}"
-                                    {% if add_meetings_button.attrs %}{{ add_meetings_button.attrs|safe }}{% endif %}>
+                                    {% if add_meetings_button.attrs %}
+                                        {{ add_meetings_button.attrs|safe }}
+                                    {% endif %}
+                                >
                                     {{ add_meetings_button.title|default:_("Add Meetings") }}
                                 </button>
                             {% endif %}
                         {% endif %}
                     </div>
-                    <div id="meeting-list-content" class="text-[.8rem]"
-                         hx-get="{% url 'horilla_activity:meeting_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
-                         hx-trigger="revealed"
-                         hx-target="#meeting-list-content"
-                         hx-swap="innerHTML">
+                    <div
+                        id="meeting-list-content"
+                        class="text-[.8rem]"
+                        hx-get="{% url 'horilla_activity:meeting_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
+                        hx-trigger="revealed"
+                        hx-target="#meeting-list-content"
+                        hx-swap="innerHTML"
+                    >
                     </div>
                 </div>
 
@@ -133,23 +180,29 @@
                     <div class="flex flex-wrap gap-y-2 justify-between mb-2">
                         <ul id="followup-tabs2" class="flex gap-2 text-sm font-normal text-gray-500 dark:text-gray-400">
                             <li>
-                                <a id="CallsTab" href="{% url 'horilla_activity:call_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
-                                   data-tab="pending"
-                                   class="fu-tab-btn inline-flex items-center px-3 py-1 text-white bg-primary-600 rounded-sm w-full text-xs"
-                                   hx-get="{% url 'horilla_activity:call_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
-                                   hx-target="#call-list-content"
-                                   hx-swap="innerHTML">
-                                   {% trans "Pending Calls" %}
+                                <a
+                                    id="CallsTab"
+                                    href="{% url 'horilla_activity:call_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
+                                    data-tab="pending"
+                                    class="fu-tab-btn inline-flex items-center px-3 py-1 text-white bg-primary-600 rounded-sm w-full text-xs"
+                                    hx-get="{% url 'horilla_activity:call_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
+                                    hx-target="#call-list-content"
+                                    hx-swap="innerHTML"
+                                >
+                                    {% trans "Pending Calls" %}
                                 </a>
                             </li>
                             <li>
-                                <a id="CallsTab" href="{% url 'horilla_activity:call_list' object_id=object_id %}?view_type=completed&content_type_id={{ content_type_id }}"
-                                   data-tab="completed"
-                                   class="fu-tab-btn inline-flex items-center px-3 py-1 rounded-sm bg-primary-200 text-primary-600 w-full text-xs"
-                                   hx-get="{% url 'horilla_activity:call_list' object_id=object_id %}?view_type=completed&content_type_id={{ content_type_id }}"
-                                   hx-target="#call-list-content"
-                                   hx-swap="innerHTML">
-                                   {% trans "Completed Calls" %}
+                                <a
+                                    id="CallsTab"
+                                    href="{% url 'horilla_activity:call_list' object_id=object_id %}?view_type=completed&content_type_id={{ content_type_id }}"
+                                    data-tab="completed"
+                                    class="fu-tab-btn inline-flex items-center px-3 py-1 rounded-sm bg-primary-200 text-primary-600 w-full text-xs"
+                                    hx-get="{% url 'horilla_activity:call_list' object_id=object_id %}?view_type=completed&content_type_id={{ content_type_id }}"
+                                    hx-target="#call-list-content"
+                                    hx-swap="innerHTML"
+                                >
+                                    {% trans "Completed Calls" %}
                                 </a>
                             </li>
                         </ul>
@@ -161,17 +214,23 @@
                                     hx-swap="{{ add_call_button.swap|default:'innerHTML' }}"
                                     onclick="{{ add_call_button.after_request|default:'openModal()' }}"
                                     class="{{ add_call_button.class|default:'text-xs px-4 py-1.5 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white]' }}"
-                                    {% if add_call_button.attrs %}{{ add_call_button.attrs|safe }}{% endif %}>
+                                    {% if add_call_button.attrs %}
+                                        {{ add_call_button.attrs|safe }}
+                                    {% endif %}
+                                >
                                     {{ add_call_button.title|default:_("Add Call") }}
                                 </button>
                             {% endif %}
                         {% endif %}
                     </div>
-                    <div id="call-list-content" class="text-[.8rem]"
-                         hx-get="{% url 'horilla_activity:call_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
-                         hx-trigger="revealed"
-                         hx-target="#call-list-content"
-                         hx-swap="innerHTML">
+                    <div
+                        id="call-list-content"
+                        class="text-[.8rem]"
+                        hx-get="{% url 'horilla_activity:call_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
+                        hx-trigger="revealed"
+                        hx-target="#call-list-content"
+                        hx-swap="innerHTML"
+                    >
                     </div>
                 </div>
 
@@ -180,30 +239,39 @@
                     <div class="flex flex-wrap gap-y-2 justify-between mb-2">
                         <ul id="followup-tabs3" class="flex gap-2 text-sm font-normal text-gray-500 dark:text-gray-400">
                             <li>
-                                <button id="sent-email-tab"
-                                   data-tab="sent"
-                                   class="fu-tab-btn inline-flex items-center px-3 py-1 text-white bg-primary-600 rounded-sm w-full text-xs"
-                                   hx-get="{% url 'horilla_activity:email_list' object_id=object_id %}?view_type=sent&content_type_id={{ content_type_id }}"
-                                   hx-target="#email-list-content"
-                                   hx-swap="innerHTML">{% trans "Mails" %}
+                                <button
+                                    id="sent-email-tab"
+                                    data-tab="sent"
+                                    class="fu-tab-btn inline-flex items-center px-3 py-1 text-white bg-primary-600 rounded-sm w-full text-xs"
+                                    hx-get="{% url 'horilla_activity:email_list' object_id=object_id %}?view_type=sent&content_type_id={{ content_type_id }}"
+                                    hx-target="#email-list-content"
+                                    hx-swap="innerHTML"
+                                >
+                                    {% trans "Mails" %}
                                 </button>
                             </li>
                             <li>
-                                <button id="draft-email-tab"
-                                   data-tab="draft"
-                                   class="fu-tab-btn inline-flex items-center px-3 py-1 rounded-sm bg-primary-200 text-primary-600 w-full text-xs"
-                                   hx-get="{% url 'horilla_activity:email_list' object_id=object_id %}?view_type=draft&content_type_id={{ content_type_id }}"
-                                   hx-target="#email-list-content"
-                                   hx-swap="innerHTML">{% trans "Drafts" %}
+                                <button
+                                    id="draft-email-tab"
+                                    data-tab="draft"
+                                    class="fu-tab-btn inline-flex items-center px-3 py-1 rounded-sm bg-primary-200 text-primary-600 w-full text-xs"
+                                    hx-get="{% url 'horilla_activity:email_list' object_id=object_id %}?view_type=draft&content_type_id={{ content_type_id }}"
+                                    hx-target="#email-list-content"
+                                    hx-swap="innerHTML"
+                                >
+                                    {% trans "Drafts" %}
                                 </button>
                             </li>
                             <li>
-                                <button id="scheduled-email-tab"
-                                   data-tab="scheduled"
-                                   class="fu-tab-btn inline-flex items-center px-3 py-1 rounded-sm bg-primary-200 text-primary-600 w-full text-xs"
-                                   hx-get="{% url 'horilla_activity:email_list' object_id=object_id %}?view_type=scheduled&content_type_id={{ content_type_id }}"
-                                   hx-target="#email-list-content"
-                                   hx-swap="innerHTML">{% trans "Scheduled" %}
+                                <button
+                                    id="scheduled-email-tab"
+                                    data-tab="scheduled"
+                                    class="fu-tab-btn inline-flex items-center px-3 py-1 rounded-sm bg-primary-200 text-primary-600 w-full text-xs"
+                                    hx-get="{% url 'horilla_activity:email_list' object_id=object_id %}?view_type=scheduled&content_type_id={{ content_type_id }}"
+                                    hx-target="#email-list-content"
+                                    hx-swap="innerHTML"
+                                >
+                                    {% trans "Scheduled" %}
                                 </button>
                             </li>
                         </ul>
@@ -215,17 +283,23 @@
                                     hx-swap="{{ add_email_button.swap|default:'innerHTML' }}"
                                     onclick="{{ add_email_button.after_request|default:'openhorillaModal()' }}"
                                     class="{{ add_email_button.class|default:'text-xs px-4 py-1.5 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white]' }}"
-                                    {% if add_email_button.attrs %}{{ add_email_button.attrs|safe }}{% endif %}>
+                                    {% if add_email_button.attrs %}
+                                        {{ add_email_button.attrs|safe }}
+                                    {% endif %}
+                                >
                                     {{ add_email_button.title|default:" Add Emails" }}
                                 </button>
                             {% endif %}
-                        {% endif%}
+                        {% endif %}
                     </div>
-                    <div id="email-list-content" class="text-[.8rem]"
-                         hx-get="{% url 'horilla_activity:email_list' object_id=object_id %}?view_type=sent&content_type_id={{ content_type_id }}"
-                         hx-trigger="revealed"
-                         hx-target="#email-list-content"
-                         hx-swap="innerHTML">
+                    <div
+                        id="email-list-content"
+                        class="text-[.8rem]"
+                        hx-get="{% url 'horilla_activity:email_list' object_id=object_id %}?view_type=sent&content_type_id={{ content_type_id }}"
+                        hx-trigger="revealed"
+                        hx-target="#email-list-content"
+                        hx-swap="innerHTML"
+                    >
                     </div>
                 </div>
 
@@ -234,21 +308,27 @@
                     <div class="flex flex-wrap gap-y-2 justify-between mb-2">
                         <ul id="followup-tabs4" class="flex gap-2 text-sm font-normal text-gray-500 dark:text-gray-400">
                             <li>
-                                <a id="EventTab" href="{% url 'horilla_activity:event_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
-                                   data-tab="pending"
-                                   class="fu-tab-btn inline-flex items-center px-3 py-1 text-white bg-primary-600 rounded-sm w-full text-xs"
-                                   hx-get="{% url 'horilla_activity:event_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
-                                   hx-target="#event-list-content"
-                                   hx-swap="innerHTML">{% trans "Pending Events" %}
+                                <a
+                                    id="EventTab"
+                                    href="{% url 'horilla_activity:event_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
+                                    data-tab="pending"
+                                    class="fu-tab-btn inline-flex items-center px-3 py-1 text-white bg-primary-600 rounded-sm w-full text-xs"
+                                    hx-get="{% url 'horilla_activity:event_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
+                                    hx-target="#event-list-content"
+                                    hx-swap="innerHTML"
+                                >{% trans "Pending Events" %}
                                 </a>
                             </li>
                             <li>
-                                <a id="EventTab" href="{% url 'horilla_activity:event_list' object_id=object_id %}?view_type=completed&content_type_id={{ content_type_id }}"
-                                   data-tab="completed"
-                                   class="fu-tab-btn inline-flex items-center px-3 py-1 rounded-sm bg-primary-200 text-primary-600 w-full text-xs"
-                                   hx-get="{% url 'horilla_activity:event_list' object_id=object_id %}?view_type=completed&content_type_id={{ content_type_id }}"
-                                   hx-target="#event-list-content"
-                                   hx-swap="innerHTML">{% trans "Completed Events" %}
+                                <a
+                                    id="EventTab"
+                                    href="{% url 'horilla_activity:event_list' object_id=object_id %}?view_type=completed&content_type_id={{ content_type_id }}"
+                                    data-tab="completed"
+                                    class="fu-tab-btn inline-flex items-center px-3 py-1 rounded-sm bg-primary-200 text-primary-600 w-full text-xs"
+                                    hx-get="{% url 'horilla_activity:event_list' object_id=object_id %}?view_type=completed&content_type_id={{ content_type_id }}"
+                                    hx-target="#event-list-content"
+                                    hx-swap="innerHTML"
+                                >{% trans "Completed Events" %}
                                 </a>
                             </li>
                         </ul>
@@ -260,17 +340,23 @@
                                     hx-swap="{{ add_event_button.swap|default:'innerHTML' }}"
                                     onclick="{{ add_event_button.after_request|default:'openModal()' }}"
                                     class="{{ add_event_button.class|default:'text-xs px-4 py-1.5 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white]' }}"
-                                    {% if add_event_button.attrs %}{{ add_event_button.attrs|safe }}{% endif %}>
+                                    {% if add_event_button.attrs %}
+                                        {{ add_event_button.attrs|safe }}
+                                    {% endif %}
+                                >
                                     {{ add_event_button.title|default:_("Add Events") }}
                                 </button>
                             {% endif %}
                         {% endif %}
                     </div>
-                    <div id="event-list-content" class="text-[.8rem]"
-                         hx-get="{% url 'horilla_activity:event_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
-                         hx-trigger="revealed"
-                         hx-target="#event-list-content"
-                         hx-swap="innerHTML">
+                    <div
+                        id="event-list-content"
+                        class="text-[.8rem]"
+                        hx-get="{% url 'horilla_activity:event_list' object_id=object_id %}?view_type=pending&content_type_id={{ content_type_id }}"
+                        hx-trigger="revealed"
+                        hx-target="#event-list-content"
+                        hx-swap="innerHTML"
+                    >
                     </div>
                 </div>
             </div>

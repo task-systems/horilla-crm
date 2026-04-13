@@ -1,0 +1,301 @@
+{% load i18n %}
+<div class="bg-white rounded-lg p-5">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold">
+            {% if side == "approval" %}{% trans "Configure approval action" %}{% else %}{% trans "Configure rejection action" %}{% endif %}
+        </h3>
+        <button type="button" onclick="closeDynamicModal()" class="text-gray-500 hover:text-red-500">
+            &times;
+        </button>
+    </div>
+
+    <input type="hidden" id="action-popup-side" value="{{ side }}">
+    <input type="hidden" id="action-popup-action" value="{{ action }}">
+    <input type="hidden" id="action-popup-process-pk" value="{{ request.GET.process_pk|default:'' }}">
+    <input type="hidden" id="action-popup-model-name" value="{{ model_name|default:'' }}">
+
+    {% if action == "update_field" %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+                <label class="text-xs text-color-600">{% trans "Field" %}</label>
+                <select
+                    id="action-popup-field"
+                    name="field_name"
+                    class="w-full js-example-basic-single headselect"
+                    hx-get="{% url 'approvals:approval_process_rule_action_value_widget_view' %}"
+                    hx-target="#action-popup-value-wrap"
+                    hx-swap="innerHTML"
+                    hx-include="#action-popup-field,#action-popup-process-pk,#action-popup-model-name"
+                    hx-vals='js:{
+            "process_pk": document.getElementById("action-popup-process-pk")?.value || "",
+            "model_name": document.getElementById("action-popup-model-name")?.value || ""
+          }'
+                >
+                    <option value="">{% trans "Select field" %}</option>
+                </select>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="text-xs text-color-600">{% trans "Value" %}</label>
+                <div id="action-popup-value-wrap">
+                    <input id="action-popup-value" type="text" class="oh-input w-full">
+                </div>
+            </div>
+        </div>
+    {% elif action == "assign_task" %}
+        <div class="grid grid-cols-1 gap-3">
+            <div class="flex flex-col gap-1">
+                <label class="text-xs text-color-600">{% trans "Task title" %}</label>
+                <input
+                    id="action-popup-task-title"
+                    type="text"
+                    class="text-color-600 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
+                >
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs text-color-600">{% trans "Due basis" %}</label>
+                    <select
+                        id="action-popup-task-due-basis"
+                        class="js-example-basic-single headselect text-color-600 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
+                    >
+                        <option value="record_submission">{% trans "Record submission date" %}</option>
+                        <option value="approval_date">{% trans "Approval date" %}</option>
+                        <option value="rejection_date">{% trans "Rejection date" %}</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs text-color-600">{% trans "Due in days" %}</label>
+                    <input
+                        id="action-popup-task-due-days"
+                        type="number"
+                        min="0"
+                        value="1"
+                        class="text-color-600 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
+                    >
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs text-color-600">{% trans "Status" %}</label>
+                    <select
+                        id="action-popup-task-status"
+                        class="js-example-basic-single headselect text-color-600 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
+                    >
+                        <option value="not_started">{% trans "Not Started" %}</option>
+                        <option value="in_progress">{% trans "In Progress" %}</option>
+                        <option value="completed">{% trans "Completed" %}</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs text-color-600">{% trans "Priority" %}</label>
+                    <select
+                        id="action-popup-task-priority"
+                        class="js-example-basic-single headselect text-color-600 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
+                    >
+                        <option value="low">{% trans "Low" %}</option>
+                        <option value="medium">{% trans "Medium" %}</option>
+                        <option value="high">{% trans "High" %}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="text-xs text-color-600">{% trans "Task description" %}</label>
+                <textarea
+                    id="action-popup-task-description"
+                    class="text-color-600 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
+                    rows="3"
+                ></textarea>
+            </div>
+        </div>
+    {% elif action == "mail" %}
+        <div class="grid grid-cols-1 gap-3">
+            <div class="flex flex-col gap-1">
+                <label class="text-xs text-color-600">{% trans "Mail template" %}</label>
+                <select
+                    id="action-popup-email-template"
+                    class="js-example-basic-single headselect text-color-600 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
+                >
+                    <option value="">{% trans "Select template" %}</option>
+                    {% for t in mail_templates %}
+                        <option value="{{ t.pk }}">{{ t.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="text-xs text-color-600">{% trans "To (email field / email / self)" %}</label>
+                <select
+                    id="action-popup-email-to"
+                    multiple
+                    class="js-example-basic-multiple headselect text-color-600 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
+                >
+                    {% for value, label in email_to_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="text-xs text-color-600">{% trans "Also send to" %}</label>
+                <select
+                    id="action-popup-email-also-sent-to"
+                    multiple
+                    class="js-example-basic-multiple headselect text-color-600 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
+                >
+                    {% for u in users %}
+                        <option value="{{ u.pk }}">{{ u.get_full_name|default:u.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    {% elif action == "notification" %}
+        <div class="grid grid-cols-1 gap-3">
+            <div class="flex flex-col gap-1">
+                <label class="text-xs text-color-600">{% trans "Notification template" %}</label>
+                <select
+                    id="action-popup-notification-template"
+                    class="js-example-basic-single headselect text-color-600 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
+                >
+                    <option value="">{% trans "Select template" %}</option>
+                    {% for t in notification_templates %}
+                        <option value="{{ t.pk }}">{{ t.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="text-xs text-color-600">{% trans "To (record field / self)" %}</label>
+                <select
+                    id="action-popup-notification-to"
+                    multiple
+                    class="js-example-basic-multiple headselect text-color-600 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
+                >
+                    {% for value, label in notification_to_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label class="text-xs text-color-600">{% trans "Also notify to" %}</label>
+                <select
+                    id="action-popup-notification-also-sent-to"
+                    multiple
+                    class="js-example-basic-multiple headselect text-color-600 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
+                >
+                    {% for u in users %}
+                        <option value="{{ u.pk }}">{{ u.get_full_name|default:u.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex flex-col gap-1">
+                <label
+                    class="text-xs text-color-600"
+                >{% trans "Custom message (optional, overrides template)" %}</label>
+                <textarea
+                    id="action-popup-notification-message"
+                    class="text-color-600 p-2 placeholder:text-xs pr-[40px] w-full border border-dark-50 rounded-md mt-1 focus-visible:outline-0 placeholder:text-dark-100 text-sm [transition:.3s] focus:border-primary-600"
+                    rows="3"
+                ></textarea>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="flex justify-end gap-2 mt-4">
+        <button
+            type="button"
+            class="text-sm px-3 py-2 border border-primary-600 rounded-md text-primary-600"
+            onclick="closeDynamicModal()"
+        >
+            {% trans "Cancel" %}
+        </button>
+        <button
+            type="button"
+            class="text-sm px-3 py-2 bg-primary-600 rounded-md text-white"
+            onclick="applyActionPopupConfig()"
+        >
+            {% trans "Apply" %}
+        </button>
+    </div>
+</div>
+
+{{ field_meta_json|json_script:"action-popup-field-meta" }}
+<script>
+    (function () {
+      const meta = JSON.parse(document.getElementById("action-popup-field-meta").textContent || "[]");
+      const fieldSel = document.getElementById("action-popup-field");
+      if (fieldSel) {
+        meta.forEach((f) => {
+          const opt = document.createElement("option");
+          opt.value = f.name;
+          opt.textContent = f.label;
+          fieldSel.appendChild(opt);
+        });
+      }
+      const initSelect2 = () => {
+        if (window.$ && $.fn.select2) {
+          $(".js-example-basic-single").select2({ width: "100%" });
+          $(".js-example-basic-multiple").select2({ width: "100%", tags: true });
+        }
+      };
+      initSelect2();
+      document.body.addEventListener("htmx:afterSwap", function (evt) {
+        if (evt.target && evt.target.id === "action-popup-value-wrap") {
+          initSelect2();
+        }
+      });
+    })();
+
+    function applyActionPopupConfig() {
+      const side = document.getElementById("action-popup-side")?.value || "approval";
+      const action = document.getElementById("action-popup-action")?.value || "";
+      const form = document.getElementById("approval-process-rule-compose-form");
+      if (!form) { closeDynamicModal(); return; }
+      const setVal = (name, value) => {
+        const el = form.querySelector(`[name="${name}"]`);
+        if (el) el.value = value || "";
+      };
+      const actionField = form.querySelector(`[name="${side}_actions"]`);
+      const existingActions = (actionField?.value || "")
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean);
+      if (action && !existingActions.includes(action)) {
+        existingActions.push(action);
+      }
+      setVal(`${side}_actions`, existingActions.join(","));
+      if (action === "update_field") {
+        setVal(`${side}_update_field`, document.getElementById("action-popup-field")?.value || "");
+        setVal(`${side}_update_value`, document.getElementById("action-popup-value")?.value || "");
+      } else if (action === "assign_task") {
+        const payload = {
+          due_basis: document.getElementById("action-popup-task-due-basis")?.value || "record_submission",
+          due_days: document.getElementById("action-popup-task-due-days")?.value || "1",
+          status: document.getElementById("action-popup-task-status")?.value || "not_started",
+          priority: document.getElementById("action-popup-task-priority")?.value || "medium"
+        };
+        setVal(`${side}_task_title`, document.getElementById("action-popup-task-title")?.value || "");
+        setVal(`${side}_task_description`, document.getElementById("action-popup-task-description")?.value || "");
+        setVal(`${side}_task_payload`, JSON.stringify(payload));
+      } else if (action === "mail") {
+        setVal(`${side}_email_template_id`, document.getElementById("action-popup-email-template")?.value || "");
+        const toVals = $("#action-popup-email-to").val() || [];
+        setVal(`${side}_email_to`, Array.isArray(toVals) ? toVals.join(",") : "");
+        const also = $("#action-popup-email-also-sent-to").val() || [];
+        setVal(`${side}_email_also_sent_to`, Array.isArray(also) ? also.join(",") : "");
+      } else if (action === "notification") {
+        setVal(`${side}_notification_template_id`, document.getElementById("action-popup-notification-template")?.value || "");
+        const toVals = $("#action-popup-notification-to").val() || [];
+        setVal(`${side}_notification_to`, Array.isArray(toVals) ? toVals.join(",") : "");
+        const also = $("#action-popup-notification-also-sent-to").val() || [];
+        setVal(`${side}_notification_also_sent_to`, Array.isArray(also) ? also.join(",") : "");
+        setVal(`${side}_notification_message`, document.getElementById("action-popup-notification-message")?.value || "");
+      }
+      const badge = document.getElementById(`${side}-action-selected`);
+      if (badge) {
+        badge.textContent = existingActions.length
+          ? existingActions.map((a) => a.replaceAll("_", " ")).join(", ")
+          : "none";
+      }
+      if (typeof window.refreshActionSummary === "function") {
+        window.refreshActionSummary(side);
+      }
+      closeDynamicModal();
+    }
+</script>

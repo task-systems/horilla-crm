@@ -1,18 +1,25 @@
-{% load static %} {% load i18n %} {% load horilla_tags %}
+{% load static i18n horilla_tags %}
 
 <div id="{{ view_id|safe }}-container" class="relative bg-white rounded-lg shadow-sm">
-    <form id="{{ view_id|safe }}" method="post"
-          hx-post="{{ form_url }}?{{ request.GET.urlencode }}"
-          hx-target="#{{ view_id|safe }}-container"
-          hx-swap="outerHTML"
-          enctype="multipart/form-data">
+    <form
+        id="{{ view_id|safe }}"
+        method="post"
+        hx-post="{{ form_url }}?{{ request.GET.urlencode }}"
+        hx-target="#{{ view_id|safe }}-container"
+        hx-swap="outerHTML"
+        enctype="multipart/form-data"
+    >
         {% csrf_token %}
 
         <div class="p-5">
             <div class="flex justify-between items-center mb-2">
                 <h2 class="text-md font-semibold">{{ form_title|escape }}</h2>
-                <button type="button" onclick="closeModal()" class="text-gray-500 hover:text-red-500 text-xl cursor-pointer">
-                    <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}" />
+                <button
+                    type="button"
+                    onclick="closeModal()"
+                    class="text-gray-500 hover:text-red-500 text-xl cursor-pointer"
+                >
+                    <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}">
                 </button>
             </div>
 
@@ -113,7 +120,8 @@
                                         <div class="flex justify-between items-center mb-1">
                                             <label for="{{ field.id_for_label }}" class="text-xs text-color-600">
                                                 {{ field.label }}
-                                                {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                                                {% if field.field.required %}<span class="text-red-500"
+                                                    >*</span>{% endif %}
                                             </label>
                                         </div>
                                         <div class="relative">
@@ -136,7 +144,10 @@
         </div>
 
         <div class="flex justify-end p-5 pt-0 gap-2">
-            <button type="submit" class="text-sm px-4 py-2 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white]">
+            <button
+                type="submit"
+                class="text-sm px-4 py-2 bg-primary-600 rounded-md hover:bg-primary-800 transition duration-300 text-[white]"
+            >
                 {% trans "Save" %}
             </button>
         </div>

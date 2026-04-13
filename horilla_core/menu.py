@@ -130,8 +130,8 @@ class GeneralSettings:
             "order": 2,
         },
         {
-            "label": _("Groups and Permissions"),
-            "url": reverse_lazy("horilla_core:group_permission_view"),
+            "label": _("Roles and Permissions"),
+            "url": reverse_lazy("horilla_core:role_permission_view"),
             "hx-target": "#settings-content",
             "hx-push-url": "true",
             "hx-select": "#permission-view",

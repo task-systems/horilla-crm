@@ -7,7 +7,9 @@ and dynamic UI handling for role-based and condition-based forecasting.
 from functools import cached_property
 
 # Third party imports (Django)
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponseRedirect
 from django.utils import timezone
 from django.views import View
 from django.views.generic import TemplateView
@@ -46,6 +48,49 @@ class ForecastTargetView(LoginRequiredMixin, HorillaView):
     list_url = reverse_lazy("forecast:forecast_target_list_view")
     main_url = reverse_lazy("forecast:forecast_target_view")
     filters_url = reverse_lazy("forecast:forecast_target_filters_view")
+
+    def get(self, request, *args, **kwargs):
+        raw_forecast_type = request.GET.get("forecast_type")
+        raw_period = request.GET.get("period")
+
+        def to_int(value):
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                return False
+
+        invalid_params = []
+        if raw_forecast_type is not None:
+            ft_id = to_int(raw_forecast_type)
+            if ft_id is False:
+                invalid_params.append(_("Forecast Type"))
+            elif not ForecastType.objects.filter(pk=ft_id).exists():
+                invalid_params.append(_("Forecast Type"))
+
+        if raw_period is not None:
+            p_id = to_int(raw_period)
+            if p_id is False:
+                invalid_params.append(_("Period"))
+            elif not Period.objects.filter(pk=p_id).exists():
+                invalid_params.append(_("Period"))
+
+        if invalid_params:
+            messages.error(
+                request,
+                _("Invalid value for: %(params)s.")
+                % {"params": ", ".join(str(p) for p in invalid_params)},
+            )
+            clean_params = {}
+            if request.GET.get("section"):
+                clean_params["section"] = request.GET["section"]
+            query_string = (
+                "?" + "&".join(f"{k}={v}" for k, v in clean_params.items())
+                if clean_params
+                else ""
+            )
+            return HttpResponseRedirect(str(self.main_url) + query_string)
+
+        return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
 
@@ -87,8 +132,10 @@ class ForecastTargetView(LoginRequiredMixin, HorillaView):
                 or context["periods"].first()
             )
 
-        context["current_forecast_type_id"] = forecast_type_id
-        context["current_period_id"] = period_id
+        default_ft = context["default_forecast_type"]
+        default_p = context["default_period"]
+        context["current_forecast_type_id"] = default_ft.pk if default_ft else None
+        context["current_period_id"] = default_p.pk if default_p else None
 
         return context
 
@@ -196,7 +243,7 @@ class ForecastTargetListView(LoginRequiredMixin, HorillaListView):
     bulk_select_option = False
     table_width = False
     enable_sorting = False
-    table_height_as_class = "h-[500px]"
+    table_height_as_class = "h-[calc(_100vh_-_330px_)]"
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -306,7 +353,29 @@ class ForecastTargetFormView(LoginRequiredMixin, HorillaSingleFormView):
     def get_context_data(self, **kwargs):
         """Add custom context data"""
         context = super().get_context_data(**kwargs)
-        context["users"] = User.objects.all()
+        if self.request.method == "POST":
+            is_role_based = self.request.POST.get("is_role_based", "off") == "on"
+            role_id = self.request.POST.get("role")
+            if is_role_based:
+                users = (
+                    User.objects.filter(role_id=role_id)
+                    if role_id
+                    else User.objects.none()
+                )
+            else:
+                users = User.objects.all()
+        else:
+            users = User.objects.all()
+        context["users"] = users
+
+        if self.request.method == "POST":
+            context["condition_fields"] = self._calculate_dynamic_condition_fields(
+                self.request.POST
+            )
+            context["form_submitted"] = True
+        else:
+            context["form_submitted"] = False
+
         context["roles"] = Role.objects.all()
         context["period_choices"] = [(p.id, p.name) for p in Period.objects.all()]
         context["forecast_type_choices"] = [
@@ -521,6 +590,7 @@ class ToggleRoleBasedView(View):
             "submitted_condition_data": self.get_condition_data(request),
             "condition_row_count": request.session.get("condition_row_count", 0),
             "is_role_based": is_role_based,
+            "form_submitted": False,
         }
         return render(
             request,
@@ -615,6 +685,7 @@ class ToggleConditionFieldsView(View):
             "is_period_same": is_period_same,
             "is_target_same": is_target_same,
             "is_forecast_type_same": is_forecast_type_same,
+            "form_submitted": False,
         }
         return render(
             request,

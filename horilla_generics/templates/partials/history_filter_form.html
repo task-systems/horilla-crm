@@ -3,7 +3,7 @@
     <div class="flex justify-between items-center mb-4">
         <h2 class="text-md font-semibold">{% trans "Filter" %}</h2>
         <button onclick="closeFilterModal()" class="text-gray-500 hover:text-gray-500 text-xl cursor-pointer">
-            <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}" />
+            <img src="{% static 'assets/icons/close.svg' %}" alt="{% trans 'Close' %}">
         </button>
     </div>
     <form
@@ -13,7 +13,8 @@
         hx-trigger="submit"
         hx-select="#history-main"
         class="space-y-4"
-        hx-on::after-request="closeFilterModal()">
+        hx-on::after-request="closeFilterModal()"
+    >
         {{ form.filter_date.label_tag }}
         {{ form.filter_date }}
 
